@@ -1,0 +1,146 @@
+\input{preamble}
+\usepackage{stmaryrd}
+
+\newcommand{\adj}[1]{\llbracket #1 \rrbracket} 
+
+\begin{document}
+
+\maketitle
+
+\section{Recap of ForceMove}
+
+The ForceMove protocol describes the message format and the supporting on-chain behaviour
+to enable generalized, $n$-party state channels on any blockchain that supports Turing-complete, general-purpose
+computation. Here we give a brief overview of the protocol to the level required to understand
+the rest of the paper. For a more comprehensive explanation please refer to \cite{}.
+
+A ForceMove \textbf{state channel}, $\chi(P, L, k)$, is defined by an ordered set of participant
+addresses, $P = [p_0, ..., p_{n-1}]$, the address of an on-chain \textbf{game library}, $L$,
+and a nonce, $k$, which chosen by the first participant to make the channel's combination of properties unique.
+The \textbf{channel address} is calculated by taking the last 20 bytes of the \texttt{keccak256}
+hash of the channel properties. 
+
+\begin{table}[h]
+  \begin{tabular}{|l|l|p{5cm}|}
+    \hline
+    \texttt{participants} & \texttt{address[]} & The addresses used to sign updates to the channel. \\ \hline
+    \texttt{gameLibrary} & \texttt{address} & The address of the gameLibrary, which defines the transition rules for this channel \\ \hline
+    \texttt{nonce} & \texttt{unit256} & Chosen to make the channel's address unique. \\ \hline
+    \texttt{turnNum} & \texttt{unit256} & Increments as new states are produced. \\ \hline
+    \texttt{balances} & \texttt{(address, uint256)[]} & Current \textit{outcome} of the channel. \\ \hline
+    \texttt{isFinal} & \texttt{bool} & \\ \hline
+    \texttt{data} & \texttt{bytes} & \\ \hline
+    \texttt{v} & \texttt{uint8} & ECDSA signature of the above arguments by the moving participant. \\ \cline{1-2}
+    \texttt{r} & \texttt{bytes32} & \\ \cline{1-2}
+    \texttt{s} & \texttt{bytes32} & \\ \hline
+  \end{tabular}
+  \caption{ForceMove state format}
+  \label{table:force-move-state}
+\end{table}
+
+A ForceMove \textbf{state}, $\sigma_\chi^i(\beta, f, \delta)$, is specified by \textbf{turn number}, $i$,
+a set of \textbf{balances}, $\beta$, a boolean flag \textbf{finalized}, $f \in \{T, F\}$, and
+a chunk of unstructured \textbf{game data}, $\delta$, that will be interpreted by the game library. The
+balances can be thought of as an ordered set of $(\texttt{address}, \texttt{uint256})$ pairs,
+which specify how any funds allocated to the channel should be distributed if the channel 
+were to finalize in the current state.
+
+In order for a state, $\sigma_\chi^i$, to be valid it must be signed by participant, $p_j$,
+where $j = i \% n$ is the remainder mod $n$. This requirement specifies that participants
+in the channel must take turns when signing states.
+
+The game library is responsible for defining a set of states and allowed transitions that
+in turn define the `application' that will run inside the state channel. It does this by
+defining a single boolean function, $t_L(i, \beta, \delta, \beta', \delta') \rightarrow \{ T, F\}$.
+This function is used to derive an overall boolean transition function, $t$, specifying whether
+a transition between two states is permitted under the rules of the protocol:
+\begin{align*}
+  t(\sigma_\chi^i(\beta, f, \delta), \sigma_{\chi'}^j(\beta', f', \delta') ) \Leftrightarrow &
+    \chi = \chi'
+    \wedge j = i + 1
+    \wedge \\
+    & [ (\neg f \wedge \neg f' \wedge j \leq 2n \wedge \beta = \beta' \wedge \delta = \delta') \vee \\
+    & (\neg f \wedge \neg f' \wedge j > 2n \wedge t_L(n, \beta, \delta, \beta', \delta')) \vee \\
+    & (f' \wedge \beta = \beta' \wedge \delta' = 0) ]
+\end{align*}
+
+In all transitions the channel properties must remain unchanged and the turn number must increment.
+There are then three different modes of operation. The first mode applies in the first $2n$
+states (assuming none of these are finalized) and in this mode the balances and game data
+must remain unchanged. As we will see later, these states exist so that the channel can be
+funded safely. We refer to the first $n$ states as the \textbf{pre-fund setup} states and
+the subsequent $n$ as the \textbf{post-fund setup} states. The second mode applies to the
+`normal' operation of the channel, when the game library is used to determine the allowed
+transitions. The final mode concerns the finalization of the channel: at any point the current
+participant can choose to exit the channel and lock in the balances in the current state.
+Once this happens the only allowed transitions are to additional finalized states. Because
+of this, we have no further use for the game data, $\delta$, so can remove this from the state.
+Once a sequence of $n$ finalized states have been produced the channel is considered closed. We
+call this sequence of $n$ finalized states a \textbf{conclusion proof}.
+
+
+\subsubsection{On-chain operations}
+
+Adjudicator
+
+We will use the notation $\adj{.}$
+
+\begin{align*}
+D_\chi(x) \adj{\alpha_\chi(0)} \rightarrow \adj{\alpha_\chi(x)}
+\end{align*}
+\begin{align*}
+W^{FM}_A(x) \adj{\alpha_\chi(x + y)\beta_\chi(A: x + z, ...)} \rightarrow \adj{\alpha_\chi(y)\beta_\chi(A: z, ...)}
+\end{align*}
+\begin{align*}
+\Theta(\tau + \epsilon) \adj{\kappa(\tau, \sigma_\chi(\beta_\chi, \delta))} \rightarrow \adj{\beta_\chi \kappa_\chi(\bot)}
+\end{align*}
+\begin{align*}
+FM(\tau, \sigma^i, ..., \sigma^{i+n-1}) \adj{\kappa_\chi(\top)} \rightarrow \adj{\kappa(\tau + \eta, \sigma^{i+n-1})}
+\end{align*}
+\begin{align*}
+R(\tau', \sigma^{i+1})\adj{\kappa(\tau, \sigma^i)} \rightarrow \adj{\kappa_\chi(\top)}
+\end{align*}
+\begin{align*}
+C(\tau, \sigma^i, ..., \sigma^{i+n-1}(\beta)) \adj{\kappa_\chi(\top)} \rightarrow \adj{\beta_\chi(\beta) \kappa_\chi(\bot)}
+\end{align*}
+\begin{align*}
+C(\tau, \sigma^i, ..., \sigma^{i+n-1}(\beta)) \adj{\kappa_\chi(\tau + \epsilon, \sigma)} \rightarrow \adj{\beta_\chi(\beta \kappa_\chi(\bot)}
+\end{align*}
+
+Understood that $\beta(a_1: 0, a_2:x_2,...) \equiv \beta(a_2:x_2, ...)$
+
+
+Adjudicator
+* Deposit
+* ForceMove
+* Respond
+* Timeout
+* Conclude
+* Withdraw
+
+\section{Enforceable outcomes}
+
+We say an outcome, $\beta_\chi$, is \textbf{enforceable by a participant}, $p$, if there exists a sequence of operations such that $p$ can register the outcome with the adjudicator that no actions taken by another party can prevent. (Here we exclude actions that break the underlying blockchain assumptions: for example, we do not consider the possibility of censuring transactions or actions of physical violence to prevent the participant from performing those operations and so on.)
+
+Impossible for two participants to have different enforceable outcomes.
+
+Is possible for one participant to hold multiple enforceable outcomes.
+
+Is possible for no outcome to be enforceable.
+
+Is possible for one outcome to be enforceable for one participant and not others.
+
+It's also possible for one outcome to be enforceable for all participants.
+
+\subsubsection{Safe funding}
+
+\section{Turbo Protocol}
+
+
+
+
+Assumptions:
+* Can register a transaction within any blockchain interval
+* Transactions are free
+
+\end{document}
