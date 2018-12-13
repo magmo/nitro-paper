@@ -2,6 +2,7 @@
 \usepackage{stmaryrd}
 
 \newcommand{\adj}[1]{\llbracket #1 \rrbracket} 
+\newcommand{\enf}[1]{[#1]} 
 
 \begin{document}
 
@@ -21,18 +22,19 @@ The \textbf{channel address} is calculated by taking the last 20 bytes of the \t
 hash of the channel properties. 
 
 \begin{table}[h]
-  \begin{tabular}{|l|l|p{5cm}|}
+  \begin{tabular}{|l|l|l|p{5cm}|}
     \hline
-    \texttt{participants} & \texttt{address[]} & The addresses used to sign updates to the channel. \\ \hline
-    \texttt{gameLibrary} & \texttt{address} & The address of the gameLibrary, which defines the transition rules for this channel \\ \hline
-    \texttt{nonce} & \texttt{unit256} & Chosen to make the channel's address unique. \\ \hline
-    \texttt{turnNum} & \texttt{unit256} & Increments as new states are produced. \\ \hline
-    \texttt{balances} & \texttt{(address, uint256)[]} & Current \textit{outcome} of the channel. \\ \hline
-    \texttt{isFinal} & \texttt{bool} & \\ \hline
-    \texttt{data} & \texttt{bytes} & \\ \hline
-    \texttt{v} & \texttt{uint8} & ECDSA signature of the above arguments by the moving participant. \\ \cline{1-2}
-    \texttt{r} & \texttt{bytes32} & \\ \cline{1-2}
-    \texttt{s} & \texttt{bytes32} & \\ \hline
+    \texttt{participants} & \texttt{address[]} & $P$ & The addresses used to sign updates to the channel. \\ \hline
+    \texttt{gameLibrary} & \texttt{address} & $L$ & The address of the gameLibrary, which defines the transition rules for this channel \\ \hline
+    \texttt{nonce} & \texttt{unit256} & $k$ & Chosen to make the channel's address unique. \\ \hline
+    \texttt{challengeDuration} & \texttt{unit256} & $\eta$ & \\ \hline
+    \texttt{turnNum} & \texttt{unit256} & $i$ & Increments as new states are produced. \\ \hline
+    \texttt{balances} & \texttt{(address, uint256)[]} & $\beta$ & Current \textit{outcome} of the channel. \\ \hline
+    \texttt{isFinal} & \texttt{bool} & $f$ & \\ \hline
+    \texttt{data} & \texttt{bytes} & $\delta$ & \\ \hline
+    \texttt{v} & \texttt{uint8} & &  ECDSA signature of the above arguments by the moving participant. \\ \cline{1-2}
+    \texttt{r} & \texttt{bytes32} & & \\ \cline{1-2}
+    \texttt{s} & \texttt{bytes32} & & \\ \hline
   \end{tabular}
   \caption{ForceMove state format}
   \label{table:force-move-state}
@@ -78,8 +80,9 @@ of this, we have no further use for the game data, $\delta$, so can remove this 
 Once a sequence of $n$ finalized states have been produced the channel is considered closed. We
 call this sequence of $n$ finalized states a \textbf{conclusion proof}.
 
+\input{figures/game-overview}
 
-\subsubsection{On-chain operations}
+\subsection{On-chain operations}
 
 Adjudicator
 
@@ -120,26 +123,69 @@ Adjudicator
 
 \section{Enforceable outcomes}
 
-We say an outcome, $\beta_\chi$, is \textbf{enforceable by a participant}, $p$, if there exists a sequence of operations such that $p$ can register the outcome with the adjudicator that no actions taken by another party can prevent. (Here we exclude actions that break the underlying blockchain assumptions: for example, we do not consider the possibility of censuring transactions or actions of physical violence to prevent the participant from performing those operations and so on.)
+We write this $\enf{\beta_\chi}_p$
 
-Impossible for two participants to have different enforceable outcomes.
+We say an outcome, $\beta_\chi$, is \textbf{enforceable by a participant}, $p$, if there exists a sequence of operations [todo - not quite] such that $p$ can register the outcome with the adjudicator that no actions taken by another party can prevent. (Here we exclude actions that break the underlying blockchain assumptions: for example, we do not consider the possibility of censuring transactions or actions of physical violence to prevent the participant from performing those operations and so on.)
 
-Is possible for one participant to hold multiple enforceable outcomes.
+Examples:
+* Next mover
+* Conclusion proof
+* PreFundSetup
 
-Is possible for no outcome to be enforceable.
+\begin{itemize}
+  \item Impossible for two participants to have different enforceable outcomes.
+  \item Is possible for one participant to hold multiple enforceable outcomes.
+  \item Is possible for no outcome to be enforceable.
+  \item Is possible for one outcome to be enforceable for one participant and not others.
+  \item It's also possible for one outcome to be enforceable for all participants.
+  \item If you're not a participant, no channel state is enforceable
+\end{itemize}
 
-Is possible for one outcome to be enforceable for one participant and not others.
+$\alpha$-equivalence
 
-It's also possible for one outcome to be enforceable for all participants.
-
-\subsubsection{Safe funding}
+On-chain funding
 
 \section{Turbo Protocol}
 
+* Withdrawal
+* Transfer
+* Deposit
+
+Off-chain open and close
+
+
+\section{Nitro Protocol}
+
+Add extra type of channels
+Guarantor terms
+
+\begin{align*}
+G_{ABC}(2) \adj{\alpha_A(2)\gamma_{A,B}(C:2, \dots)\beta_B(\dots, C:2, \dots)} \rightarrow \\
+\adj{\alpha_A(2)\alpha_C(2)\gamma_{A,B}(C:0, \dots)\beta_B(\dots, C:0, \dots)}
+\end{align*}
+
+
+\subsection{Virtual Channels}
+
+Want to fund a channel $\chi$ between A and B, for which we have state $\enf{\beta_\chi(A: x, B:y)}_{A,B}$. We have channels $L$ and $L'$ with participants $\{A, C\}$ and $\{B, C\}$ respectively. We assume these channels start in states $\enf{\beta_L(A:x, C:)}$
 
 
 
-Assumptions:
+\begin{align*}
+  \adj{.}\enf{\beta(A:x, B:y)\beta}
+\end{align*}
+
+\begin{align*}
+  \adj{\alpha_L\alpha_{L'}}
+  \enf{\beta_\chi(A:x, B:y)}_{A, B}
+  \enf{\beta_L()}_{A,C}
+  \enf{\beta_{L'}()}_{B,C}
+  \enf{\gamma_{G, J}(\chi: x + y, C: x + y)}_{A, C} \\
+  \enf{\beta_J(\chi: x + y, C: x + y)}_{A,B,C}
+\end{align*}
+
+
+\section{Assumptions}:
 * Can register a transaction within any blockchain interval
 * Transactions are free
 
