@@ -1,5 +1,8 @@
 \input{preamble}
 \usepackage{stmaryrd}
+\usepackage{mathtools}
+\theoremstyle{definition}
+\newtheorem{exmp}{Example}[section]
 
 \newcommand{\adj}[1]{\llbracket #1 \rrbracket} 
 \newcommand{\enf}[1]{[#1]} 
@@ -92,11 +95,22 @@ We will use the notation $\adj{.}$
 D_\chi(x) \adj{\alpha_\chi(0)} \rightarrow \adj{\alpha_\chi(x)}
 \end{align*}
 \begin{align*}
-W^{FM}_A(x) \adj{\alpha_\chi(x + y)\beta_\chi(A: x + z, ...)} \rightarrow \adj{\alpha_\chi(y)\beta_\chi(A: z, ...)}
+W_A(x) \adj{\alpha_\chi(x + y)\beta_\chi(A: x + z, ...)} \rightarrow \adj{\alpha_\chi(y)\beta_\chi(A: z, ...)}
 \end{align*}
+
+
+
 \begin{align*}
 \Theta(\tau + \epsilon) \adj{\kappa(\tau, \sigma_\chi(\beta_\chi, \delta))} \rightarrow \adj{\beta_\chi \kappa_\chi(\bot)}
 \end{align*}
+Unlike the other operations on this list, the timeout operation is not triggered by a
+blockchain transaction. Instead the operation happens automatically when the block time
+exceeds the expiry time stored in the challenge. In practice, there will not be any change 
+to the state stored in the contract when the operation occurs - just a change to the
+interpretation of that state. 
+
+
+
 \begin{align*}
 FM(\tau, \sigma^i, ..., \sigma^{i+n-1}) \adj{\kappa_\chi(\top)} \rightarrow \adj{\kappa(\tau + \eta, \sigma^{i+n-1})}
 \end{align*}
@@ -123,14 +137,54 @@ Adjudicator
 
 \section{Enforceable outcomes}
 
+$\{\beta_1, \dots \beta_n \}$ - 
+The set of outcomes $\{\beta_1, \dots \beta_n\}$ 
+. We say one of these outcomes is a forceable-possibility.
+
+If 
+
+locally possible outcomes
+enforceable
+
 We write this $\enf{\beta_\chi}_p$
 
 We say an outcome, $\beta_\chi$, is \textbf{enforceable by a participant}, $p$, if there exists a sequence of operations [todo - not quite] such that $p$ can register the outcome with the adjudicator that no actions taken by another party can prevent. (Here we exclude actions that break the underlying blockchain assumptions: for example, we do not consider the possibility of censuring transactions or actions of physical violence to prevent the participant from performing those operations and so on.)
 
-Examples:
-* Next mover
-* Conclusion proof
-* PreFundSetup
+
+\begin{exmp}
+  \textbf{Enforceability by the next mover} \\
+  hello
+\end{exmp}
+
+\begin{exmp}
+  \textbf{Conclusion proofs} \\
+  hello
+\end{exmp}
+
+\begin{exmp}
+  \textbf{PreFundSetup} \\
+  hello
+\end{exmp}
+
+\begin{exmp}
+  \textbf{The consensus game} \\
+  \begin{align*}
+    t_{L_C}(i, \beta, (j, x), \beta', (j', x')) \Leftrightarrow
+      [ & (j=n-1 \wedge j'= 0 \wedge \beta' = x = x')  \vee \\
+      & (j < n-1 \wedge j' = j+1, \beta = \beta', x = x') \vee \\
+      & (j'=0, \beta = \beta') ]
+  \end{align*}
+
+  \begin{align*}
+    \sigma^{i}(\beta, (0, \beta)) & \approx [\beta]_P \\
+    \sigma^{i+1}(\beta, (0, \beta')) & \approx \{\beta'\}_{p_0}[\beta]_{p_1, ..., p_{n-1}} \\
+    \sigma^{i+2}(\beta, (1, \beta')) & \approx \{\beta'\}_{p_0, p_1}[\beta]_{p_2, ..., p_{n-1}} \\
+    &\vdots\\
+    \sigma^{i+n-1}(\beta, (n-1, \beta')) & \approx [\beta', \beta]_{p_{n-1}} \\
+    \sigma^{i+n}(\beta', (0, \beta')) & \approx [\beta']_{P} \\
+  \end{align*}
+    hello
+\end{exmp}
 
 \begin{itemize}
   \item Impossible for two participants to have different enforceable outcomes.
@@ -141,15 +195,53 @@ Examples:
   \item If you're not a participant, no channel state is enforceable
 \end{itemize}
 
-$\alpha$-equivalence
+
+We say a state $\adj{S}$ is $\alpha_X$-equivalent to a state $\alpha_X(x)$ if there exist
+a sequence of on-chain operations $O = O_i \dots O_0$ such that the $\alpha_X$ term in
+$\adj{S'} = O\adj{S}$ is at least $x$ ($\alpha_X$-reachable) and there is no sequence of
+operations $O'$ such that $\alpha_x(x)$ is not reachable from the resulting state
+$\adj{S''} = O'\adj{S}$ 
 
 On-chain funding
 
+\subsection{The consensus game}
+
+
 \section{Turbo Protocol}
 
-* Withdrawal
-* Transfer
-* Deposit
+Turbo protocol is a small extension to ForceMove that allows multiple ForceMove state
+channels between a the same set of participants to be supported by a single on-chain
+state deposit.
+
+* parallelized
+* open and close off-chain
+* generalisation of addresses
+
+In Turbo the ForceMove withdrawal operation, $W_A(x)$, is replaced with two operations: a
+\textbf{transfer} operation, $T_{A,B}(x)$, and a modified withdrawal operation, $W'_B(x)$.
+The original ForceMove withdrawal can be recovered as $W_A(x) = W'_B(x)T_{A,B}(x)$.
+
+The modified withdrawal operation, $W'_A(x)$, allows withdrawal directly from the funds
+held for address, $A$. The operation requires knowledge of the private key of $A$ and is
+therefore not possible for addresses that correspond to state channels. The operation has
+the following effect on the on-chain state:
+\begin{align*}
+W'_A(x) \adj{\alpha_A(x')} \rightarrow \adj{\alpha_A(x'-x)}
+\end{align*}
+
+The transfer operation, $T_{A,B}(x)$, is an instruction to transfer funds currently allocated
+to address $A$ to address $B$, according to the outcome of channel $A$:
+\begin{multline*}
+T_{AB}(x) \adj{\alpha_A(x_\alpha)\beta_A(B:x_\beta, \dots)} \rightarrow \\
+  \begin{cases}
+      \adj{\alpha_A(x_\alpha - x)\alpha_B(x)\beta_A(B:x_\beta - x, \dots)} & 
+      \text{if } x \leq x_\alpha, x_\beta \\
+      \adj{\alpha_A(x_\alpha)\beta_A(B:x_\beta, \dots)} &
+      \text{otherwise}
+  \end{cases}
+\end{multline*}
+
+
 
 Off-chain open and close
 
@@ -159,31 +251,87 @@ Off-chain open and close
 Add extra type of channels
 Guarantor terms
 
-\begin{align*}
-G_{ABC}(2) \adj{\alpha_A(2)\gamma_{A,B}(C:2, \dots)\beta_B(\dots, C:2, \dots)} \rightarrow \\
-\adj{\alpha_A(2)\alpha_C(2)\gamma_{A,B}(C:0, \dots)\beta_B(\dots, C:0, \dots)}
-\end{align*}
+\begin{table}[h]
+  \begin{tabular}{|l|l|l|p{5cm}|}
+    \hline
+    \texttt{participants} & \texttt{address[]} & $P$ & The addresses used to sign updates to the channel. \\ \hline
+    \texttt{gameLibrary} & \texttt{address} & $L$ & The address of the gameLibrary, which defines the transition rules for this channel \\ \hline
+    \texttt{nonce} & \texttt{unit256} & $k$ & Chosen to make the channel's address unique. \\ \hline
+    \texttt{challengeDuration} & \texttt{unit256} & $\eta$ & \\ \hline
+    \texttt{turnNum} & \texttt{unit256} & $i$ & Increments as new states are produced. \\ \hline
+    \texttt{guarantorFor} & \texttt{address} &  & Target channel for guarantee channels. Equal to 0 for balance channels. \\ \hline
+    \texttt{balances} & \texttt{(address, uint256)[]} & $\beta$ or $\gamma$ & Current \textit{outcome} of the channel. \\ \hline
+    \texttt{isFinal} & \texttt{bool} & $f$ & \\ \hline
+    \texttt{data} & \texttt{bytes} & $\delta$ & \\ \hline
+    \texttt{v} & \texttt{uint8} & &  ECDSA signature of the above arguments by the moving participant. \\ \cline{1-2}
+    \texttt{r} & \texttt{bytes32} & & \\ \cline{1-2}
+    \texttt{s} & \texttt{bytes32} & & \\ \hline
+  \end{tabular}
+  \caption{ForceMove state format}
+  \label{table:force-move-state}
+\end{table}
 
+\begin{multline*}
+G_{ABC}(x) \adj{\alpha_A(x_\alpha)\gamma_{A,B}(C:x_\gamma, \dots)\beta_B(\dots, C:x_\beta, \dots)} \rightarrow \\
+  \begin{cases}
+      \adj{\alpha_A(x_\alpha - x)\alpha_C(x)\gamma_{A,B}(C:x_\beta -x, \dots)\beta_B(\dots, C:x_\beta - x, \dots)} \\
+      \hspace{7cm} \text{if } x \leq x_\alpha, x_\beta, x_\gamma \\
+      \adj{\alpha_A(x_\alpha)\gamma_{A,B}(C:x_\gamma, \dots)\beta_B(\dots, C:x_\beta, \dots)} \\
+      \hspace{7cm} \text{otherwise}
+  \end{cases}
+\end{multline*}
 
 \subsection{Virtual Channels}
 
+There is a configuration where we can support virtual channels.
+They can be opened and closed off-chain.
+
 Want to fund a channel $\chi$ between A and B, for which we have state $\enf{\beta_\chi(A: x, B:y)}_{A,B}$. We have channels $L$ and $L'$ with participants $\{A, C\}$ and $\{B, C\}$ respectively. We assume these channels start in states $\enf{\beta_L(A:x, C:)}$
 
-
-
 \begin{align*}
-  \adj{.}\enf{\beta(A:x, B:y)\beta}
+  \adj{\alpha_L(x)\alpha_{L'}(x)} \quad \enf{\beta_L(A: a, C: b)}_{A,C} \quad \enf{\beta_{L'}(B:b, C:a)}_{B, C}
 \end{align*}
 
 \begin{align*}
-  \adj{\alpha_L\alpha_{L'}}
-  \enf{\beta_\chi(A:x, B:y)}_{A, B}
-  \enf{\beta_L()}_{A,C}
-  \enf{\beta_{L'}()}_{B,C}
-  \enf{\gamma_{G, J}(\chi: x + y, C: x + y)}_{A, C} \\
-  \enf{\beta_J(\chi: x + y, C: x + y)}_{A,B,C}
+  & \adj{\alpha_L(x)\beta_L(G: x)\gamma_{G,J}(\chi: x, C: x)\beta_J(\chi: x, C: x)\beta_\chi(A: a, B: b)}\\ 
+  & \begin{aligned}
+   \xrightarrow{T_{L,G}(x)} & \adj{\alpha_G(x)\gamma_{G, J}(\chi: x, C: x)\beta_J(\chi: x, C: x)\beta_\chi(A: a, B: b)} \\
+   \xrightarrow{G_{G, J, \chi}(a)} & \adj{\alpha_\chi(x)\beta_\chi(A: a, B: b)\gamma_{G, J}(C: x)\beta_J(C: x)} \\
+   \xrightarrow{T_{\chi, A}(a)} & \adj{\alpha_A(a)\alpha_\chi(b)\beta_\chi(B: b)\gamma_{G, J}(C: x)\beta_J(C: x)} \\
+   \approx & \alpha_A(a)
+  \end{aligned}
 \end{align*}
 
+
+
+
+\begin{figure}[h]\centering
+  \begin{tikzpicture}[x=3cm,y=1cm]
+
+    % Specification of nodes (position, etc.)
+    \node (a0) at (-1,0) { $\adj{\alpha_L(x)}$ };
+    \node (a1) at (1,0) { $\adj{\alpha_{L'}(x)}$ };
+    \node (b0) at (-1,-1) { $\enf{\beta_L(G: x)}_{A, C}$ };
+    \node (b1) at (1,-1) { $\enf{\beta_{L'}(G': x)}_{B, C}$ };
+    \node (g0) at (-1,-2) { $\enf{\gamma_{G, J}(\chi: x, A: x, C: x)}_{A, C}$ };
+    \node (g1) at (1,-2) { $\enf{\gamma_{G', J}(\chi: x, B: x, C: x)}_{B, C}$ };
+    \node (j) at (0,-3) { $\enf{\beta_J(\chi: x, C: x)}_{A,B,C}$ };
+    \node (c) at (0,-4) { $\enf{\beta_\chi(A: a, B: b)}_{A,B}$ };
+
+    \begin{scope}[-]
+      \tikzstyle{every node}=[draw=none,below]
+      \draw (a0) to (b0);
+      \draw (a1) to (b1);
+      \draw (b0) to (g0);
+      \draw (b1) to (g1);
+      \draw (g0) to (j);
+      \draw (g1) to (j);
+      \draw (j) to (c);
+    \end{scope}
+
+  \end{tikzpicture}
+\caption{Ledger channels, $x = a + b$}\label{fig:modes}
+\end{figure}
 
 \section{Assumptions}:
 * Can register a transaction within any blockchain interval
