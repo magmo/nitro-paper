@@ -1,6 +1,7 @@
 \input{preamble}
 \usepackage{stmaryrd}
 \usepackage{mathtools}
+\usepackage{bm}
 \theoremstyle{definition}
 \newtheorem{exmp}{Example}[section]
 
@@ -81,25 +82,49 @@ participant can choose to exit the channel and lock in the balances in the curre
 Once this happens the only allowed transitions are to additional finalized states. Because
 of this, we have no further use for the game data, $\delta$, so can remove this from the state.
 Once a sequence of $n$ finalized states have been produced the channel is considered closed. We
-call this sequence of $n$ finalized states a \textbf{conclusion proof}.
+call this sequence of $n$ finalized states a \textbf{conclusion proof}, which we will write $\bm{\sigma}^*$.
 
 \input{figures/game-overview}
 
 \subsection{On-chain operations}
 
-Adjudicator
+todo: intro
+We will talk about the adjudicator as though it is a single contract but don't intend to take a position on how it should be constructed by doing so; it is likely that in practice the adjudicator functionality will be provided by a set of interacting contracts.
 
-We will use the notation $\adj{.}$
+We will refer to the on-chain contract as the \textbf{adjudicator}, which we will write $\adj{S}$, where $S$ represents the contract's internal state. The state consists of three collections: the allocations, the outcomes and the challenges, each of which is keyed by a channel address. 
 
+The \textbf{allocations} collection is an \texttt{(address -> uint256)} mapping that records the total funds allocated to a given channel. We write $\adj{\alpha_\chi(x)}$ to represent an adjudicator where $x$ is allocated to channel $\chi$.
+
+The \textbf{outcomes} collection assigns channels to one of two different modes: channels are either undecided or decided. We use the symbol $\top$ to represent undecided channels, so that $\adj{\beta_\chi(\top)}$ represents an adjudicator where the outcome of channel $\chi$ is undecided. For channels with outcomes that are decided, the outcomes collection maps the channel address to an ordered set of \texttt{(address, uint256)} pairs - exactly the same format as the channel balances. We write $\adj{\beta_\chi(X: x, Y: y)}$ for an adjudicator where the outcome for channel $\chi$ is decided and sends $x$ to address $X$ and $y$ to address $Y$.
+
+The \textbf{challenges} collection records whether there is an open challenge on a given channel. We write $\adj{\kappa_\chi(\tau, \sigma)}$ for the case where there's an open challenge on channel $\chi$ challenging with state $\sigma$ and expiring at time $\tau$. We write $\adj{\kappa_\chi(\top)}$ in the case where there is no open challenge and $\adj{\kappa_\chi(\bot)}$ in the case where a challenge has expired (and thus no further challenges are possible). An efficient real-world implementation would most likely store the challenges as part of the outcomes collection, but we have chosen to treat them as separate concepts for the purpose of this paper.
+
+Note that while using the above notation in the rest of the paper, we will suppress the unimportant parts of the state, with the understanding that these parts of the state remain unchanged. It is also understood that zero entries can be ignored in outcomes, so that $\beta(a_1: 0, a_2:x_2,...) \equiv \beta(a_2:x_2, ...)$.
+
+We now move on to describing the operations supported by the adjudicator. The first operation we look at is the \textbf{deposit}:
 \begin{align*}
-D_\chi(x) \adj{\alpha_\chi(0)} \rightarrow \adj{\alpha_\chi(x)}
+D_\chi(x) \adj{\alpha_\chi(y)} \rightarrow \adj{\alpha_\chi(x + y)}
 \end{align*}
+The deposit can be called by anyone and results in an increase in the allocation for the given channel.
+
+There is also a \textbf{withdrawal} operation that can be use to withraw funds allocated to an address by an outcome.
 \begin{align*}
 W_A(x) \adj{\alpha_\chi(x + y)\beta_\chi(A: x + z, ...)} \rightarrow \adj{\alpha_\chi(y)\beta_\chi(A: z, ...)}
 \end{align*}
+In order to call the withdraw, the caller needs to sign the withdraw operation using the private key of the address they're withdrawing from. Thus it is not possible to call the withdraw operation for an address that corresponds to a state channel, as these addresses were generated from a hash of the channel's properties and not from a public/private key pair.
 
+The next operation is the \textbf{force-move} which is used to register a challenge in the adjudicator:
+\begin{align*}
+FM(\tau, \sigma^i, ..., \sigma^{i+n-1}) \adj{\kappa_\chi(\top)} \rightarrow \adj{\kappa(\tau + \eta, \sigma^{i+n-1})}
+\end{align*}
 
+The intent of a force-move is to get the next participant to provide their next move to the adjudicator. To do this they can call the \textbf{respond} method, providing their next state:
+\begin{align*}
+R(\tau', \sigma^{i+1})\adj{\kappa(\tau, \sigma^i)} \rightarrow \adj{\kappa_\chi(\top)}
+\end{align*}
+Once the challenge is cancelled it is removed from the adjudicator and the channel operation can continue off-chain. The force-move paper \cite{} outlines a couple of alternative ways (\textbf{refute} and \textbf{respond-with-alternative-move}) to respond to a force-move. While these are important for the ForceMove protocol, we will not need them in this paper, so will not go over them here.
 
+If the opponent does not respond to the challenge before the challenge expiry time, $\tau$, then a \textbf{timeout} occurs:
 \begin{align*}
 \Theta(\tau + \epsilon) \adj{\kappa(\tau, \sigma_\chi(\beta_\chi, \delta))} \rightarrow \adj{\beta_\chi \kappa_\chi(\bot)}
 \end{align*}
@@ -109,52 +134,52 @@ exceeds the expiry time stored in the challenge. In practice, there will not be 
 to the state stored in the contract when the operation occurs - just a change to the
 interpretation of that state. 
 
-
-
+The final operation is the \textbf{conclude} operation, which enables the immediate creation of a channel outcome from a conclusion proof, $\bm{\sigma}^*(\beta)$ including in the case where there is an active challenge:
 \begin{align*}
-FM(\tau, \sigma^i, ..., \sigma^{i+n-1}) \adj{\kappa_\chi(\top)} \rightarrow \adj{\kappa(\tau + \eta, \sigma^{i+n-1})}
+C(\tau, \bm{\sigma}^*(\beta)) \adj{\kappa_\chi(x)} \rightarrow 
+\begin{cases}
+  \adj{\kappa_\chi(\bot)} & \text{if } x = \bot \\
+  \adj{\beta_\chi(\beta) \kappa_\chi(\bot)} &
+  \text{otherwise}
+\end{cases}
 \end{align*}
-\begin{align*}
-R(\tau', \sigma^{i+1})\adj{\kappa(\tau, \sigma^i)} \rightarrow \adj{\kappa_\chi(\top)}
-\end{align*}
-\begin{align*}
-C(\tau, \sigma^i, ..., \sigma^{i+n-1}(\beta)) \adj{\kappa_\chi(\top)} \rightarrow \adj{\beta_\chi(\beta) \kappa_\chi(\bot)}
-\end{align*}
-\begin{align*}
-C(\tau, \sigma^i, ..., \sigma^{i+n-1}(\beta)) \adj{\kappa_\chi(\tau + \epsilon, \sigma)} \rightarrow \adj{\beta_\chi(\beta \kappa_\chi(\bot)}
-\end{align*}
-
-Understood that $\beta(a_1: 0, a_2:x_2,...) \equiv \beta(a_2:x_2, ...)$
+The conclude operation enables instant withdrawals in the case the channel is concluded collaboratively off-chain.
 
 
-Adjudicator
-* Deposit
-* ForceMove
-* Respond
-* Timeout
-* Conclude
-* Withdraw
 
-\section{Enforceable outcomes}
 
-$\{\beta_1, \dots \beta_n \}$ - 
-The set of outcomes $\{\beta_1, \dots \beta_n\}$ 
-. We say one of these outcomes is a forceable-possibility.
 
-If 
+\section{Outcomes and Ownership}
 
-locally possible outcomes
-enforceable
+Own an outcome. Prepared. Possible. Enabled.
+Enforceable / Enabled
 
-We write this $\enf{\beta_\chi}_p$
+As shown in the previous section, at the end of a ForceMove channel the final balances $\beta$ are \textbf{registered} with the adjudicator, either via an expired force-move or via a conclusion proof. We will refer to these final balances as the \textbf{outcome} of the channel. In this section, we will examine channel outcomes and introduce the concept of outcome ownership that underpins the rest of the paper.
 
-We say an outcome, $\beta_\chi$, is \textbf{enforceable by a participant}, $p$, if there exists a sequence of operations [todo - not quite] such that $p$ can register the outcome with the adjudicator that no actions taken by another party can prevent. (Here we exclude actions that break the underlying blockchain assumptions: for example, we do not consider the possibility of censuring transactions or actions of physical violence to prevent the participant from performing those operations and so on.)
+We say an outcome, $\beta$ is an \textbf{owned outcome} for a participant, $p$, if no other participant can prevent $p$ from registering $\beta$ with the adjudicator. We write this $\enf{\beta}_p$.
 
+TODO: do we need to talk about "before next turn".
 
 \begin{exmp}
-  \textbf{Enforceability by the next mover} \\
-  hello
+  \textbf{The Next Mover's Ownership} \\
+  Take a ForceMove channel where all $n$ participants possess states $\sigma_0, \dots, \sigma_m$, where $m \geq n$. Let $p$ be the participant whose turn it is to sign $\sigma_{m+1}$ (so that $p = p_i$ where $i = (m+1)\%n)$. 
+
+  Then if $\beta = \sigma_m.\beta$ the $\beta$ is owned by $p$, $\enf{\beta}_p$. In particular, no other participant can prevent $p$ from 
+  creating a force-move $FM(\tau, \sigma_{m-n}, \dots, \sigma_n)$ and then waiting for it to time out.
 \end{exmp}
+
+We say a set of outcomes, $\{ \beta_1, \dots, \beta_n \}$, are an \textbf{unonwned} set of outcomes for $p$, if it's possible for $p$ to cause one of the outcomes to be registered with the adjudicator but it isn't possible for $p$ to choose which one.
+
+Here are some facts about outcomes:
+\begin{itemize}
+  \item It is possible for multiple participants to own the same outcome similtaneously. We write this $\enf{\beta}_{p_1, p_2}$.
+  \item It is possible for one participant to own multiple outcomes simulateously. We write this $\enf{\beta_1, \beta_2}_p$.
+  \item It is impossible for different participants to own different outcomes similtaneously.
+  \item If one participant holds multiple outcomes it isn't possible for another participant to hold
+  \item Is possible that no participant owns any outcomes.
+  \item Only a channel's participants can own an outcome in the channel.
+\end{itemize}
+
 
 \begin{exmp}
   \textbf{Conclusion proofs} \\
@@ -185,15 +210,6 @@ We say an outcome, $\beta_\chi$, is \textbf{enforceable by a participant}, $p$, 
   \end{align*}
     hello
 \end{exmp}
-
-\begin{itemize}
-  \item Impossible for two participants to have different enforceable outcomes.
-  \item Is possible for one participant to hold multiple enforceable outcomes.
-  \item Is possible for no outcome to be enforceable.
-  \item Is possible for one outcome to be enforceable for one participant and not others.
-  \item It's also possible for one outcome to be enforceable for all participants.
-  \item If you're not a participant, no channel state is enforceable
-\end{itemize}
 
 
 We say a state $\adj{S}$ is $\alpha_X$-equivalent to a state $\alpha_X(x)$ if there exist
