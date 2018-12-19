@@ -163,13 +163,34 @@ C(\tau, \bm{\sigma}^*(\beta)) \adj{\kappa_\chi(x)} \rightarrow
 \end{align*}
 The conclude operation enables instant withdrawals in the case the channel is concluded collaboratively off-chain.
 
-\section{Enabled and Enforceable Outcomes}
+\section{Reasoning about State Channels}
 
-Analyse what a state means at a given point in time. Involves reasoning about the states and private information they hold and their knowledge about what other players hold. Don't track in detail - from a player's point of view it's us vs world.
-
-Call an outcome of a channel the balances that end up in the adjudicator. Either via a challenge + expiry or by the conclude operation.
-
+Develop the reasoning and logic for the rest of the paper.
 We introduce these concepts using the ForceMove framework but they are the central concepts of all state channel logic and can be applied to all state channel systems.
+
+State channels enable value to be transferred off-chain.
+How does this work when the chain is the record of value?
+Consider value to be transferred off-chain, when the right to obtain
+that value on-chain is transferred.
+To understand a state channel it's therefore key to understand the capabilities our current set of states and private information affords us.
+
+This involves not only reasoning about the states and private information they hold and their knowledge about what other players hold. In doing this
+we don't track 
+- assume that any state you have received is public
+- assume that any state that is sent is public
+
+In ForceMove, the only way a channel can affect the on-chain funds is via
+the channel balances, $\beta$, being placed in the adjudicator. We will
+refer to these final balances as the \textbf{outcome} of the channel and
+will refer to their placement in the adjudicator as \textbf{registering} the outcome. As we saw in the previous section, there are two ways to register an outcome with the adjudicator: (i) by calling the force-move operation which no-one responds to before the expiry time or (ii) by calling the conclude operation with a conclusion proof.
+
+We will simplify the analysis with the following assumptions:
+\begin{itemize}
+\item \textbf{Availability}: Given $\epsilon > 0$ and time $t$ it is always possible for any party to perform an on-chain operation in the interval $(t, t+\epsilon)$.
+\item \textbf{Responsiveness}(?): All on-chain operations are immediately visible to all parties.
+\item \textbf{Zero Gas}: On-chain operations are free.
+\end{itemize}
+In practice, we approximate the availability and responsiveness assumptions by ensuring that $\epsilon$ is sufficiently large, so that the assumption holds in practice. We do this by choosing the the channel timeout and requirements around how frequently participants should need to check the chain. The Zero Gas assumption means that we don't take the cost of operations into account when analysing the value of states. This is a good approximation when the gas costs are small compared with the value of the states - other cases require a more detailed analysis. This should be the subject of future research but falls outside the scope of this paper.
 
 \subsection{Enforceable Outcomes}
 
@@ -233,6 +254,8 @@ How much could I withdraw on-chain right now.
 
 Example: $\adj{\alpha_\chi(x)}\enf{\beta_\chi(A: x)}_A \sim_A x$
 
+\subsection{'safe' transitions}
+
 \section{Turbo Protocol}
 
 Turbo protocol is a small extension to ForceMove that allows multiple ForceMove state
@@ -267,9 +290,50 @@ T_{AB}(x) \adj{\alpha_A(x_\alpha)\beta_A(B:x_\beta, \dots)} \rightarrow \\
   \end{cases}
 \end{multline*}
 
+\subsection{Ledger channels}
 
+Rules of the consensus game
 
-Off-chain open and close
+\subsection{Opening a sub-channel}
+
+Want to open the channel, $\chi$, where $A$ and $B$ have initial balances $a' \leq a$ and $b' \leq b$ respectively. Both players start by signing a pre-fund setup for $\chi$ leaving us in the state:
+
+Note that we also have $S_3 \sim \omega_A(a)\omega_B(b)$. In order to transition to this state with the collaboration game, we have to transition through 
+
+We start with a ledger channel 
+\begin{align*}
+S_1 &= \adj{\alpha_L(a+b)} &&\enf{\beta_L(A: a, B: b)}_{A, B} & \\
+S_2 &= \adj{\alpha_L(a+b)} &&\enf{\beta_L(A: a, B: b)}_{A, B}&\enf{\beta_\chi(A: a', B: b')}_{A, B} \\
+S_3 &= \adj{\alpha_L(a+b)} &&\enf{\beta_L(A: a-a', B: b-b', \chi: a' + b')}_{A, B}&\enf{\beta_\chi(A: a', B: b')}_{A, B}
+\end{align*}
+
+\subsection{Closing a sub-channel off-chain}
+
+\begin{align*}
+S_1 &= \adj{\alpha_L(x)} &&\enf{\beta_L(A: a, B: b, \chi: a' + b')}_{A, B}&\enf{\beta_\chi(A: a', B: b')}_{A, B}\\
+S_2 &= \adj{\alpha_L(x)} &&\enf{\beta_L(A: a + a', B: b + b')}_{A, B}&\enf{\beta_\chi(A: a', B: b')}_{A, B} \\
+S_3 &= \adj{\alpha_L(x)} &&\enf{\beta_L(A: a + a', B: b + b')}_{A, B} & 
+\end{align*}
+where $x = a + a' + b + b'$.
+
+\subsection{Topping up a ledger channel}
+
+\begin{align*}
+S_1 &= \adj{\alpha_L(a + b)} &&\enf{\beta(A: a, B: b)}_{A, B} \\
+S_2 &= \adj{\alpha_L(a + b)} &&\enf{\beta(B: b, A: a + a')}_{A, B} \\
+S_3 &= D_L(a')\adj{\alpha_L(a + b)} &&\enf{\beta(B: b, A: a + a')}_{A, B} \\
+S_4 &= \adj{\alpha_L(a + b + a')} &&\enf{\beta(B: b, A: a + a')}_{A, B}
+\end{align*}
+
+\subsection{Partial checkout from a ledger channel}
+
+\begin{align*}
+S_1 &= \adj{\alpha_L(x)} &&\enf{\beta_L(B: b, A: a, \chi: c)}_{A, B} & \\
+S_2 &= \adj{\alpha_L(x)} &&\enf{\beta_L(B: b, A: a, \chi: c)}_{A, B} & \enf{\beta_{L'}(B: b, A: a - a', \chi: c)}_{A, B}\\
+S_3 &= \adj{\alpha_L(x)} &&\enf{\beta_L(L': x-a', A: a)}_{A, B} & \enf{\beta_{L'}(B: b, A: a - a', \chi: c)}_{A, B}\\
+S_4 &= \adj{\alpha_L(x)\beta_L(L': x-a, A: a)} && & \enf{\beta_{L'}(B: b, A: a - a', \chi: c)}_{A, B}\\
+S_5 &= \adj{\alpha_L'(x-a)\alpha_A(a)} && & \enf{\beta_{L'}(B: b, A: a - a', \chi: c)}_{A, B}\\
+\end{align*}
 
 
 \section{Nitro Protocol}
@@ -309,34 +373,11 @@ G_{ABC}(x) \adj{\alpha_A(x_\alpha)\gamma_{A,B}(C:x_\gamma, \dots)\beta_B(\dots, 
 
 \subsection{Virtual Channels}
 
-There is a configuration where we can support virtual channels.
-They can be opened and closed off-chain.
-
-Want to fund a channel $\chi$ between A and B, for which we have state $\enf{\beta_\chi(A: x, B:y)}_{A,B}$. We have channels $L$ and $L'$ with participants $\{A, C\}$ and $\{B, C\}$ respectively. We assume these channels start in states $\enf{\beta_L(A:x, C:)}$
-
-\begin{align*}
-  \adj{\alpha_L(x)\alpha_{L'}(x)} \quad \enf{\beta_L(A: a, C: b)}_{A,C} \quad \enf{\beta_{L'}(B:b, C:a)}_{B, C}
-\end{align*}
-
-\begin{align*}
-  & \adj{\alpha_L(x)\beta_L(G: x)\gamma_{G,J}(\chi: x, C: x)\beta_J(\chi: x, C: x)\beta_\chi(A: a, B: b)}\\ 
-  & \begin{aligned}
-   \xrightarrow{T_{L,G}(x)} & \adj{\alpha_G(x)\gamma_{G, J}(\chi: x, C: x)\beta_J(\chi: x, C: x)\beta_\chi(A: a, B: b)} \\
-   \xrightarrow{G_{G, J, \chi}(a)} & \adj{\alpha_\chi(x)\beta_\chi(A: a, B: b)\gamma_{G, J}(C: x)\beta_J(C: x)} \\
-   \xrightarrow{T_{\chi, A}(a)} & \adj{\alpha_A(a)\alpha_\chi(b)\beta_\chi(B: b)\gamma_{G, J}(C: x)\beta_J(C: x)} \\
-   \approx & \alpha_A(a)
-  \end{aligned}
-\end{align*}
-
-
-
-
 \begin{figure}[h]\centering
   \begin{tikzpicture}[x=3cm,y=1cm]
 
     % Specification of nodes (position, etc.)
-    \node (a0) at (-1,0) { $\adj{\alpha_L(x)}$ };
-    \node (a1) at (1,0) { $\adj{\alpha_{L'}(x)}$ };
+    \node (a0) at (0,0) { $\adj{\alpha_L(x)\alpha_{L'}(x)}$ };
     \node (b0) at (-1,-1) { $\enf{\beta_L(G: x)}_{A, C}$ };
     \node (b1) at (1,-1) { $\enf{\beta_{L'}(G': x)}_{B, C}$ };
     \node (g0) at (-1,-2) { $\enf{\gamma_{G, J}(\chi: x, A: x, C: x)}_{A, C}$ };
@@ -347,7 +388,7 @@ Want to fund a channel $\chi$ between A and B, for which we have state $\enf{\be
     \begin{scope}[-]
       \tikzstyle{every node}=[draw=none,below]
       \draw (a0) to (b0);
-      \draw (a1) to (b1);
+      \draw (a0) to (b1);
       \draw (b0) to (g0);
       \draw (b1) to (g1);
       \draw (g0) to (j);
@@ -359,8 +400,67 @@ Want to fund a channel $\chi$ between A and B, for which we have state $\enf{\be
 \caption{Ledger channels, $x = a + b$}\label{fig:modes}
 \end{figure}
 
-\section{Assumptions}:
-* Can register a transaction within any blockchain interval
-* Transactions are free
+There is a configuration where we can support virtual channels.
+They can be opened and closed off-chain.
+
+Want to fund a channel $\chi$ between A and B, for which we have state $\enf{\beta_\chi(A: x, B:y)}_{A,B}$. We have channels $L$ and $L'$ with participants $\{A, C\}$ and $\{B, C\}$ respectively. We assume these channels start in states $\enf{\beta_L(A:x, C:)}$
+
+\begin{align*}
+  \adj{\alpha_L(x)\alpha_{L'}(x)} \quad \enf{\beta_L(A: a, C: b)}_{A,C} \quad \enf{\beta_{L'}(B:b, C:a)}_{B, C}
+\end{align*}
+
+The offload
+\begin{align*}
+  & \adj{\alpha_L(x)\beta_L(G: x)\gamma_{G,J}(\chi: x, C: x)\beta_J(\chi: x, C: x)\beta_\chi(A: a, B: b)}\\ 
+  & \begin{aligned}
+   \xrightarrow{T_{L,G}(x)} & \adj{\alpha_G(x)\gamma_{G, J}(\chi: x, C: x)\beta_J(\chi: x, C: x)\beta_\chi(A: a, B: b)} \\
+   \xrightarrow{G_{G, J, \chi}(a)} & \adj{\alpha_\chi(x)\beta_\chi(A: a, B: b)\gamma_{G, J}(C: x)\beta_J(C: x)} \\
+   \xrightarrow{T_{\chi, A}(a)} & \adj{\alpha_A(a)\alpha_\chi(b)\beta_\chi(B: b)\gamma_{G, J}(C: x)\beta_J(C: x)} \\
+   \approx & \alpha_A(a)
+  \end{aligned}
+\end{align*}
+
+\subsection{Opening a virtual channel}
+
+Our first attempt at opening a virtual channel is as follows
+\begin{align*}
+S_1 &= V_\alpha &&\enf{\beta_L(A: a, C: b)}_{A, C} && \enf{\beta_{L'}(B:b, C: a)}_{B, C} & \\
+S_2 &= V_\alpha &&\enf{\beta_L(A: a, C: b)}_{A, C} && \enf{\beta_{L'}(B:b, C: a)}_{B, C} & V_\gamma \\
+S_3 &= V_\alpha &&\enf{\beta_L(G: x)}_{A, C} && \enf{\beta_{L'}(B:b, C: a)}_{B, C} & V_\gamma \\
+S_4 &= V_\alpha &&\enf{\beta_L(G: x)}_{A, C} && \enf{\beta_{L'}(G': x)}_{B, C} & V_\gamma \\
+\end{align*}
+Unfortunately this does not work as $S_3 \nsim_C x$
+
+We let
+\begin{align*}
+\beta_L^0 &= \beta_L(A:a, C: b) &
+\beta_L^1 &= \beta_L(G: x) \\
+\beta_{L'}^0 &= \beta_{L'}(B:b, C: a) &
+\beta_{L'}^1 &= \beta_{L'}(G': x)
+\end{align*}
+
+and proceed as follows
+\begin{align*}
+S_1 &= V_\text{rest} &&\enf{\beta_L^0}_{A, C} && \enf{\beta_{L'}^0}_{B, C} \\
+S_2 &= V_\text{rest} &&\{\beta_L^0, \beta_L^1\}_A\enf{\beta_L^0, \beta_L^1}_C && \enf{\beta_{L'}^0}_{B, C}\\
+S_3 &= V_\text{rest} &&\{\beta_L^0, \beta_L^1\}_A\enf{\beta_L^0, \beta_L^1}_C && \{\beta_{L'}^0, \beta_{L'}^1\}_B\enf{\beta_{L'}^0, \beta_{L'}^1}_C \\
+S_4 &= V_\text{rest} &&\enf{\beta_L^1}_{A, C} && \{\beta_{L'}^0, \beta_{L'}^1\}_B\enf{\beta_{L'}^0, \beta_{L'}^1}_C \\
+S_5 &= V_\text{rest} &&\enf{\beta_L^1}_{A, C} && \enf{\beta_{L'}^1}_{B, C}
+\end{align*}
+
+
+
+\subsection{Closing a virtual channel}
+
+\begin{align*}
+S_1 &= \enf{\beta_J(\chi: x, C: x)}_{A, B, C} && \enf{\beta_\chi(A:a, B: b)}_{A, B} & V \\
+S_2 &= \enf{\beta_J(A: a, B: b, C: x)}_{A, B, C} && \enf{\beta_\chi(A:a, B: b)}_{A, B} & V \\
+S_3 &= \enf{\beta_J(A: a, B: b, C: x)}_{A, B, C} && & V \\
+\end{align*}
+
+\subsection{Virtual Channel Partial Withdrawal and Top-up}
+
+We leave these as an exercise for the reader :). 
+
 
 \end{document}
