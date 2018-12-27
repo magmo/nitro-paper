@@ -1,9 +1,38 @@
-\input{preamble}
-\usepackage{stmaryrd}
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{color}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows}
+\usepackage{etoolbox}
+\usepackage{url} % for urls in bibliography
+\usepackage[parfill]{parskip} % no paragraph indents, leave blank line
+\usepackage{graphicx}
+\usepackage{subcaption}
+
+% Need this to keep the space before theorems when using parfill parskip
+% https://tex.stackexchange.com/questions/25346/wrong-spacing-before-theorem-environment-amsthm
+\begingroup
+    \makeatletter
+    \@for\theoremstyle:=definition,remark,plain\do{%
+        \expandafter\g@addto@macro\csname th@\theoremstyle\endcsname{%
+            \addtolength\thm@preskip\parskip
+            }%
+        }
+\endgroup
+
+\title{Nitro Protocol}
+\author{Tom Close}
+
 \usepackage{mathtools}
 \usepackage{bm}
+\usepackage{stmaryrd} % for llbracket and rrbracket
+
 \theoremstyle{definition}
 \newtheorem{exmp}{Example}[section]
+\newtheorem{defn}{Definition}[section]
 
 \newcommand{\adj}[1]{\llbracket #1 \rrbracket} 
 \newcommand{\enf}[1]{[#1]} 
@@ -11,6 +40,58 @@
 \begin{document}
 
 \maketitle
+
+\section{Introduction}
+
+A blockchain is a device that enables a group of adversarial parties to come to consensus over the contents of a shared ledger, without the presence of a trusted central authority. 
+Whether using a proof-of-work or a proof-of-stake algorithm, this process has a cost both in terms of time and in terms of money.
+For the Ethereum blockchain, this cost results in an effective limit of around 15 transactions per second being processed on the network.
+When compared with the visa network, which can process on the order of 50,000 transactions per second, this limit supports the view that blockchains, in their current form, do not scale.
+
+State channels offer a solution to the blockchain scaling problem.
+A state channel can be thought of as a set of updatable agreements between a fixed set of participants determining how a given set of assets should be split between them.
+The agreements are updated off-chain through the exchange of cryptographically signed messages between the participants according to some set of previously-agreed update rules. 
+The assets in question are held in escrow on the blockchain, in such a way
+that they can only be released according to the latest agreement from the state channel.
+If the off-chain cooperative behaviour breaks down, for example if one party refuses to sign updates either by choice or due to unavailability, any of the parties can reclaim their share of the assets by presenting the latest agreement to the chain.
+An exit game is required to give other parties the opportunity to present a later state, but all parties have the guarantee that they can reclaim their share of the funds within some finite time.
+
+In addition to the increased throughput, state channels bring instant finality to transactions: the moment a channel update is received the participant knows that the assets transferred are now assigned to them.
+They cannot access the assets immediately but they have the power to prevent any other party claiming those assets in the future.
+The only requirement is that participants need to be live enough to engage in the exit game if an opponent attempts to exit an earlier state.
+In practice, the requirement here is to check the chain periodically - at time intervals that are less than, but on the same order of magnitude as, the challenge duration in the exit game.
+
+As the channel updates are created and exchanged off-chain, the channel-update throughput is limited only by the speed of constructing, signing and broadcasting the update.
+Given that channel updates only needed to be communicated between participants and the system is therefore highly parallelizable, it is difficult to put a bound on the total transaction throughput of a system of state channels.
+In practice the system is only limited by the on-chain operations required to move assets when opening and closing channels.
+
+In this paper, we allow channels to be opened and closed off-chain. We enable the construction of efficient state channel networks.[TODO]
+
+\section{Existing work}
+
+Lightning and raiden
+- payment channel networks
+- directional
+
+Celer
+- directional but with multiple paths
+- general conditions
+
+Perun
+- virtual payment channels (different from HTLCs)
+- but using a validity time
+- and then state channel networks
+[Connext - have removed the time limit with a trade-off of trusting the hub - TODO: check this]
+
+Counterfactual
+- thinks about counterfactual instantiation
+- also app instance on top, which we collaborated on
+- possible to do meta-channels, but the details are not given in the paper and are still being finalized
+
+
+Our contribution:
+- like perun without the time limit
+
 
 \section{Recap of ForceMove}
 
@@ -95,9 +176,9 @@ We will refer to the on-chain contract as the \textbf{adjudicator}, which we wil
 
 The \textbf{allocations} collection is an \texttt{(address -> uint256)} mapping that records the total funds allocated to a given channel. We write $\adj{\alpha_\chi(x)}$ to represent an adjudicator where $x$ is allocated to channel $\chi$.
 
-The \textbf{outcomes} collection assigns channels to one of two different modes: channels are either undecided or decided. We use the symbol $\top$ to represent undecided channels, so that $\adj{\beta_\chi(\top)}$ represents an adjudicator where the outcome of channel $\chi$ is undecided. For channels with outcomes that are decided, the outcomes collection maps the channel address to an ordered set of \texttt{(address, uint256)} pairs - exactly the same format as the channel balances. We write $\adj{\beta_\chi(X: x, Y: y)}$ for an adjudicator where the outcome for channel $\chi$ is decided and sends $x$ to address $X$ and $y$ to address $Y$.
+The \textbf{outcomes} collection assigns channels to one of two different modes: channels are either undecided or decided. We use the symbol $\cdot$ to represent undecided channels, so that $\adj{\beta_\chi(\cdot)}$ represents an adjudicator where the outcome of channel $\chi$ is undecided. For channels with outcomes that are decided, the outcomes collection maps the channel address to an ordered set of \texttt{(address, uint256)} pairs - exactly the same format as the channel balances. We write $\adj{\beta_\chi(X: x, Y: y)}$ for an adjudicator where the outcome for channel $\chi$ is decided and sends $x$ to address $X$ and $y$ to address $Y$.
 
-The \textbf{challenges} collection records whether there is an active challenge on a given channel. We write $\adj{\kappa_\chi(\tau, \sigma)}$ for the case where there's an active challenge on channel $\chi$ challenging with state $\sigma$ and expiring at time $\tau$. We write $\adj{\kappa_\chi(\top)}$ in the case where there is no open challenge and $\adj{\kappa_\chi(\bot)}$ in the case where a challenge has expired (and thus no further challenges are possible). An efficient real-world implementation would most likely store the challenges as part of the outcomes collection, but we have chosen to treat them as separate concepts for the purpose of this paper.
+The \textbf{challenges} collection records whether there is an active challenge on a given channel. We write $\adj{\kappa_\chi(\tau, \sigma)}$ for the case where there's an active challenge on channel $\chi$ challenging with state $\sigma$ and expiring at time $\tau$. We write $\adj{\kappa_\chi(\cdot)}$ in the case where there is no open challenge and $\adj{\kappa_\chi(\times)}$ in the case where a challenge has expired (and thus no further challenges are possible). An efficient real-world implementation would most likely store the challenges as part of the outcomes collection, but we have chosen to treat them as separate concepts for the purpose of this paper.
 
 Note that while using the above notation in the rest of the paper, we will suppress the unimportant parts of the state, with the understanding that these parts of the state remain unchanged. It is also understood that zero entries can be ignored in outcomes, so that $\beta(a_1: 0, a_2:x_2,...) \equiv \beta(a_2:x_2, ...)$.
 
@@ -124,7 +205,7 @@ The next operation is the \textbf{force-move} which is used to register a challe
 FM(\tau, \bm{\sigma}_i^{i+n-1}) \adj{\kappa_\chi(x)} \rightarrow 
 \begin{cases}
   \adj{\kappa_\chi(\tau + \eta, \sigma^{i+n-1})} &
-  \text{if } x = \top \wedge t(\bm{\sigma}_i^{i+n-1}) \\
+  \text{if } x = \cdot \wedge t(\bm{\sigma}_i^{i+n-1}) \\
   \adj{\kappa_\chi(x)} &
   \text{otherwise}
 \end{cases}
@@ -135,7 +216,7 @@ The intent of a force-move is to get the next participant to provide their next 
 \begin{align*}
 R(\tau', \sigma^{i+1})\adj{\kappa(\tau, \sigma^i)} \rightarrow
 \begin{cases}
-  \adj{\kappa_\chi(\top)} & \text{if } \tau' < \tau \wedge t(\sigma^i, \sigma^{i+1}) \\
+  \adj{\kappa_\chi(\cdot)} & \text{if } \tau' < \tau \wedge t(\sigma^i, \sigma^{i+1}) \\
   \adj{\kappa(\tau, \sigma^i)} &
   \text{otherwise}
 \end{cases}
@@ -144,7 +225,7 @@ Once the challenge is cancelled it is removed from the adjudicator and the chann
 
 If the opponent does not respond to the challenge before the challenge expiry time, $\tau$, then a \textbf{timeout} occurs:
 \begin{align*}
-\Theta(\tau + \epsilon) \adj{\kappa(\tau, \sigma_\chi(\beta_\chi, \delta))} \rightarrow \adj{\beta_\chi \kappa_\chi(\bot)}
+\Theta(\tau + \epsilon) \adj{\kappa(\tau, \sigma_\chi(\beta_\chi, \delta))} \rightarrow \adj{\beta_\chi \kappa_\chi(\times)}
 \end{align*}
 Unlike the other operations on this list, the timeout operation is not triggered by a
 blockchain transaction. Instead the operation happens automatically when the block time
@@ -156,8 +237,8 @@ The final operation is the \textbf{conclude} operation, which enables the immedi
 \begin{align*}
 C(\tau, \bm{\sigma}^*(\beta)) \adj{\kappa_\chi(x)} \rightarrow 
 \begin{cases}
-  \adj{\kappa_\chi(\bot)} & \text{if } x = \bot \\
-  \adj{\beta_\chi(\beta) \kappa_\chi(\bot)} &
+  \adj{\kappa_\chi(\times)} & \text{if } x = \times \\
+  \adj{\beta_\chi(\beta) \kappa_\chi(\times)} &
   \text{otherwise}
 \end{cases}
 \end{align*}
@@ -182,7 +263,7 @@ we don't track
 In ForceMove, the only way a channel can affect the on-chain funds is via
 the channel balances, $\beta$, being placed in the adjudicator. We will
 refer to these final balances as the \textbf{outcome} of the channel and
-will refer to their placement in the adjudicator as \textbf{registering} the outcome. As we saw in the previous section, there are two ways to register an outcome with the adjudicator: (i) by calling the force-move operation which no-one responds to before the expiry time or (ii) by calling the conclude operation with a conclusion proof.
+will refer to their placement in the adjudicator as \textbf{finalizing} the outcome. As we saw in the previous section, there are two ways to register an outcome with the adjudicator: (i) by calling the force-move operation which no-one responds to before the expiry time or (ii) by calling the conclude operation with a conclusion proof.
 
 We will simplify the analysis with the following assumptions:
 \begin{itemize}
@@ -192,27 +273,27 @@ We will simplify the analysis with the following assumptions:
 \end{itemize}
 In practice, we approximate the availability and responsiveness assumptions by ensuring that $\epsilon$ is sufficiently large, so that the assumption holds in practice. We do this by choosing the the channel timeout and requirements around how frequently participants should need to check the chain. The Zero Gas assumption means that we don't take the cost of operations into account when analysing the value of states. This is a good approximation when the gas costs are small compared with the value of the states - other cases require a more detailed analysis. This should be the subject of future research but falls outside the scope of this paper.
 
-\subsection{Enforceable Outcomes}
+\subsection{Finalizable Outcomes}
 
-Enforceability of an outcome, $\beta$ is \textbf{enforceable} by $p$:
+finalizability of an outcome, $\beta$ is \textbf{finalizable} by $p$:
 * it is possible for $p$ to finalize $\beta$ in the adjudicator $\adj{\beta_\chi(\beta)}$ and no-one else can stop them. We write this $\enf{\beta}_p$.
 
 Example: $p$ is the next player to move
 
-It is possible for an outcome to be enforceable for multiple players at the same time:
+It is possible for an outcome to be finalizable for multiple players at the same time:
 
 Example: a single conclusion proof exists
 
 Example: after the post fund setup
 
-Note that it is also possible for more than one outcome to be enforceable by a player. We will see an example of this later. It follows from the definition of enforceability that it is impossible to simultaneously have one player with more than one enforceable outcome and more than one player at least one enforceable outcomes. 
+Note that it is also possible for more than one outcome to be finalizable by a player. We will see an example of this later. It follows from the definition of finalizability that it is impossible to simultaneously have one player with more than one finalizable outcome and more than one player at least one finalizable outcomes. 
 
-It's also possible to get into a state where no outcomes are enforceable by anyone. This is usual undesirable and a sign that something somewhere has gone wrong. An example of this is the case where two different conclusion proofs exist.
+It's also possible to get into a state where no outcomes are finalizable by anyone. This is usual undesirable and a sign that something somewhere has gone wrong. An example of this is the case where two different conclusion proofs exist.
 
 
 \subsection{Enabled Outcomes}
 
-It is often the case that a given player, $p$, will have no enforceable outcomes at a given point in time. In this case we instead look at the set of \textbf{enabled} outcomes for $p$, which we write $\{\beta_1, ... \beta_i\}_p$. The enabled outcomes are the set of all outcomes of the channel that are possible up until $p$ signs their next state. They are the outcomes that were enabled by $p$'s last signature.
+It is often the case that a given player, $p$, will have no finalizable outcomes at a given point in time. In this case we instead look at the set of \textbf{enabled} outcomes for $p$, which we write $\{\beta_1, ... \beta_i\}_p$. The enabled outcomes are the set of all outcomes of the channel that are possible up until $p$ signs their next state. They are the outcomes that were enabled by $p$'s last signature.
 
 All the possible ways the channel can end before they take their next turn - that they can't control(?).
 
@@ -220,18 +301,22 @@ The set of enabled outcomes has the property that $p$ can cause one of them to b
 
 Sometimes a player might have incomplete knowledge, so they are not able to calculate the possible states. In this case the enabled outcomes should include all possible states as far as the player can tell. An example of this occurs in commit-reveal schemes: say two players are playing a guessing game where player A commits to a value, player B makes a guess and then player A reveals whether they were right. At the point where B has just made their guess, the outcome is determined but B does not yet know what it is. In this case, the enabled outcomes for B should include the outcome where B was correct and the outcome where B was incorrect.
 
-If a player has enforceable outcomes, they do not have any enabled outcomes.
-If a player has only one enabled outcome then, by the definitions, it is an enforceable outcome: $\{\beta \}_p \equiv \enf{\beta}_p$. 
+If a player has finalizable outcomes, they do not have any enabled outcomes.
+If a player has only one enabled outcome then, by the definitions, it is an finalizable outcome: $\{\beta \}_p \equiv \enf{\beta}_p$. 
 
 
-\subsection{The consensus game}
+\subsection{The Consensus Game}
 
-  \begin{align*}
-    t_{L_C}(i, \beta, (j, x), \beta', (j', x')) \Leftrightarrow
-      [ & (j=n-1 \wedge j'= 0 \wedge \beta' = x = x')  \vee \\
-      & (j < n-1 \wedge j' = j+1, \beta = \beta', x = x') \vee \\
-      & (j'=0, \beta = \beta') ]
-  \end{align*}
+The Consensus Game is an important ForceMove application, which we will use heavily in the rest of the paper due to its special properties regarding outcome finalizability. In this section we introduce transition rules and explore these properties.
+
+Like all ForceMove applications, the transition rules for the Consensus Game are specified by a game library, $L_C$, which defines the transition function, $t_{L_C}$, in terms of the turn number, $i$, the balances, $\beta$ and the game data $\delta$. $\delta = (j, x)$, where $j$ is the \textit{consensus counter} and $x$ is the \textit{proposed balances}. 
+\begin{align*}
+  t_{L_C}(i, \beta, (j, x), \beta', (j', x')) \Leftrightarrow
+    [ & (j=n-1 \wedge j'= 0 \wedge \beta' = x = x')  \vee \\
+    & (j < n-1 \wedge j' = j+1, \beta = \beta', x = x') \vee \\
+    & (j'=0, \beta = \beta') ]
+\end{align*}
+For a given $\beta$, the consensus counter will increase from $0\dots (n-1)$ as the participants sign off on the new balances. Once all participants have signed, consensus has been reached and the channel's balances are updated.
 
   \begin{align*}
     \sigma^{i}(\beta, (0, \beta)) & \approx [\beta]_P \\
@@ -338,8 +423,24 @@ S_5 &= \adj{\alpha_L'(x-a)\alpha_A(a)} && & \enf{\beta_{L'}(B: b, A: a - a', \ch
 
 \section{Nitro Protocol}
 
-Add extra type of channels
-Guarantor terms
+Nitro protocol is an extension to Turbo protocol that enables a group of parties to open a state channel without having a mutual on-chain deposit,
+provided they do all have an on-chain deposit with a shared third party.
+
+In order to enable virtual channels, we need to add a new type of channel - the \textbf{guarantor channel} - to the framework. We will distinguish these from regular channels by referring to regular channels as \textbf{balance channels} from now on.
+
+Guarantor channels differ from balance channels in that both the channel and the outcome stores one extra property - \textbf{gurantorFor} - which stores the address of the channel that they guarantee. Their outcomes are also interpreted differently. The outcome of a guarantor channel, $A$, which guarantees channel $B$ is written $\gamma_{A, B}(C_1: x_1, C_2: x_2, \dots)$. This outcome means that $A$ will cover $B$'s debt to $C_1$ up-to an amount $x_1$, then $B$'s debt to $C_2$ up-to an amount $x_2$ and so on.
+
+We introduce another on-chain operation $G_{A, C}(x)$ which involves claiming an amount $x$ from $A$'s guarantee for $C$. The operation is defined as follows:
+\begin{multline*}
+G_{AC}(x) \adj{\alpha_A(x_\alpha)\gamma_{A,B}(C:x_\gamma, \dots)\beta_B(\dots, C:x_\beta, \dots)} \rightarrow \\
+  \begin{cases}
+      \adj{\alpha_A(x_\alpha - x)\alpha_C(x)\gamma_{A,B}(C:x_\beta -x, \dots)\beta_B(\dots, C:x_\beta - x, \dots)} \\
+      \hspace{7cm} \text{if } x \leq x_\alpha, x_\beta, x_\gamma \\
+      \adj{\alpha_A(x_\alpha)\gamma_{A,B}(C:x_\gamma, \dots)\beta_B(\dots, C:x_\beta, \dots)} \\
+      \hspace{7cm} \text{otherwise}
+  \end{cases}
+\end{multline*}
+TODO: rewrite this and explain.
 
 \begin{table}[h]
   \begin{tabular}{|l|l|l|p{5cm}|}
@@ -361,17 +462,10 @@ Guarantor terms
   \label{table:force-move-state}
 \end{table}
 
-\begin{multline*}
-G_{ABC}(x) \adj{\alpha_A(x_\alpha)\gamma_{A,B}(C:x_\gamma, \dots)\beta_B(\dots, C:x_\beta, \dots)} \rightarrow \\
-  \begin{cases}
-      \adj{\alpha_A(x_\alpha - x)\alpha_C(x)\gamma_{A,B}(C:x_\beta -x, \dots)\beta_B(\dots, C:x_\beta - x, \dots)} \\
-      \hspace{7cm} \text{if } x \leq x_\alpha, x_\beta, x_\gamma \\
-      \adj{\alpha_A(x_\alpha)\gamma_{A,B}(C:x_\gamma, \dots)\beta_B(\dots, C:x_\beta, \dots)} \\
-      \hspace{7cm} \text{otherwise}
-  \end{cases}
-\end{multline*}
-
 \subsection{Virtual Channels}
+
+Virtual channels is this: 
+Why? Equivalent for A, B and C
 
 \begin{figure}[h]\centering
   \begin{tikzpicture}[x=3cm,y=1cm]
@@ -421,32 +515,31 @@ The offload
 \end{align*}
 
 \subsection{Opening a virtual channel}
-
-Our first attempt at opening a virtual channel is as follows
-\begin{align*}
-S_1 &= V_\alpha &&\enf{\beta_L(A: a, C: b)}_{A, C} && \enf{\beta_{L'}(B:b, C: a)}_{B, C} & \\
-S_2 &= V_\alpha &&\enf{\beta_L(A: a, C: b)}_{A, C} && \enf{\beta_{L'}(B:b, C: a)}_{B, C} & V_\gamma \\
-S_3 &= V_\alpha &&\enf{\beta_L(G: x)}_{A, C} && \enf{\beta_{L'}(B:b, C: a)}_{B, C} & V_\gamma \\
-S_4 &= V_\alpha &&\enf{\beta_L(G: x)}_{A, C} && \enf{\beta_{L'}(G': x)}_{B, C} & V_\gamma \\
-\end{align*}
-Unfortunately this does not work as $S_3 \nsim_C x$
-
 We let
 \begin{align*}
-\beta_L^0 &= \beta_L(A:a, C: b) &
-\beta_L^1 &= \beta_L(G: x) \\
-\beta_{L'}^0 &= \beta_{L'}(B:b, C: a) &
-\beta_{L'}^1 &= \beta_{L'}(G': x)
+l_0 &= \enf{\beta_L(A:a, C: b)}_{A, C} &
+l_1 &= \enf{\beta_L(G: x)}_{A, C} \\
+l'_0 &= \enf{\beta_{L'}(B:b, C: a)}_{B, C} &
+l'_1 &= \enf{\beta_{L'}(G': x)}_{B, C} \\
+j_0 &= \enf{\beta_{J}(A: a, B:b, C: x)}_{A, B, C} &
+j_1 &= \enf{\beta_{J}(\chi: x, C: x)}_{A, B, C} \\
+g &= \enf{\gamma_{G, J}(A: x, B:x, C: x)}_{A, C} &
+g' &= \enf{\gamma_{G, J'}(A: x, B:x, C: x)}_{A, C} \\
+v &= \enf{\beta_\chi(A: a, B: b)}_{A, B} &
+\adj{S} &= \adj{\alpha_L(x)\alpha_{L'}(x)}
 \end{align*}
 
 and proceed as follows
 \begin{align*}
-S_1 &= V_\text{rest} &&\enf{\beta_L^0}_{A, C} && \enf{\beta_{L'}^0}_{B, C} \\
-S_2 &= V_\text{rest} &&\{\beta_L^0, \beta_L^1\}_A\enf{\beta_L^0, \beta_L^1}_C && \enf{\beta_{L'}^0}_{B, C}\\
-S_3 &= V_\text{rest} &&\{\beta_L^0, \beta_L^1\}_A\enf{\beta_L^0, \beta_L^1}_C && \{\beta_{L'}^0, \beta_{L'}^1\}_B\enf{\beta_{L'}^0, \beta_{L'}^1}_C \\
-S_4 &= V_\text{rest} &&\enf{\beta_L^1}_{A, C} && \{\beta_{L'}^0, \beta_{L'}^1\}_B\enf{\beta_{L'}^0, \beta_{L'}^1}_C \\
-S_5 &= V_\text{rest} &&\enf{\beta_L^1}_{A, C} && \enf{\beta_{L'}^1}_{B, C}
+S_1 &= \adj{S} && l_0 && l'_0 \\
+S_2 &= \adj{S} && l_0 && l'_0 && g && g' && j_0 \\
+S_3 &= \adj{S} && l_1 && l'_0 && g && g' && j_0 \\
+S_4 &= \adj{S} && l_1 && l'_1 && g && g' && j_0 \\
+S_5 &= \adj{S} && l_1 && l'_1 && g && g' && j_0 && v\\
+S_6 &= \adj{S} && l_1 && l'_1 && g && g' && j_1 && v\\
 \end{align*}
+
+
 
 
 
