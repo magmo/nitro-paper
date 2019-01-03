@@ -48,7 +48,7 @@
 
 \maketitle
 
-\section{Introduction}
+\section{Motivation}
 
 A blockchain is a device that enables a group of adversarial parties to come to consensus over the contents of a shared ledger, without appealing to a trusted central authority. 
 Whether using a proof-of-work or a proof-of-stake algorithm, this process has a cost both in terms of time and in terms of money.
@@ -88,6 +88,7 @@ Perun
 - virtual payment channels (different from HTLCs)
 - but using a validity time
 - and then state channel networks
+- constrained
 [Connext - have removed the time limit with a trade-off of trusting the hub - TODO: check this]
 
 Counterfactual
@@ -101,17 +102,18 @@ Unconstrained subchannels
 
 \section{State Channel Concepts}
 
-
+- describe the setup and fundamental logic that allows us to reason about state channels
+- what it means for two states to be equivalent
+- how we can safely move between equivalent states without exposing either participant to risk
 
 - abstract away a lot of the details
-- one type of coin
 - ForceMove centric but believe that the ideas presented here, in some form, are present in most frameworks
 - draw examples from ForceMove: turn based, programmable by specifying libraries
 
 - signature scheme
 - hash
 
-\subsection{Participants and Addresses}
+\subsection{State Channel Systems}
 
 - in this paper we will deal with systems of interacting state channels
 - it will be useful to start by looking at some of the parameters that give these
@@ -133,7 +135,7 @@ Unconstrained subchannels
 - ordered subset of participants
 - a nonce
 - channel address
-- 
+- non-collisions
 
 - space of assets
 - allowed values these can take
@@ -215,12 +217,14 @@ Unconstrained subchannels
   outcome is registered on-chain.
 \end{example}
 
-\subsection{Systems of Channels}
+\subsection{Calculating Value}
 
 - system: related channels + adjudicator
 - value (unbeatable strategy for extracting at least a given total, without assuming we add funds)
 - value equivalent (if two system states have the same value)
 - value preserving transition
+- applications change value, opening and closing an application shouldn't
+
 - transitioning between outcomes
 - rewrite rules
 - channels update independently
@@ -231,6 +235,9 @@ Unconstrained subchannels
 
 Turbo protocol allows a set of participants who already have a funded channel to open and
 close sub-channels without any on-chain transactions. 
+
+- protocol really specifies the format of the channel outcomes and how they're interpreted on-chain
+- can be combined with force-move to provide a full functioning state channel system
 
 As an example, suppose Alice and Bob want to play a game of chess and that
 they already have an existing state channel, $\rchi_L$, which holds
@@ -268,14 +275,10 @@ To close the chess channel off-chain, Alice and Bob update the state of the ledg
 In the rest of this section we will present the protocol that makes the above interaction
 possible.
 
-\subsection{Constructing Turbo}
+\subsection{Turbo Outcomes}
 
 The key difference between Turbo and ForceMove is that Turbo allows the outcome of a channel to allocate funds to other \textit{channels}, as well as to the participants.
 
-While this generalization allows for a variety of relationships between different channels,
-we will focus here on a setup where a single parent channel funds one or more sub-channels
-\footnote{Note that we allow the case where the sub-channels are themselves ledger channels.}.
-Following the Perun paper, we will refer to this parent channel as a \textbf{ledger channel}.
 
 Interpretation and manipulation of the outcomes when they exist on-chain. Registering those
 outcomes is done by ForceMove.
@@ -337,54 +340,92 @@ T_{A,B}(3) \adj{\alpha_A(10)\beta_A(B: 3, C: 7)} = \adj{\alpha_A(7)\alpha_B(3)\b
 - value equivalent in terms of $\alpha_A$
 - if I can find one set of transfer operations they're equivalent
 
-- 
-
 - funding a ledger channel - only deposit if it increases your value by the deposit amount
 - opening a subchannel
 
 \subsection{Examples}
 
+While this generalization allows for a variety of relationships between different channels,
+we will focus here on a setup where a single parent channel funds one or more sub-channels
+\footnote{Note that we allow the case where the sub-channels are themselves ledger channels.}.
+Following the Perun paper, we will refer to this parent channel as a \textbf{ledger channel}.
+
+- ledger channel is assumed to be running the consensus application
 
 \subsubsection{Opening a sub-channel}
 
+- make precise the operation we performed in the introduction, where we opened a subchannel
+- here the enforcable state for $\rchi$ is assumed to be the ready-to-fund state
+- doesn't matter what application is running in the channel - just what the initial balances are
 \begin{align*}
   S_1 &= \adj{\alpha_L(a+b)} &&\enf{\beta_L(A: a, B: b)}_{A, B} & \\
   S_2 &= \adj{\alpha_L(a+b)} &&\enf{\beta_L(A: a, B: b)}_{A, B}&\enf{\beta_\rchi(A: a', B: b')}_{A, B} \\
   S_3 &= \adj{\alpha_L(a+b)} &&\enf{\beta_L(A: a-a', B: b-b', \rchi: a' + b')}_{A, B}&\enf{\beta_\rchi(A: a', B: b')}_{A, B}
 \end{align*}
+- at each point it is value equivalent for both A and B to $a$ $b$ respectively
+- each step only changes one channel at a time 
+- therefore we can do by single-channel-rewrite lemma
 
 \subsubsection{Closing a sub-channel}
 
+- closing a subchannel is similar
+- hear the finalizable state is assumed to be a conclude state from the end of the channel
 \begin{align*}
 S_1 &= \adj{\alpha_L(x)} &&\enf{\beta_L(A: a, B: b, \rchi: a' + b')}_{A, B}&\enf{\beta_\rchi(A: a', B: b')}_{A, B}\\
 S_2 &= \adj{\alpha_L(x)} &&\enf{\beta_L(A: a + a', B: b + b')}_{A, B}&\enf{\beta_\rchi(A: a', B: b')}_{A, B} \\
 S_3 &= \adj{\alpha_L(x)} &&\enf{\beta_L(A: a + a', B: b + b')}_{A, B} & 
 \end{align*}
 where $x = a + a' + b + b'$.
+- the analysis is exactly the same as in the opening case
 
 \subsubsection{Topping up a ledger channel}
 
+- useful to be able to top up without disturbing sub-channels supported in a ledger channel
+- topping up is similar to depositing in force-move
 \begin{align*}
-S_1 &= \adj{\alpha_L(a + b)} &&\enf{\beta(A: a, B: b)}_{A, B} \\
-S_2 &= \adj{\alpha_L(a + b)} &&\enf{\beta(B: b, A: a + a')}_{A, B} \\
-S_3 &= D_L(a')\adj{\alpha_L(a + b)} &&\enf{\beta(B: b, A: a + a')}_{A, B} \\
-S_4 &= \adj{\alpha_L(a + b + a')} &&\enf{\beta(B: b, A: a + a')}_{A, B}
+S_1 &= \adj{\alpha_L(x)} &&\enf{\beta(A: a, B: b, \rchi: c)}_{A, B} \\
+S_2 &= \adj{\alpha_L(x)} &&\enf{\beta(B: b, \rchi: c, A: a + a')}_{A, B} \\
+S_3 &= D_L(a')\adj{\alpha_L(x)} &&\enf{\beta(B: b, \rchi: c, A: a + a')}_{A, B} \\
+S_4 &= \adj{\alpha_L(x + a')} &&\enf{\beta(B: b, \rchi: c, A: a + a')}_{A, B}
 \end{align*}
+- rearrange the current outcome to put the depositor last
+- note that $\nu_A(S_3) - \nu_A(S_2) = a'$ as it should be if $A$ is to deposit
 
 \subsubsection{Partial checkout from a ledger channel}
 
+- partial checkout is the opposite to top up
+- the scenario here is two parties have a ledger channel open, supporting one or more subchannels
+- participant A wants to be able to withdraw 
+- this means we need to increase the value of $\alpha_A$ 
+- we will assume here that we start with $\alpha_A(0)$
 \begin{align*}
-S_1 &= \adj{\alpha_L(x)} &&\enf{\beta_L(B: b, A: a, \rchi: c)}_{A, B} & \\
-S_2 &= \adj{\alpha_L(x)} &&\enf{\beta_L(B: b, A: a, \rchi: c)}_{A, B} & \enf{\beta_{L'}(B: b, A: a - a', \rchi: c)}_{A, B}\\
-S_3 &= \adj{\alpha_L(x)} &&\enf{\beta_L(L': x-a', A: a)}_{A, B} & \enf{\beta_{L'}(B: b, A: a - a', \rchi: c)}_{A, B}\\
-S_4 &= \adj{\alpha_L(x)\beta_L(L': x-a, A: a)} && & \enf{\beta_{L'}(B: b, A: a - a', \rchi: c)}_{A, B}\\
-S_5 &= \adj{\alpha_L'(x-a)\alpha_A(a)} && & \enf{\beta_{L'}(B: b, A: a - a', \rchi: c)}_{A, B}\\
+S_1 &= \adj{\alpha_L(x)} \quad \enf{\beta_L(B: b, A: a, \rchi: c)}_{A, B}  \\
+S_2 &= \adj{\alpha_L(x)} \quad \enf{\beta_L(B: b, A: a, \rchi: c)}_{A, B} \quad \enf{\beta_{L'}(B: b, A: a - a', \rchi: c)}_{A, B}\\
+S_3 &= \adj{\alpha_L(x)} \quad \enf{\beta_L(L': x-a', A: a')}_{A, B} \quad \enf{\beta_{L'}(B: b, A: a - a', \rchi: c)}_{A, B}\\
+S_4 &= \adj{\alpha_L(x)\beta_L(L': x-a, A: a')} \quad \enf{\beta_{L'}(B: b, A: a - a', \rchi: c)}_{A, B}\\
+S_5 &= \adj{\alpha_{L'}(x-a')\alpha_A(a')} \quad \enf{\beta_{L'}(B: b, A: a - a', \rchi: c)}_{A, B}
 \end{align*}
+- technique here is to create a replacement ledger channel with the updated totals and then update the 
+  original channel to point here.
+- in transitioning to $S_4$ we take $L$ to the chain. probably using conclude to avoid the timeout
 
 \section{Nitro Protocol}
 
-- virtual channels
-- quick sketch
+- extension to turbo. introduce a different type of outcome. allows us to support channels through
+  a third party
+- call these virtual channels
+
+- example: suppose that Alice wants to play chess with Bob
+- doesn't have a ledger channel open but they both have a channel open with Hugo
+
+- how this enables a hub
+
+- how this enables multi-hop routing
+
+\subsection{Outcomes in Nitro}
+
+- extends turbo by adding a new type of outcome (and a new type of channel)
+- refer to this as the guarantee and write this $\gamma$
 
 - guarantee outcomes + on-chain operation
 
