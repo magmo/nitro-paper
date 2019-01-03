@@ -229,3 +229,7 @@ TSWLatexianTemp*
 
 
 __latexindent_temp.tex
+
+# for python files
+*.pyc
+*.pyo
