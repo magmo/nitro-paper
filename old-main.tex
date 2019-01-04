@@ -443,57 +443,14 @@ G_{AC}(x) \adj{\alpha_A(x_\alpha)\gamma_{A,B}(C:x_\gamma, \dots)\beta_B(\dots, C
 \end{multline*}
 TODO: rewrite this and explain.
 
-\begin{table}[h]
-  \begin{tabular}{|l|l|l|p{5cm}|}
-    \hline
-    \texttt{participants} & \texttt{address[]} & $P$ & The addresses used to sign updates to the channel. \\ \hline
-    \texttt{gameLibrary} & \texttt{address} & $L$ & The address of the gameLibrary, which defines the transition rules for this channel \\ \hline
-    \texttt{nonce} & \texttt{unit256} & $k$ & Chosen to make the channel's address unique. \\ \hline
-    \texttt{challengeDuration} & \texttt{unit256} & $\eta$ & \\ \hline
-    \texttt{turnNum} & \texttt{unit256} & $i$ & Increments as new states are produced. \\ \hline
-    \texttt{guarantorFor} & \texttt{address} &  & Target channel for guarantee channels. Equal to 0 for balance channels. \\ \hline
-    \texttt{balances} & \texttt{(address, uint256)[]} & $\beta$ or $\gamma$ & Current \textit{outcome} of the channel. \\ \hline
-    \texttt{isFinal} & \texttt{bool} & $f$ & \\ \hline
-    \texttt{data} & \texttt{bytes} & $\delta$ & \\ \hline
-    \texttt{v} & \texttt{uint8} & &  ECDSA signature of the above arguments by the moving participant. \\ \cline{1-2}
-    \texttt{r} & \texttt{bytes32} & & \\ \cline{1-2}
-    \texttt{s} & \texttt{bytes32} & & \\ \hline
-  \end{tabular}
-  \caption{ForceMove state format}
-  \label{table:force-move-state}
-\end{table}
+\input{figures/nitro-state}
 
 \subsection{Virtual Channels}
 
 Virtual channels is this: 
 Why? Equivalent for A, B and C
 
-\begin{figure}[h]\centering
-  \begin{tikzpicture}[x=3cm,y=1cm]
-
-    % Specification of nodes (position, etc.)
-    \node (a0) at (0,0) { $\adj{\alpha_L(x)\alpha_{L'}(x)}$ };
-    \node (b0) at (-1,-1) { $\enf{\beta_L(G: x)}_{A, C}$ };
-    \node (b1) at (1,-1) { $\enf{\beta_{L'}(G': x)}_{B, C}$ };
-    \node (g0) at (-1,-2) { $\enf{\gamma_{G, J}(\chi: x, A: x, C: x)}_{A, C}$ };
-    \node (g1) at (1,-2) { $\enf{\gamma_{G', J}(\chi: x, B: x, C: x)}_{B, C}$ };
-    \node (j) at (0,-3) { $\enf{\beta_J(\chi: x, C: x)}_{A,B,C}$ };
-    \node (c) at (0,-4) { $\enf{\beta_\chi(A: a, B: b)}_{A,B}$ };
-
-    \begin{scope}[-]
-      \tikzstyle{every node}=[draw=none,below]
-      \draw (a0) to (b0);
-      \draw (a0) to (b1);
-      \draw (b0) to (g0);
-      \draw (b1) to (g1);
-      \draw (g0) to (j);
-      \draw (g1) to (j);
-      \draw (j) to (c);
-    \end{scope}
-
-  \end{tikzpicture}
-\caption{Ledger channels, $x = a + b$}\label{fig:modes}
-\end{figure}
+\input{figures/virtual-channels}
 
 There is a configuration where we can support virtual channels.
 They can be opened and closed off-chain.

@@ -2,8 +2,6 @@ from overlap import overlap
 from remove import remove
 from cap import cap
 
-MAX = 2**256
-
 def claim(recipient, guarantee, outcome, funding, amount):
   cappedGuarantee = cap(guarantee, outcome)
   if overlap(recipient, cappedGuarantee, funding) >= amount:

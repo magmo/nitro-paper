@@ -96,34 +96,45 @@ Counterfactual
 - also app instance on top, which we collaborated on
 - possible to do meta-channels, but the details are not given in the paper and are still being finalized
 
+ForceMove
+
 Our contribution:
 - like perun without the time limit
 Unconstrained subchannels
 
-\section{State Channel Concepts}
+\section{State Channel Background}
 
-- describe the setup and fundamental logic that allows us to reason about state channels
-- what it means for two states to be equivalent
-- how we can safely move between equivalent states without exposing either participant to risk
+In this paper, we are focus on the construction of networks of state channels, which we treat separately from the operation of those channels.
+For the purpose of this work, we view a state channel and its states purely as a device for enabling a given party to realize a given outcome on-chain, in a sense that we will make precise.
+In particular, we do not specify the state format, the update rules, the mechanics of on-chain challenges or how to respond to them.
 
-- abstract away a lot of the details
-- ForceMove centric but believe that the ideas presented here, in some form, are present in most frameworks
-- draw examples from ForceMove: turn based, programmable by specifying libraries
+The ForceMove framework is an example of a state channel framework that specifies all these details. 
+The state channel networks presented here were designed to work with ForceMove and we will frequently present examples involving ForceMove channels.
+That said, the techniques provided here should be applicable to any state channel framework sharing the features presented in this section.
 
-- signature scheme
-- hash
+We start the section by reviewing the properties of ForceMove that are important for Turbo and Nitro \footnote{We give a more complete recap of ForceMove in the appendix.}. 
+We then introduce some concepts that will be useful later when reasoning about the correctness of our state channel networks. 
 
-\subsection{State Channel Systems}
+\subsection{ForceMove Channels}
 
-- in this paper we will deal with systems of interacting state channels
-- it will be useful to start by looking at some of the parameters that give these
-   systems their characteristics
-- in particular we will look at three important parameters: the space of participants,
-  the space of assets and the application rules
+common features of state channels
+- participants + signatures
 
-- consider a state channel system (Participants, Assets, ApplicationRules)
+- addresses - forceMove ordered set of participants + nonce
+- no collisions between different sets of participants
 
-- space of participant addresses
+- assets held on chain, how do we record values
+- values
+
+- deposits and withdrawals
+
+- ignore states + updates mechanism, challenge mechanism
+- outcomes $\beta_\rchi(\omega)$
+
+
+
+The \textbf{participants} of a state channel are defined by a cryptographic address,
+co
 - all addresses generated from the signature scheme
 - someone somewhere should know the private key corresponding to a participant address
 - they are the owner of that address
@@ -137,16 +148,17 @@ Unconstrained subchannels
 - channel address
 - non-collisions
 
-- space of assets
-- allowed values these can take
+In this paper we will focus on state channels that determine the distribution of a single
+asset, which we will refer to as 'coins'.
+
 - in this paper we deal with a single asset which we will refer to as coins
 - the assets allocated can be summarised with a single integer
-- in this paper we allow the coin value to take any value in $\mathbb{Z}$
+- in this paper we allow the coin value to take any value in 
 - this is not realistic for the blockchain context, where there is typically a maximum
   value, \texttt{MAX}, after which totals overflow
-- meaning that we should really consider coins in the space $\mathbb{Z}_{\texttt{MAX}}$
-- in ethereum $\texttt{MAX} = 2^{256} - 1$
-- we can also consider state channels that operate on multiple assets: $\mathbb{Z}_{\texttt{MAX}} \times \mathbb{Z}_{\texttt{MAX}}$
+- meaning that we should really consider coins in the space 
+$\mathbb{Z}_{\texttt{M}}$.
+- we can also consider state channels that operate on multiple assets: $\mathbb{Z}_{\texttt{M}} \times \mathbb{Z}_{\texttt{M}}$
 
 - space of application rules. Consider these to also define the states
 - state transitions
@@ -155,8 +167,6 @@ Unconstrained subchannels
 - what sort of rules does it support? transition rules depend on time or the general state of the chain
 - we assume here that they don't
 - possible to remove these restrictions
-
-
 
 - space of channel addresses
 - participant addresses
@@ -180,6 +190,9 @@ Unconstrained subchannels
 - abstract a channel to be something that can reach an outcome
 
 - first part of this is what outcomes you can register on-chain
+
+- replace the simpleAdjudicator
+- do we need alpha and deposits
 
 \subsection{Finalizable and Enabled Outcomes}
 
@@ -219,7 +232,6 @@ Unconstrained subchannels
 
 \subsection{Calculating Value}
 
-- system: related channels + adjudicator
 - value (unbeatable strategy for extracting at least a given total, without assuming we add funds)
 - value equivalent (if two system states have the same value)
 - value preserving transition
@@ -235,21 +247,21 @@ Unconstrained subchannels
 
 Turbo protocol allows a set of participants who already have a funded channel to open and
 close sub-channels without any on-chain transactions. 
+In order to do this, the protocol specifies the format of the channel outcomes and how
+they are interpreted on-chain.
+It does not specify the channel update and challenge mechanics but can be combined with
+ForceMove to provide a fully functional system.
 
-- protocol really specifies the format of the channel outcomes and how they're interpreted on-chain
-- can be combined with force-move to provide a full functioning state channel system
-
-As an example, suppose Alice and Bob want to play a game of chess and that
-they already have an existing state channel, $\rchi_L$, which holds
+As an example of what Turbo enables, suppose Alice and Bob want to play a game of chess and that
+they already have an existing state channel, $\rchi_L$.
+The winner of the game of chess should receive 2 coins from the loser and $\rchi_L$ currently holds
 5 of Alice's coins and 5 of Bob's.
-2 coins from the loser.
 
 \begin{center}
   \includegraphics[scale=0.5]{turbo_start} % TODO: tikz
 \end{center}
 
-They decide that winner of the chess game should win 2 coins from the loser and proceed
-by creating a new channel $\rchi_C$ for the chess game with the appropriate starting state.
+Alice and Bob proceed by creating a new channel $\rchi_C$ for the chess game with the appropriate starting state.
 They then update $\rchi_L$ to allocate funds to these games.
 
 \begin{center}
@@ -275,27 +287,54 @@ To close the chess channel off-chain, Alice and Bob update the state of the ledg
 In the rest of this section we will present the protocol that makes the above interaction
 possible.
 
-\subsection{Turbo Outcomes}
+\subsection{Turbo Outcomes and Operations}
 
-The key difference between Turbo and ForceMove is that Turbo allows the outcome of a channel to allocate funds to other \textit{channels}, as well as to the participants.
+Turbo protocol specifies the interpretation of channel outcomes and the operations that
+manipulate them once they are on-chain.
+The process of registering the outcome with the chain is not specified, but could be accomplished
+using the ForceMove protocol.
+
+Outcomes in Turbo take the form of an ordered list of address-value pairs.
+To write outcomes we will use the notation $\{a_1{:}v_1, \dots, a_n{:}v_n \}$, where the $a_i$
+represent addresses and the $v_i$ represent values.
+The key idea behind Turbo is that the addresses in the outcomes are not limited to being
+participant addresses but that they can also be addresses of other \textit{channels}.
+
+The ordering in the outcome is significant and is used to determine a priority order for payouts,
+which becomes important if channel does not hold enough funds to cover the entire outcome.
+
+The naive algorithm for distributing the funds is to work along the outcome from the front,
+paying funds out to the corresponding address until no funds are remaining.
+In practice, we avoid introducing a dependency on the order of the payouts by using
+the \textbf{overlap} function $\texttt{overlap}(p, \omega, x)$, which returns the payout owed
+to $p$ from outcome $\omega$ when the channel is funded with $x$.
+The overlap function can be written in python as follows:
+
+\begin{minipage}{\linewidth} % minipage to avoid page breaks
+  \lstinputlisting[language=Python]{code/overlap.py}
+\end{minipage}
+
+general pattern is 
+- funds deposited into a payment channel address
+- an outcome assigns funds from the payment channel to 
 
 
-Interpretation and manipulation of the outcomes when they exist on-chain. Registering those
-outcomes is done by ForceMove.
+
 
 \begin{center}
   \includegraphics[scale=0.7]{overlap} % TODO: tikz
 \end{center}
-\lstinputlisting[language=Python]{code/overlap.py}
+
+- once an outcome pays out, we remove the outcome
 
 \begin{center}
   \includegraphics[scale=0.7]{remove} % TODO: tikz
 \end{center}
 \lstinputlisting[language=Python]{code/remove.py}
 
+
 We will now introduce the three on-chain operations that drive Turbo: deposit, withdrawal,
 and transfer.
-
 
 The \textbf{deposit} operation is used to increase the funds held for a given channel.
 In order for the operation to be valid it must be accompanied by a transfer of funds equal 
@@ -334,16 +373,18 @@ For example,
 T_{A,B}(3) \adj{\alpha_A(10)\beta_A(B: 3, C: 7)} = \adj{\alpha_A(7)\alpha_B(3)\beta_A(C: 7)}
 \end{align*}
 
-\subsection{Value Equivalence in Turbo}
+\subsubsection{Value Equivalence in Turbo}
 
+- how can we know if two system states are value equivalent?
+- in turbo it's simple: if there's any sequence of Ts that drive them to the same state
+  then they're equivalent
 - transfer operations commute
-- value equivalent in terms of $\alpha_A$
 - if I can find one set of transfer operations they're equivalent
 
 - funding a ledger channel - only deposit if it increases your value by the deposit amount
 - opening a subchannel
 
-\subsection{Examples}
+\subsection{Ledger channels}
 
 While this generalization allows for a variety of relationships between different channels,
 we will focus here on a setup where a single parent channel funds one or more sub-channels
@@ -411,6 +452,8 @@ S_5 &= \adj{\alpha_{L'}(x-a')\alpha_A(a')} \quad \enf{\beta_{L'}(B: b, A: a - a'
 
 \section{Nitro Protocol}
 
+% \input{figures/nitro-state}
+
 - extension to turbo. introduce a different type of outcome. allows us to support channels through
   a third party
 - call these virtual channels
@@ -422,16 +465,85 @@ S_5 &= \adj{\alpha_{L'}(x-a')\alpha_A(a')} \quad \enf{\beta_{L'}(B: b, A: a - a'
 
 - how this enables multi-hop routing
 
-\subsection{Outcomes in Nitro}
+\subsection{Nitro Outcomes and Operations}
 
 - extends turbo by adding a new type of outcome (and a new type of channel)
 - refer to this as the guarantee and write this $\gamma$
+- guarantee allows one channel choose to pay out for certain parts of another outcome
 
-- guarantee outcomes + on-chain operation
+- finalizing is exactly the same
+- guarantee channels can follow the same force-move transition rules and challenge etc.
+- interpretation of the outcomes on-chain
 
-- construction
+- in explaining how this works it will be useful to introduce another operation
+- cap - ensures that one allocation can't give out more to any address than another
 
-- opening + closing
+\lstinputlisting[language=Python]{code/cap.py}
+
+- the claim operation
+
+\lstinputlisting[language=Python]{code/claim.py}
+
+
+- [diagram]: nitro state properties
+
+
+\subsubsection{Value Calculations}
+
+\subsection{Virtual Channels}
+
+- outline how we can use guarantee channels to create virtual channels
+- the construction we will use is as follows
+
+\input{figures/virtual-channels}
+
+- worth thinking about how this works
+- offload
+- key is the joint A-B-C channel, source of truth for state of channel
+
+
+\subsubsection{Opening a Virtual Channel}
+
+Want to start in the situation where channels A-C and B-C exist and demonstrate how to
+open the virtual channel situation
+
+We let
+\begin{align*}
+l_0 &= \enf{\beta_L(A:a, C: b)}_{A, C} &
+l_1 &= \enf{\beta_L(G: x)}_{A, C} \\
+l'_0 &= \enf{\beta_{L'}(B:b, C: a)}_{B, C} &
+l'_1 &= \enf{\beta_{L'}(G': x)}_{B, C} \\
+j_0 &= \enf{\beta_{J}(A: a, B:b, C: x)}_{A, B, C} &
+j_1 &= \enf{\beta_{J}(\chi: x, C: x)}_{A, B, C} \\
+g &= \enf{\gamma_{G, J}(A: x, B:x, C: x)}_{A, C} &
+g' &= \enf{\gamma_{G, J'}(A: x, B:x, C: x)}_{A, C} \\
+v &= \enf{\beta_\chi(A: a, B: b)}_{A, B} &
+\adj{S} &= \adj{\alpha_L(x)\alpha_{L'}(x)}
+\end{align*}
+
+and proceed as follows
+\begin{align*}
+S_1 &= \adj{S} && l_0 && l'_0 \\
+S_2 &= \adj{S} && l_0 && l'_0 && g && g' && j_0 \\
+S_3 &= \adj{S} && l_1 && l'_0 && g && g' && j_0 \\
+S_4 &= \adj{S} && l_1 && l'_1 && g && g' && j_0 \\
+S_5 &= \adj{S} && l_1 && l'_1 && g && g' && j_0 && v\\
+S_6 &= \adj{S} && l_1 && l'_1 && g && g' && j_1 && v\\
+\end{align*}
+
+- first create the subchannel we want to fund
+- and the joint channel and guarantee channels to support it
+everything here is disconnected
+- then we update the ledger channels, one at a time to fund the guarantees
+- finally we update the joint channel to fund the virtual channel
+
+\subsubsection{Closing a Virtual Channel}
+
+Opening a channel in reverse
+- start with the virtual channel coming to a finalizable outcome e.g. conclude
+- then A or B propose an update to j
+- once A and B have signed off, it's in C's interest too
+- then they can defund the guarantee channels independently
 
 
 \section{Acknowledgements}
