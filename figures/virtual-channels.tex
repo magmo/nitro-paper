@@ -1,26 +1,22 @@
 \begin{figure}[h]\centering
-  \begin{tikzpicture}[x=3cm,y=1cm]
+  \begin{tikzpicture}[x = 2cm, y=1cm]
+    \node (expanded0) at (0, 0) { \input{figures/virtual-channels-0} };
+    \node[scale=0.4, rectangle, draw, dashed, rounded corners] (state0) at (3, 1.5) { \input{figures/virtual-channels-mini-0} };
+    \node[scale=0.4] (state1a) at (4, 1.5) { \input{figures/virtual-channels-mini-1a} };
+    \node[scale=0.4] (state1b) at (3, -1) { \input{figures/virtual-channels-mini-1b} };
+    \node[scale=0.4] (state2) at (4, -1) { \input{figures/virtual-channels-mini-2} };
+    \node[scale=0.4, rectangle, draw, dashed, rounded corners] (state3) at (4, -3.5) { \input{figures/virtual-channels-mini-3} };
+    \node (expanded3) at (1, -6) { \input{figures/virtual-channels-3} };
 
-    % Specification of nodes (position, etc.)
-    \node (a0) at (0,0) { $\adj{\alpha_L(x)\alpha_{L'}(x)}$ };
-    \node (b0) at (-1,-1) { $\enf{\beta_L(G: x)}_{A, C}$ };
-    \node (b1) at (1,-1) { $\enf{\beta_{L'}(G': x)}_{B, C}$ };
-    \node (g0) at (-1,-2) { $\enf{\gamma_{G, J}(\chi: x, A: x, C: x)}_{A, C}$ };
-    \node (g1) at (1,-2) { $\enf{\gamma_{G', J}(\chi: x, B: x, C: x)}_{B, C}$ };
-    \node (j) at (0,-3) { $\enf{\beta_J(\chi: x, C: x)}_{A,B,C}$ };
-    \node (c) at (0,-4) { $\enf{\beta_\chi(A: a, B: b)}_{A,B}$ };
-
-    \begin{scope}[-]
-      \tikzstyle{every node}=[draw=none,below]
-      \draw (a0) to (b0);
-      \draw (a0) to (b1);
-      \draw (b0) to (g0);
-      \draw (b1) to (g1);
-      \draw (g0) to (j);
-      \draw (g1) to (j);
-      \draw (j) to (c);
+    \begin{scope}[ultra thick]
+      \tikzstyle{every node}=[below]
+      \draw[-{Latex[length=3mm,width=4mm]}] (state0) edge (state1a)
+                (state0) edge (state1b)
+                (state1a) edge (state2)
+                (state1b) edge (state2)
+                (state2) edge (state3);
     \end{scope}
-
   \end{tikzpicture}
-\caption{Ledger channels, $x = a + b$}\label{fig:modes}
-\end{figure}
+  \caption{Ledger channels, $x = a + b$}
+  \label{fig:modes}
+\end{figure} 

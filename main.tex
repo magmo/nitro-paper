@@ -5,14 +5,13 @@
 \usepackage{amssymb}
 \usepackage{color}
 \usepackage{tikz}
-\usetikzlibrary{shapes,arrows}
+\usetikzlibrary{shapes,arrows.meta,backgrounds}
 \usepackage{etoolbox}
 \usepackage{url} % for urls in bibliography
 \usepackage[parfill]{parskip} % no paragraph indents, leave blank line
 \usepackage{graphicx}
 \usepackage{subcaption}
 \usepackage{listings}
-
 
 \graphicspath{ {./drawio/} }
 
@@ -117,82 +116,96 @@ We then introduce some concepts that will be useful later when reasoning about t
 
 \subsection{ForceMove Channels}
 
-common features of state channels
-- participants + signatures
+A ForceMove state channel belongs to a set of \textbf{participants}, each defined by a unique cryptographic address.
+The private keys corresponding to these addresses are used to sign updates to the channel.
+We assume that the signature scheme is unforgeable, so that only the owner of the address has the capability to sign states as that participant.
 
-- addresses - forceMove ordered set of participants + nonce
-- no collisions between different sets of participants
+Each channel has a \textbf{channel address} which is formed by taking the hash of the participant addresses along with a nonce, $k$, that is chosen by the participants in order to distinguish their channels from one another.
+We assume that the hashing algorithm is cryptographically secure, so that it impossible for two different sets of participants to create a channel with the same address.
+We also assume that the signature scheme and hashing algorithm together make it impossible to create a channel address that is the same as a participant address.
+In practice, we accept that these statements will not be absolute but instead will hold with high probability.
 
-- assets held on chain, how do we record values
-- values
+A state channel ultimately determines the quantity of a given asset that each participant should receive.
+The format that the asset quantity takes is an important consideration for a state channel.
+Blockchains typically have a max integer size, $M$, meaning that a state channel on a single asset
+has asset quantites in $\mathbb{Z}_M$, so that quantities above the max overflow.
+Similarly the quantities for a state channel on two assets takes values in $\mathbb{Z}_M \times \mathbb{Z}_M$.
+There are many other possibilities here, including having state channels on an arbitrary set of assets.
+In this paper, we will simplify the explanation by only considering state channels on a single
+asset, taking quantity values in $\mathbb{Z}$, thereby explicitly ignoring integer overflow issues.
+We will refer to this asset as `coins'.
 
-- deposits and withdrawals
+\subsection{Depositing, Holding and Withdrawing Coins}
 
-- ignore states + updates mechanism, challenge mechanism
-- outcomes $\beta_\rchi(\omega)$
+In order to have value, a state channel system must be backed by assets held on-chain.
+In our explanation, we assume that these funds are held and managed by a single smart contract,
+which we will refer to as the \textbf{adjudicator}.
+In practice, the adjudicator functionality and deposits could be split across multiple smart contracts.
+
+We say that $\rchi$ \textbf{holds} $x$, in the case where there is a quantity of $x$ coins
+locked on-chain against $\rchi$'s address.
+We write this statement $\adj{\alpha_\rchi(x)}$, where the $\alpha$ denotes funds being held
+and the $\adj{\quad}$ is used to indicate that the statement refers to state on the chain.
+Note that in ForceMove, the only information stored on chain is the channel address and the quantity of the asset held for it - all other information resides in the off-chain states and is only visible on-chain in the case of a dispute.
+
+The \textbf{deposit} operation, $D_\rchi(x)$, is an on-chain operation used to assign $x$ coins to channel $\chi$.
+There are no restrictions on who can deposit coins into a channel - only that the
+transaction must include a transfer of $x$ coins into the adjudicator.
+\begin{align*}
+D_\rchi(x) \adj{\alpha_\rchi(y)} = \adj{\alpha_\rchi(x + y)}
+\end{align*}
+
+In order to distribute the coins it holds, a state channel must have one or more mechanisms for
+registering its \textbf{outcome}, $\omega$, on-chain.
+This registration must be done in a way that ensures that at most one outcome can be registered for each channel.
+In ForceMove, outcomes are registered either via an unanswered challenge or by the presentation
+of a \textit{conclusion proof} - a special set of states signed by particpants indicating
+that the channel has concluded, thus allowing them to skip the challenge timeout.
+We write  $\adj{\beta_\rchi(\omega)}$ to represent the situation where the outcome $\omega$
+has been registered on-chain for channel $\rchi$.
+
+Once an outcome is registered on-chain, it can be used to transfer coins between addresses,
+through the application of one or more on-chain operations:
+\begin{align*}
+O \adj{\alpha_\rchi(a + b)\beta_\rchi(\omega)} = \adj{\alpha_A(a)\alpha_\rchi(b)\beta_\rchi(\omega')}
+\end{align*}
+The specification of the precise format for the outcome, $\omega$, and the operations, $O$,
+will be given in the sections on Turbo and Nitro.
+In the equation above, $A$ could be either a channel address or a participant address.
+
+The \textbf{withdrawal} operation can be used to withdraw coins held at address $A$ by any
+party with the knowledge of the corresponding private key. 
+Note that the signature requirement coupled with the no-collision assumption means
+it is only possible to withdraw from a participant address.
+If $x \leq x'$ then
+\begin{align*}
+W_A(x) \adj{\alpha_A(x')} = \adj{\alpha_A(x'-x)}
+\end{align*}
+In practice the withdrawal should also specify the blockchain address where the funds should be sent.
+A potential method signature is \texttt{withdraw(fromAddr, toAddr, amount, signature)}, 
+where \texttt{signature} is $A$'s signature of the other parameters
+\footnote{In practice, we can add the \texttt{senderAddress} to the parameters to sign,
+in order to prevent replay attacks.}.
+
+Note that, in practice, the operations $O$ and $W$ need not be separate blockchain transactions.
+For example, in the ForceMove SimpleAdjudicator, funds are withdrawn directly using $\alpha_\chi$ and $\beta_\chi$;
+the intermediate state, $\alpha_A$, where funds are held against a participant address never exists on-chain.
+
+\subsection{Value}
 
 
+Value
 
-The \textbf{participants} of a state channel are defined by a cryptographic address,
-co
-- all addresses generated from the signature scheme
-- someone somewhere should know the private key corresponding to a participant address
-- they are the owner of that address
-- a participants can own multiple addresses
-- the key is used to sign updates
-- addresses don't have to have any funds allocated on-chain - they can be ephemeral
+- value (unbeatable strategy for extracting at least a given total, without assuming we add funds)
+- value equivalent (if two system states have the same value)
+- value preserving transition
+- applications change value, opening and closing an application shouldn't
 
-- space of channels
-- ordered subset of participants
-- a nonce
-- channel address
-- non-collisions
+- transitioning between outcomes
+- rewrite rules
+- channels update independently
 
-In this paper we will focus on state channels that determine the distribution of a single
-asset, which we will refer to as 'coins'.
-
-- in this paper we deal with a single asset which we will refer to as coins
-- the assets allocated can be summarised with a single integer
-- in this paper we allow the coin value to take any value in 
-- this is not realistic for the blockchain context, where there is typically a maximum
-  value, \texttt{MAX}, after which totals overflow
-- meaning that we should really consider coins in the space 
-$\mathbb{Z}_{\texttt{M}}$.
-- we can also consider state channels that operate on multiple assets: $\mathbb{Z}_{\texttt{M}} \times \mathbb{Z}_{\texttt{M}}$
-
-- space of application rules. Consider these to also define the states
-- state transitions
-- payment channel can be thought of in terms of a state channel system with a single application
-- is it possible to add to the space of application rules
-- what sort of rules does it support? transition rules depend on time or the general state of the chain
-- we assume here that they don't
-- possible to remove these restrictions
-
-- space of channel addresses
-- participant addresses
-- channels = set of participants + nonce
-- channel addresses
-
-\subsection{Funding and Channel Outcomes}
-
-- adjudicator: two important collections - funds held and outcomes
-- holding funds + notation
-- holding outcomes
-
-- outcomes of a channel
-- outcome: how funds should be distributed
-- notation
-- make this precise later
-
-
-- ways of registering outcomes in force move
-- only one outcome on-chain for each channel. Once one outcome has been registered no other one can be
-- abstract a channel to be something that can reach an outcome
-
-- first part of this is what outcomes you can register on-chain
-
-- replace the simpleAdjudicator
-- do we need alpha and deposits
+- possible to transition between finalizable states
 
 \subsection{Finalizable and Enabled Outcomes}
 
@@ -219,6 +232,9 @@ $\mathbb{Z}_{\texttt{M}}$.
 
 - enabled outcomes
 
+
+
+
 \begin{example}{Pre-fund setup in ForceMove.}
   In a ForceMove state channel with $n$ participants $P$, at end of the pre-fund setup i.e.
   when the last state to be broadcast was $\sigma_n$, then we have $\enf{\sigma_n.\beta}_P$ -
@@ -229,19 +245,6 @@ $\mathbb{Z}_{\texttt{M}}$.
   conclusion through a series of force-moves, any participant can ensure that the current
   outcome is registered on-chain.
 \end{example}
-
-\subsection{Calculating Value}
-
-- value (unbeatable strategy for extracting at least a given total, without assuming we add funds)
-- value equivalent (if two system states have the same value)
-- value preserving transition
-- applications change value, opening and closing an application shouldn't
-
-- transitioning between outcomes
-- rewrite rules
-- channels update independently
-
-- possible to transition between finalizable states
 
 \section{Turbo Protocol}
 
@@ -336,29 +339,6 @@ general pattern is
 We will now introduce the three on-chain operations that drive Turbo: deposit, withdrawal,
 and transfer.
 
-The \textbf{deposit} operation is used to increase the funds held for a given channel.
-In order for the operation to be valid it must be accompanied by a transfer of funds equal 
-to the increase.
-\begin{align*}
-D_\rchi(x) \adj{\alpha_\rchi(y)} = \adj{\alpha_\rchi(x + y)}
-\end{align*}
-The deposit can be called by anyone but a rational participant, $p$, should only make a
-deposit of size $x$ if it causes the value of the system state for $p$ to increase by $x$.
-
-The \textbf{withdrawal} operation is used to withdraw funds held at a given 
-address, $A$, by a party with a knowledge of the corresponding private key. If $x \leq x'$ then
-\begin{align*}
-W_A(x) \adj{\alpha_A(x')} = \adj{\alpha_A(x'-x)}
-\end{align*}
-In the above equation, we focus only on the affect of the withdrawal operation on the system state.
-In practice the withdrawal should also specify the external address that the funds should be sent to
-along with the signature.
-A potential method signature is \texttt{withdraw(fromAddr, toAddr, amount, signature)}, 
-where \texttt{signature} is $A$'s signature of the other parameters
-\footnote{In practice, we can add the \texttt{senderAddress} to the parameters to sign,
-in order to prevent replay attacks.}.
-Note that the signature requirement coupled with the no-collision assumption means
-it is not possible to withdraw from the funds held for a channel.
 
 The \textbf{transfer} operation, $T_{A,B}(x)$, is an instruction to transfer funds currently allocated
 to address $A$ to address $B$, according to the outcome of channel $A$.
