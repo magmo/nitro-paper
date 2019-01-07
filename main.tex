@@ -191,7 +191,7 @@ In practice, the operations $O$ and $W$ do not need to be separate blockchain tr
 For example, in the ForceMove SimpleAdjudicator, funds are withdrawn directly using $\alpha_\chi$ and $\beta_\chi$;
 the intermediate state, $\alpha_A$, where funds are held against a participant address never exists on-chain.
 
-\subsection{The Value of a State}
+\subsection{The Value of a State}\label{section:value-of-a-state}
 
 The utility of a state channel comes from the ability of being able to transfer the value
 between participants without the need for an on-chain operation.
@@ -210,8 +210,6 @@ The unbeatable strategy can involve signing (or refusing to sign) states off-cha
 applying one or more on-chain operations.
 The strategy might have to adapt based on the actions of other players but regardless of
 the actions they take, it should still be possible for $A$ to withdraw $x$ coins.
-
-
 
 In terms of applying operations on-chain, we need to
 If it is currently time $t$, and I want to apply operation $O$ on-chain before time $t + \epsilon$
@@ -248,10 +246,8 @@ where the outcome, $\omega$, is finalizable by $A$.
 It follows from the definition that exactly one of the following statements is true about
 a channel $\rchi$ at any point in time:
 \begin{enumerate}
-  \item The only participant, $p$, with a finalizable outcome exactly
-        one finalizable outcome, $\omega$. We write this $\enf{\beta_\rchi(\omega)}_p$.
-  \item The only participant, $p$, with a finalizable outcome has at least
-        two finalizable outcomes, $\omega_1, \dots, \omega_m$.
+  \item No participants apart from $p$ have a finalizable outcome.
+        Participant $p$ has one or more finalizable outcome(s), $\omega_1, \dots, \omega_m$.
         We write this $\enf{\beta_\rchi(\omega_1) \dots \beta_\rchi(\omega_m)}_p$.
   \item There are at least two participants, $P = \{p_1, \dots, p_m \}$, who share the same
         finalizable outcome, $\omega$. We write this $\enf{\beta_\rchi(\omega)}_{p_1, \dots, p_m}$.
@@ -333,27 +329,44 @@ state at the beginning of their lifecycle and one at the end
 \footnote{If a channel does not end with a conclusion proof, it ends with an expired on-chain challenge,
 in which case the outcome is already finalized on-chain.}.
 
-\subsection{Consensus Game Transitions}
+\subsection{Value Preserving Consensus Transitions}
 
-One other important 
-- the consensus game
-- possible to transition between finalizable states
-- consensus game
+Another important example of universally finalizable states comes from the \textbf{consensus game}.
+The consensus game is a ForceMove \textit{application}, which means it specifies a certain
+set of transitions rules that can be used to define the allowed state transitions for a ForceMove
+channel.
+We give a complete definition of the consensus game in the appendix.
 
-- points where everyone shares a single finalizable outcome are special
-- every channel has one of these at the beginning
-- and one at the end (unless it ends via a challenge, in which case that outcome is finalized)
+At a very high level, the consensus game provides a mechanism for moving from one universally
+finalizable outcome, $\omega_1$, to another, $\omega_2$. 
+In order for this to happen, one participant proposes the new outcome, $\omega_2$, and then
+every other participant must sign off on it. 
+If any participant disagrees, they can cancel the transition.
+This process has the important property that throughout its operation no participant enables
+any outcome other than $\omega_1$ and $\omega_2$.
+We call this a \textbf{consensus transition} between the two outcomes.
 
-- special channel the consensus game moves from one finalized outcome $\omega_1$ to another $\omega_2$
-- only enabling those outcomes along the way
+In the presentation of Turbo and Nitro, we will often use the fact that, if you use the
+consensus game transition to move between two system states with the same value to a
+participant, then all the intermediate states also have the same value to that participant.
+This is the key observation that allows us to prove that we can open and close channels
+off-chain.
 
-- consensus transition
-- value preserving transtions
-- if I have two system states which only differ by the state of consensys game channel $\rchi$ where 
-- and where I have jointly enforceable outcomes 
-- with the same value
-- then it is possible from move from one to the other with a sequence of value-preserving transitions
+\textbf{Value Preserving Consensus Transitions (VPCTs)}:
+If I have two system states, $\Sigma$ and $\Sigma'$, which only differ in the state of
+a consensus game chanel, $\rchi$, with participants $P$ and universally enforceable outcomes
+$\enf{\beta_\rchi(\omega)}_P \in \Sigma$ and $\enf{\beta_\rchi(\omega')}_P \in \Sigma'$, and 
+for some participant $p \in P$, $\nu_p(\Sigma) = \nu_p(\Sigma') = x$, then
+applying a consensus game transition gives a sequence of system states 
+$\Sigma = \Sigma_0, \dots, \Sigma_m = \Sigma'$ where $\nu_p(\Sigma_i) = x$ for all $\Sigma_i$.
 
+Proof (sketch): As $\nu_p(\Sigma) = \nu_p(\Sigma) = x$ and $\Sigma$ and $\Sigma'$ only differ
+in $\rchi$, we know that if $p$ can register either outcome $\omega$ or $\omega'$ on-chain, then
+they can obtain value $x$. The consensus transition allows the participants to transition
+from outcome $\omega$ to $\omega'$ without any participant enabling any other outcome.
+Therefore at all points, $p$ is capable of registering one of those outcomes on-chain (though
+in general they cannot choose which).
+Therefore, at all points, the value of the system to $p$ is $x$.
 
 \section{Turbo Protocol}
 
@@ -420,54 +433,55 @@ paying funds out to the corresponding address until no funds are remaining.
 In practice, we avoid introducing a dependency on the order of the payouts by using
 the \textbf{overlap} function $\texttt{overlap}(p, \omega, x)$, which returns the payout owed
 to $p$ from outcome $\omega$ when the channel is funded with $x$.
-The overlap function can be written in python as follows:
+If we have $\adj{\beta_\rchi(\omega)}$ and $\texttt{overlap}(p, \omega, x) = y$, we say that $\rchi$ \textbf{allocates} $y$ to $p$ \textbf{within} $x$.
+A python implementation of $\texttt{overlap}$ is given in the appendix.
 
-\begin{minipage}{\linewidth} % minipage to avoid page breaks
-  \lstinputlisting[language=Python]{code/overlap.py}
-\end{minipage}
-
-
-
-
-\begin{center}
+\begin{figure}[ht]
+  \centering
   \includegraphics[scale=0.7]{overlap} % TODO: tikz
-\end{center}
-
-- once an outcome pays out, we remove the outcome
-
-\begin{center}
   \includegraphics[scale=0.7]{remove} % TODO: tikz
-\end{center}
-\lstinputlisting[language=Python]{code/remove.py}
+  \caption{Overlap and remove}
+\end{figure}
 
+Once an outcome, $\omega$, has paid out a total, $x$, to an address, $A$, we will \textbf{remove} the total to create a new outcome $\omega' = \texttt{remove}(A, \omega, x)$.
+The remove operation works through the outcome from the start, reducing the totals for $A$ until $x$ coins have been removed.
+A python implementation of $\texttt{remove}$ is given in the appendix.
 
-We will now introduce the three on-chain operations that drive Turbo: deposit, withdrawal,
-and transfer.
+Armed with overlap and remove, we can now define the only on-chain operation added by Turbo.
+The \textbf{transfer} operation, $T_{A,B}(x)$, is an instruction to transfer $x$ coins
+currently held by $A$ to $B$, according to the outcome of $A$.
 
-
-The \textbf{transfer} operation, $T_{A,B}(x)$, is an instruction to transfer funds currently allocated
-to address $A$ to address $B$, according to the outcome of channel $A$.
-
-\lstinputlisting[language=Python]{code/transfer.py}
-
-If channel $X$ holds x and the outcome of $X$ allocates $y$ to $Y$ within $x$.
-- then update channel X to hold x, channel Y to hold y, and decrease the amount X allocates to Y by y
-
-For example, 
+The operation can be described as follows:
+if channel $A$ holds at least $a \geq x$ coins
+and the outcome, $\beta_A(\omega)$, of $A$ allocates $x$ to $B$ within $a$,
+then decrease the total held by $A$ by $x$ coins,
+increase the total held by $B$ by $x$ coins
+and replace the outcome with $\beta_A(\omega')$, where $\omega' = \texttt{remove}(B, \omega, x)$.
+Otherwise, do nothing.
+We provide a python implementation of transfer in the appendix.
+By way of an example:
 \begin{align*}
 T_{A,B}(3) \adj{\alpha_A(10)\beta_A(B: 3, C: 7)} = \adj{\alpha_A(7)\alpha_B(3)\beta_A(C: 7)}
 \end{align*}
 
-\subsubsection{Value Equivalence in Turbo}
+Combined with the deposit and withdrawal operations, the transfer operation gives us everything we need to create a system that supports ledger channels.
 
-- how can we know if two system states are value equivalent?
-- in turbo it's simple: if there's any sequence of Ts that drive them to the same state
-  then they're equivalent
-- transfer operations commute
-- if I can find one set of transfer operations they're equivalent
+\subsection{Value Equivalence in Turbo}
 
-- funding a ledger channel - only deposit if it increases your value by the deposit amount
-- opening a subchannel
+In section \ref{section:value-of-a-state} we defined the value of a system state, $\nu_p(\Sigma)$, to be the to be the largest $x$ such that $p$ has an unbeatable strategy to extract $x$ coins from the adjudicator.
+We then split this into two parts: the unbeatable strategy for registering an outcome with the adjudicator and the unbeatable strategy for calling on-chain operations to move the coins into $p$'s address.
+We looked a lot at the former part, which gave us the concept of a finalizable state,
+but have not yet covered the second part.
+In this section, we will look at what it takes to have an unbeatable strategy for moving funds from one address to another in Turbo.
+
+For Turbo it turns out that the rule is very simple: if $p$ has any strategy for withdrawing $x$ coins from the adjudicator, it is an unbeatable strategy.
+
+The following observation about the transfer operation is the key portion of the proof:
+if I have the operation $T_{A, B}(x)$, that causes a change to the on-chain state,
+then we must have some outcome $\adj{\beta_A(\omega)}$, which means that $A$ is a channel address and therefore withdrawals from $A$ are impossible.
+Therefore the only operations that can reduce the total held in $A$ are transfers of the form $T_{A, \rchi}(x)$ for addresses $\rchi$ that appear in $\omega$.
+Due to the definition of the transfer operation, all operations of this form commute.
+So no transfer operation inserted in front of $T_{A, \rchi}(x)$ can change its effect on the state.
 
 \subsection{Ledger channels}
 
@@ -476,54 +490,62 @@ we will focus here on a setup where a single parent channel funds one or more su
 \footnote{Note that we allow the case where the sub-channels are themselves ledger channels.}.
 Following the Perun paper, we will refer to this parent channel as a \textbf{ledger channel}.
 
-- ledger channel is assumed to be running the consensus application
+All ledger channels in the following sections run the consensus game, so that we can use the value preserving consensus transition result.
 
 \subsubsection{Opening a sub-channel}
 
-- make precise the operation we performed in the introduction, where we opened a subchannel
-- here the enforcable state for $\rchi$ is assumed to be the ready-to-fund state
-- doesn't matter what application is running in the channel - just what the initial balances are
+In this section, we give the details of the sub-channel opening process that we touched on at the beginning of the Turbo chapter.
+We assume we start in a position where we have a ledger channel $L$ between $A$ and $B$, which contains enough to fund a sub-channel, $\rchi$.
+This sub-channel runs an arbitrary ForceMove application and starts the process at the funding point, giving the universally finalizable below.
+We progress through the following system states:
 \begin{align*}
   S_1 &= \adj{\alpha_L(a+b)} &&\enf{\beta_L(A: a, B: b)}_{A, B} & \\
   S_2 &= \adj{\alpha_L(a+b)} &&\enf{\beta_L(A: a, B: b)}_{A, B}&\enf{\beta_\rchi(A: a', B: b')}_{A, B} \\
-  S_3 &= \adj{\alpha_L(a+b)} &&\enf{\beta_L(A: a-a', B: b-b', \rchi: a' + b')}_{A, B}&\enf{\beta_\rchi(A: a', B: b')}_{A, B}
+  S_3 &= \adj{\alpha_L(a+b)} &&\enf{\beta_L(A: a-a', B: b-b', \rchi: x)}_{A, B}&\enf{\beta_\rchi(A: a', B: b')}_{A, B}
 \end{align*}
-- at each point it is value equivalent for both A and B to $a$ $b$ respectively
-- each step only changes one channel at a time 
-- therefore we can do by single-channel-rewrite lemma
+where $x = a' + b'$.
+For all of these states, we have $\nu_A(S_i) = a$ and $\nu_B(S_i) = b$.
+As each system state only differs in the state of one channel, we can apply the VPCT result, to see that we can move between the system states whilst keeping the system value constant for both $A$ and $B$.
+At the end of this process, the funding of the sub-channel is complete and the players can proceed with the non-value preserving interaction within it.
 
 \subsubsection{Closing a sub-channel}
 
-- closing a subchannel is similar
-- hear the finalizable state is assumed to be a conclude state from the end of the channel
+Closing a sub-channel is very similar to opening a sub-channel, involving the same states in the reverse order.
+In this instance, the universally finalizable state in the sub-channel, $\rchi$, is
+taken to come from a conclusion proof.
 \begin{align*}
 S_1 &= \adj{\alpha_L(x)} &&\enf{\beta_L(A: a, B: b, \rchi: a' + b')}_{A, B}&\enf{\beta_\rchi(A: a', B: b')}_{A, B}\\
 S_2 &= \adj{\alpha_L(x)} &&\enf{\beta_L(A: a + a', B: b + b')}_{A, B}&\enf{\beta_\rchi(A: a', B: b')}_{A, B} \\
 S_3 &= \adj{\alpha_L(x)} &&\enf{\beta_L(A: a + a', B: b + b')}_{A, B} & 
 \end{align*}
 where $x = a + a' + b + b'$.
-- the analysis is exactly the same as in the opening case
+The analysis here is exactly the same as in the opening case, where $\nu_A(S_i) = a + a'$ and $\nu_B(S_i) = b + b'$.
+We then apply the VPCT result to argue that we can transition between these states without changing the value for either player.
 
 \subsubsection{Topping up a ledger channel}
 
-- useful to be able to top up without disturbing sub-channels supported in a ledger channel
-- topping up is similar to depositing in force-move
+Sometimes it is useful for one participant to be able to increase their total in a ledger channel without disturbing any sub-channels operating in it.
+In the scenario below, $A$ and $B$ have a ledger channel, $L$, supporting a sub-channel, $\rchi$, whose state is not shown.
+Participant $A$ wants to increase their balance in the channel by an amount $a'$, through an on-chain deposit.
+The operation proceeds as follows:
 \begin{align*}
 S_1 &= \adj{\alpha_L(x)} &&\enf{\beta(A: a, B: b, \rchi: c)}_{A, B} \\
 S_2 &= \adj{\alpha_L(x)} &&\enf{\beta(B: b, \rchi: c, A: a + a')}_{A, B} \\
 S_3 &= D_L(a')\adj{\alpha_L(x)} &&\enf{\beta(B: b, \rchi: c, A: a + a')}_{A, B} \\
 S_4 &= \adj{\alpha_L(x + a')} &&\enf{\beta(B: b, \rchi: c, A: a + a')}_{A, B}
 \end{align*}
-- rearrange the current outcome to put the depositor last
-- note that $\nu_A(S_3) - \nu_A(S_2) = a'$ as it should be if $A$ is to deposit
+Here we have $\nu_A(S_1) = \nu_A(S_2) = a + c_A$, $\nu_A(S_3) = \nu_A(S_4) = a + a' + c_A$ and the value to $B$ stays constant at $b + c_B$ throughout, where $c_A$ and $c_B$ is the value attributable to $A$ and $B$, respectively, from the $\rchi$ sub-channel.
+The operation starts by moving $A$'s entry to the end of the list.
+It is then safe to increase the total to $a + a'$, using the priority order payout property and the fact that the channel is underfunded, to see that this has not changed the value to $A$.
+In the next line, $A$ deposits $a'$, which causes the value to $A$ to increase by the same amount, as should happen.
+At this point the channel is fully funded and the participants are free to reorder the entries of the outcome as they please.
 
 \subsubsection{Partial checkout from a ledger channel}
 
-- partial checkout is the opposite to top up
-- the scenario here is two parties have a ledger channel open, supporting one or more subchannels
-- participant A wants to be able to withdraw 
-- this means we need to increase the value of $\alpha_A$ 
-- we will assume here that we start with $\alpha_A(0)$
+A partial checkout is the opposite case to a top up: here $A$ wants to withdraw $a'$ coins from the ledger channel, without disturbing any sub-channels.
+The approach here is different to topping up.
+The general idea is to replace the ledger channel, $L$, with an equivalent ledger channel, $L'$, with $A$'s balance reduced and then switch the funding across.
+For simplicity, we assume that we start with $\adj{\alpha_A(0)}$, so $A$ has no funds held on-chain at the beginning.
 \begin{align*}
 S_1 &= \adj{\alpha_L(x)} \quad \enf{\beta_L(B: b, A: a, \rchi: c)}_{A, B}  \\
 S_2 &= \adj{\alpha_L(x)} \quad \enf{\beta_L(B: b, A: a, \rchi: c)}_{A, B} \quad \enf{\beta_{L'}(B: b, A: a - a', \rchi: c)}_{A, B}\\
@@ -531,17 +553,27 @@ S_3 &= \adj{\alpha_L(x)} \quad \enf{\beta_L(L': x-a', A: a')}_{A, B} \quad \enf{
 S_4 &= \adj{\alpha_L(x)\beta_L(L': x-a, A: a')} \quad \enf{\beta_{L'}(B: b, A: a - a', \rchi: c)}_{A, B}\\
 S_5 &= \adj{\alpha_{L'}(x-a')\alpha_A(a')} \quad \enf{\beta_{L'}(B: b, A: a - a', \rchi: c)}_{A, B}
 \end{align*}
-- technique here is to create a replacement ledger channel with the updated totals and then update the 
-  original channel to point here.
-- in transitioning to $S_4$ we take $L$ to the chain. probably using conclude to avoid the timeout
+All these states have the same value for $A$ and $B$.
+The first two transitions rely on the VPCT result.
+The move from $S_3$ to $S_4$ involves registering the outcome of $L$ on-chain.
+It is assumed here that the participants create a conclusion proof, so that they can
+skip the timeout.
+The final transition involves applying the transfer operations $T_{L, L'}(x-a')$ and $T_{L, A}(a')$.
 
 \section{Nitro Protocol}
 
-% \input{figures/nitro-state}
+Nitro Protocol is an extension to Turbo that introduces a new type of outcome and the on-chain operations to support it. 
+We will show how this extension enables a channel between two participants to be supported through a third party.
+Following the terminology in the Perun paper, we will refer to these channels as \textbf{virtual channels}.
 
-- extension to turbo. introduce a different type of outcome. allows us to support channels through
-  a third party
-- call these virtual channels
+As an example, suppose that Alice wants to open an $\{A:5, B:5\}$ chess game with Bob, but they do not share an existing ledger channel.
+Alice does, however, have an $\{A:5, C:5\}$ ledger channel open with Carol and Bob and Carol have a $\{B:5, C:5\}$ ledger channel open too.
+
+Nitro Protocol allows Alice and Bob to open their chess game, using their existing ledger channels with Carol, without the need for any on-chain transactions.
+
+
+
+
 
 - example: suppose that Alice wants to play chess with Bob
 - doesn't have a ledger channel open but they both have a channel open with Hugo
@@ -622,6 +654,22 @@ Opening a channel in reverse
 \subsection{Virtual Channels on Turbo}
 \subsection{Payouts to Non-Participants}
 \subsection{Possible Extensions}
+
+\subsection{On-chain Operations Code}
+\subsubsection{Overlap}
+\begin{minipage}{\linewidth} % minipage to avoid page breaks
+  \lstinputlisting[language=Python]{code/overlap.py}
+\end{minipage}
+
+\subsubsection{Remove}
+\begin{minipage}{\linewidth} % minipage to avoid page breaks
+  \lstinputlisting[language=Python]{code/remove.py}
+\end{minipage}
+
+\subsubsection{Transfer}
+\begin{minipage}{\linewidth} % minipage to avoid page breaks
+  \lstinputlisting[language=Python]{code/transfer.py}
+\end{minipage}
 
 
 \end{document}
