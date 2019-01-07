@@ -570,42 +570,91 @@ As an example, suppose that Alice wants to open an $\{A:5, B:5\}$ chess game wit
 Alice does, however, have an $\{A:5, C:5\}$ ledger channel open with Carol and Bob and Carol have a $\{B:5, C:5\}$ ledger channel open too.
 
 Nitro Protocol allows Alice and Bob to open their chess game, using their existing ledger channels with Carol, without the need for any on-chain transactions.
+Suppose that Alice wins all of the funds in the channel, so that the final outcome is $\{A: 10, B: 0\}$.
+Then Nitro allows Alice and Bob to close their chess game off-chain too, rebalancing through Carol, so that the final state of the ledger channels is $\{A: 10, C: 0\}$ and $\{B: 0, C: 10\}$.
 
+In this interaction, Carol contributed 10 of her coins at the beginning, which had to remain locked while Alice and Bob were playing.
+She got those 10 coins back but they were distributed differently between the her ledger channels.
+By locking up her coins for a period of time, she enabled Alice and Bob to play chess entirely off-chain.
 
-
-
-
-- example: suppose that Alice wants to play chess with Bob
-- doesn't have a ledger channel open but they both have a channel open with Hugo
-
-- how this enables a hub
-
-- how this enables multi-hop routing
+In this section, we will introduce the new outcomes and operations, along with the network construction to make interactions like the above possible.
 
 \subsection{Nitro Outcomes and Operations}
 
-- extends turbo by adding a new type of outcome (and a new type of channel)
-- refer to this as the guarantee and write this $\gamma$
-- guarantee allows one channel choose to pay out for certain parts of another outcome
+Nitro extends Turbo by adding a new type of channel whose outcomes are interpreted differently.
+We refer to these new channels as \textbf{guarantor} channels.
+In all ways apart from the interpretation of the outcomes, guarantor channels behave exactly like regular channels: they follow the ForceMove update rules and are finalized on-chain in the same way, and they can run ForceMove applications, like the consensus game.
 
-- finalizing is exactly the same
-- guarantee channels can follow the same force-move transition rules and challenge etc.
-- interpretation of the outcomes on-chain
+The outcome of a guarantor channel specifies certain parts of another channel's outcome to guarantee.
+We will use the notation $\gamma_{A, B}(\omega)$ to represent the outcome, $\omega$, of channel $A$, which is acting as a guarantor for $B$.
 
-- in explaining how this works it will be useful to introduce another operation
-- cap - ensures that one allocation can't give out more to any address than another
+Along with the new type of channel, Nitro adds one operation: the \textbf{claim} operation, $G_{A, B, C}(x)$, which is used to claim on the guarantee of $A$ on $B$'s payout to $C$.
 
-\lstinputlisting[language=Python]{code/cap.py}
+Before proceeding with the definitions, we are going to start with some examples to give an idea of how these new additions interact:
 
-- the claim operation
+\begin{example}
+  This example shows the simplest case of claiming on a guarantee:
+  \begin{align*}
+    G_{A, B, C}(5)\adj{\alpha_A(5)\gamma_{A, B}(C: 5)\beta_B(C:5)} = \adj{\alpha_C(5)}
+  \end{align*}
+  Guarantor channel $A$ holds 5 and guarantees 5 for $B$s allocation to $C$, within 5.
+  $B$ allocates 5 to $C$, so the claim operation is successful, paying 5 from $A$ to $C$ through the outcome of $B$.
+\end{example}
 
-\lstinputlisting[language=Python]{code/claim.py}
+\begin{example}
+  The next example shows a slightly more complicated case:
+  \begin{align*}
+    G_{A, B, C}(2)\adj{\alpha_A(3)\gamma_{A, B}(C: 2)\beta_B(C: 3)} = \adj{\alpha_C(2)\alpha_A(1)\beta_B(C:1)}
+  \end{align*}
+  Here 2 is transferred from $A$ to $C$ through $B$, but this does not completely eliminate $B$'s payout to $C$.
+\end{example}
+
+\begin{example}
+  The guarantee only goes through if the balances in $\alpha$, $\gamma$ and $\beta$ are all large enough.
+  \begin{align*}
+    G_{A, B, C}(3)\adj{\alpha_A(3)\gamma_{A, B}(C: 2)\beta_B(C: 3)} = \adj{\alpha_A(3)\gamma_{A, B}(C: 2)\beta_B(C: 3)}
+  \end{align*}
+  The operation has no effect, as the balance in the guarantee is not high enough.
+\end{example}
+
+\begin{example}
+  The guarantee can be used to modify the order of payouts:
+  \begin{multline*}
+    G_{A, B, C}(2)\adj{\alpha_A(2)\gamma_{A, B}(C: 2, D: 1)\beta_B(D: 1, C: 2)} =\\ \adj{\alpha_C(2)\gamma_{A, B}(D: 1)\beta_B(D: 1)}
+  \end{multline*}
+  Note that in this case, the payout to $C$ went through because it appeared first in the guarantee outcome, even though it was lower priority in $B$'s outcome.
+\end{example}
+
+\begin{example}
+  Multiple guarantees can also be used to cover the outcome of a single channel:
+  \begin{multline*}
+    G_{A', B, D}(2)G_{A, B, C}(2)\\\adj{\alpha_A(2)\alpha_{A'}(2)\gamma_{A, B}(C: 2, D: 2)\gamma_{A', B}(C: 2, D: 2)\beta_B(C: 2, D: 2)}\\ = \adj{\alpha_C(2)\alpha_D(2)}
+  \end{multline*}
+  In this example, we managed to set up a situation where it did not matter which of $A$ and $A'$ went to $C$ and which went to $D$ but $C$ would always receive their funds first.
+  This trick will be used in the virtual channel construction.
+\end{example}
 
 
-- [diagram]: nitro state properties
+In order to specify the claim operation, it will be useful to introduce a utility operation first: the \textbf{cap} operation.
+By capping outcome $\omega_1$ by $\omega_2$ you ensure that $\omega_1$ will never pay out more to any address $A$ than $\omega_2$ would.
+The python code for the cap operation is given in the appendix (\ref{appendix:cap}), so here we will settle for a few examples:
+\begin{align*}
+  \texttt{cap}(\{A: 10\}, \{A:4\}) &= \{A: 4 \} \\
+  \texttt{cap}(\{A: 10\}, \{A:4, B: 2, A: 4\}) &= \{A: 8 \} \\
+  \texttt{cap}(\{A: 2, B: 3, A: 3, D: 2\}, \{A: 1, B: 2, A: 2\}) &= \{A: 2, B: 2, A:1\}
+\end{align*}
 
+We will use the cap operation to define the \textbf{claim} operation, $T_{A,B,C}(x)$, as follows: if $A$ holds $a$, and the outcome of $A$ capped by the outcome of $B$ allocates $x$ to $C$ within $y$, then decrease the amount held by $A$ by $x$, increase the amount held by $C$ by $x$, remove $x$ from $A$'s allocation to $C$ and also remove $x$ from $B$'s allocation to $C$. A python implementation of the claim operation can be found in \ref{appendix:claim}.
 
-\subsubsection{Value Calculations}
+\subsection{Value Calculations}
+
+\begin{multline*}
+  T_{B, D}(5)G_{A, B, C}(5)\adj{\alpha_A(5)\alpha_B(5)\gamma_{A, B}(C: 5)\beta_B(C: 5, D: 5)}\\= \adj{\alpha_C(5)\alpha_D(5)}
+\end{multline*}
+
+\begin{multline*}
+  T_{B, C}(5)\adj{\alpha_A(5)\alpha_B(5)\gamma_{A, B}(C: 5)\beta_B(C: 5, D: 5)} \\= \adj{\alpha_C(5)\alpha_A(5)\gamma_{A, B}(C: 5)\beta_B(D: 5)}
+\end{multline*}
 
 \subsection{Virtual Channels}
 
@@ -671,5 +720,14 @@ Opening a channel in reverse
   \lstinputlisting[language=Python]{code/transfer.py}
 \end{minipage}
 
+\subsubsection{Cap}\label{appendix:cap}
+\begin{minipage}{\linewidth} % minipage to avoid page breaks
+  \lstinputlisting[language=Python]{code/cap.py}
+\end{minipage}
+
+\subsubsection{Claim}\label{appendix:claim}
+\begin{minipage}{\linewidth} % minipage to avoid page breaks
+  \lstinputlisting[language=Python]{code/claim.py}
+\end{minipage}
 
 \end{document}
