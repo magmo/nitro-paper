@@ -193,7 +193,7 @@ the intermediate state, $\alpha_A$, where funds are held against a participant a
 
 \subsection{The Value of a State}\label{section:value-of-a-state}
 
-The utility of a state channel comes from the ability of being able to transfer the value
+The utility of a state channel comes from the ability to transfer the value
 between participants without the need for an on-chain operation.
 In order to reason about state channels, we therefore need to understand how this transfer
 of value works.
@@ -204,29 +204,49 @@ the entire state of all channels plus the adjudicator.
 We will call the latter the \textbf{system state} and usually denote it with the symbol $\Sigma$.
 
 We define the \textbf{value}, $\nu_A(\Sigma)$, of a system state $\Sigma$ for participant $A$,
-to be the largest $x$ such that $A$ has an \textit{unbeatable strategy} to withdraw $x$
-coins from the adjudicator.
+to be the largest $x$ such that $A$ has an \textit{unbeatable strategy} to extract $x$
+coins from the adjudicator, where by extract we mean to withdraw $x$ coins more than any we needed to deposit to execute the strategy.
 The unbeatable strategy can involve signing (or refusing to sign) states off-chain, as well as
 applying one or more on-chain operations.
 The strategy might have to adapt based on the actions of other players but regardless of
-the actions they take, it should still be possible for $A$ to withdraw $x$ coins.
+the actions they take, it should still be possible for $A$ to extract $x$ coins.
 
-In terms of applying operations on-chain, we need to
-If it is currently time $t$, and I want to apply operation $O$ on-chain before time $t + \epsilon$
-then it is possible for me to do so.
-But I cannot prevent you from applying $O'$ beforehand.
-Ignore gas + censorship, allow front-running
+In order to make the concept of an unbeatable strategy more tangible, we make the following assumptions about blockchain transactions:
+\begin{enumerate}
+  \item \textbf{Transactions are unimpeded}: given that the current time is $t$ and $\epsilon > 0$, then it is possible for any party to apply any operation, $O$, on-chain before time $t + \epsilon$.
+  This assumption sidesteps issues of censorship, chain congestion and timing considerations around the creation of blocks.
+  In practice, this assumption should be reasonable, provided that $\epsilon$ is sufficiently large.
+  \item \textbf{Transactions \textit{can} be front-run}: given two parties, $p_1$ and $p_2$, and two operations, $O_1$ and $O_2$, there is no way for $p_1$ to ensure that they can apply $O_1$ to the chain before $p_2$ applies $O_2$.
+  This assumption means that strategies that rely on executing a given transaction on-chain before someone else executes a different one are not allowed.
+  \item \textbf{Transactions are free}: we ignore the cost of gas fees when calculating the value of a state.
+  Modelling the effect of gas fees on state channel networks is an interesting and important area of research but falls beyond the scope of this paper.
+\end{enumerate}
 
-In general, as a state channel system transitions from one state to another the value of the system
-for each participant will change - otherwise state channels would be useless!
+Although the main utility of state channels comes from transitions where the value changes,
+in this paper we will be looking primarily at state transitions where the value of the system
+remains the same.
+We will use the fact that certain transitions preserve value for all participants, to allow us
+to prove the correctness of operations involving the construction of state channel networks.
 
-- focus of this paper is the creation of state channel networks
-- frequently have to transform the system state
-- it will be important that these are value preserving
+In particular, we will make use of the \textbf{principle of value equivalence}: if two system
+states hold the same value for all participants, then we assume that all participants will
+be willing to transition between them.
+The one exception is any transition involving a deposit, where we assume that a participant depositing
+$x$ coins into the system, will proceed if the value of the resulting state to them increases by $x$.
 
-- principle of value equivalence - if two states are value equivalent then the participants will do them
+If we were considering transactions fees here, we would need to argue this principle more
+carefully: with transaction fees, some of the transitions we see as value preserving here
+would actually involve moving to a state of slightly lower value. 
+We assume that the utility gained in being able to open and close channels off-chain overcomes
+this issues in practice.
 
-- also slight modification: for deposits
+When analysing Turbo and Nitro, we will often need to calculate the value of a given system
+state for a participant.
+When doing this, it will be useful to break the strategies down into two stages: the strategy
+for registering one or more outcomes on-chain, followed by the strategy for performing operations
+on those outcomes on-chain.
+We will focus on the former stage in the next section; the latter stage will be dealt with
+separately in the sections for Turbo and Nitro.
 
 \subsection{Finalizable and Enabled Outcomes}
 
