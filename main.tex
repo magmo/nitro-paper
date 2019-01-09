@@ -114,7 +114,7 @@ That said, the techniques provided here should be applicable to any state channe
 We start the section by reviewing the properties of ForceMove that are important for Turbo and Nitro \footnote{We give a more complete recap of ForceMove in the appendix.}. 
 We then introduce some concepts that will be useful later when reasoning about the correctness of our state channel networks. 
 
-\subsection{ForceMove Channels}
+\subsection{Participants, Addresses and Assets}
 
 A ForceMove state channel belongs to a set of \textbf{participants}, each defined by a unique cryptographic address.
 The private keys corresponding to these addresses are used to sign updates to the channel.
@@ -552,9 +552,9 @@ The operation proceeds as follows:
 S_1 &= \adj{\alpha_L(x)} &&\enf{\beta(A: a, B: b, \rchi: c)}_{A, B} \\
 S_2 &= \adj{\alpha_L(x)} &&\enf{\beta(B: b, \rchi: c, A: a + a')}_{A, B} \\
 S_3 &= D_L(a')\adj{\alpha_L(x)} &&\enf{\beta(B: b, \rchi: c, A: a + a')}_{A, B} \\
-S_4 &= \adj{\alpha_L(x + a')} &&\enf{\beta(B: b, \rchi: c, A: a + a')}_{A, B}
+    &= \adj{\alpha_L(x + a')} &&\enf{\beta(B: b, \rchi: c, A: a + a')}_{A, B}
 \end{align*}
-Here we have $\nu_A(S_1) = \nu_A(S_2) = a + c_A$, $\nu_A(S_3) = \nu_A(S_4) = a + a' + c_A$ and the value to $B$ stays constant at $b + c_B$ throughout, where $c_A$ and $c_B$ is the value attributable to $A$ and $B$, respectively, from the $\rchi$ sub-channel.
+Here we have $\nu_A(S_1) = \nu_A(S_2) = a + c_A$, $\nu_A(S_3) = a + a' + c_A$ and the value to $B$ stays constant at $b + c_B$ throughout, where $c_A$ and $c_B$ is the value attributable to $A$ and $B$, respectively, from the $\rchi$ sub-channel.
 The operation starts by moving $A$'s entry to the end of the list.
 It is then safe to increase the total to $a + a'$, using the priority order payout property and the fact that the channel is underfunded, to see that this has not changed the value to $A$.
 In the next line, $A$ deposits $a'$, which causes the value to $A$ to increase by the same amount, as should happen.
@@ -630,11 +630,14 @@ Before proceeding with the definitions, we are going to start with some examples
 \end{example}
 
 \begin{example}
-  The guarantee only goes through if the balances in $\alpha$, $\gamma$ and $\beta$ are all large enough.
+  The claim only goes through if the balances in $\alpha$, $\gamma$ and $\beta$ are all large enough.
   \begin{align*}
-    G_{A, B, C}(3)\adj{\alpha_A(3)\gamma_{A, B}(C: 2)\beta_B(C: 3)} = \adj{\alpha_A(3)\gamma_{A, B}(C: 2)\beta_B(C: 3)}
+    G_{A, B, C}(3)\adj{\alpha_A(3)\gamma_{A, B}(C: 2)\beta_B(C: 3)} &= \adj{\alpha_A(3)\gamma_{A, B}(C: 2)\beta_B(C: 3)} \\
+    G_{A, B, C}(3)\adj{\alpha_A(3)\gamma_{A, B}(C: 3)\beta_B(C: 2)} &= \adj{\alpha_A(3)\gamma_{A, B}(C: 3)\beta_B(C: 2)}
   \end{align*}
-  The operation has no effect, as the balance in the guarantee is not high enough.
+  In both these cases, the operation has no effect.
+  In the first instance, this is because the total in the guarantee is not large enough;
+  in the second, it is the total in $B$'s outcome that is not large enough.
 \end{example}
 
 \begin{example}
@@ -668,13 +671,29 @@ We will use the cap operation to define the \textbf{claim} operation, $T_{A,B,C}
 
 \subsection{Value Calculations}
 
+- not as simple as turbo
+- the following example shows you it is possible to have a strategy that is beatable
+- say I am D and then I can withdraw 5 by doing:
 \begin{multline*}
   T_{B, D}(5)G_{A, B, C}(5)\adj{\alpha_A(5)\alpha_B(5)\gamma_{A, B}(C: 5)\beta_B(C: 5, D: 5)}\\= \adj{\alpha_C(5)\alpha_D(5)}
 \end{multline*}
-
+- but only if no-one calls $T_{B, C}$ first
 \begin{multline*}
   T_{B, C}(5)\adj{\alpha_A(5)\alpha_B(5)\gamma_{A, B}(C: 5)\beta_B(C: 5, D: 5)} \\= \adj{\alpha_C(5)\alpha_A(5)\gamma_{A, B}(C: 5)\beta_B(D: 5)}
 \end{multline*}
+
+- a bit contrived, unusual to have both guarantees on channels which hold their own funds
+
+- a few observations:
+  - new deposits cannot decrease the value for anyone
+  - withdrawals only decrease the value for the withdrawer (relies on lack of overlap between participants and channels)
+  - we only need to consider deposits and guarantees
+  - seems generally not useful to have a guarantee on a channel which holds its own funds by design
+    (and new deposits are dealt with above)
+  - so we only need to consider guarantors on the same channel
+  - consider two cases: completely overlapping, disjoint (ish) and summming
+
+  - look at two special cases
 
 \subsection{Virtual Channels}
 
