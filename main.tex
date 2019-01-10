@@ -155,21 +155,20 @@ transaction must include a transfer of $x$ coins into the adjudicator.
 D_\rchi(x) \adj{\alpha_\rchi(y)} = \adj{\alpha_\rchi(x + y)}
 \end{align*}
 
-In order to distribute the coins it holds, a state channel must have one or more mechanisms for
-registering its \textbf{outcome}, $\omega$, on-chain.
+In order to distribute the coins it holds, a state channel, $\rchi$, must have one or more mechanisms for
+registering its \textbf{outcome}, $\Omega_\rchi$, on-chain.
 This registration must be done in a way that ensures that at most one outcome can be registered for each channel.
 In ForceMove, outcomes are registered either via an unanswered challenge or by the presentation
-of a \textit{conclusion proof} - a special set of states signed by particpants indicating
+of a \textit{conclusion proof} - a special set of states signed by participants indicating
 that the channel has concluded, thus allowing them to skip the challenge timeout.
-We write  $\adj{\beta_\rchi(\omega)}$ to represent the situation where the outcome $\omega$
-has been registered on-chain for channel $\rchi$.
+We write  $\adj{\Omega_\rchi}$ to represent the situation where the outcome $\Omega_\rchi$ for channel $\rchi$ has been registered on-chain.
 
 Once an outcome is registered on-chain, it can be used to transfer coins between addresses,
 through the application of one or more on-chain operations:
 \begin{align*}
-O \adj{\alpha_\rchi(a + b)\beta_\rchi(\omega)} = \adj{\alpha_A(a)\alpha_\rchi(b)\beta_\rchi(\omega')}
+O \adj{\alpha_\rchi(a + b)\Omega_\rchi} = \adj{\alpha_A(a)\alpha_\rchi(b)\Omega_\rchi'}
 \end{align*}
-The specification of the precise format for the outcome, $\omega$, and the operations, $O$,
+The specification of the precise format for the outcome, $\Omega_\rchi$, and the operations, $O$,
 will be given in the sections on Turbo and Nitro.
 In the equation above, $A$ could be either a channel address or a participant address.
 
@@ -188,7 +187,7 @@ where \texttt{signature} is $A$'s signature of the other parameters
 in order to prevent replay attacks.}.
 
 In practice, the operations $O$ and $W$ do not need to be separate blockchain transactions.
-For example, in the ForceMove SimpleAdjudicator, funds are withdrawn directly using $\alpha_\chi$ and $\beta_\chi$;
+For example, in the ForceMove SimpleAdjudicator, funds are withdrawn directly using $\alpha_\chi$ and $\Omega_\chi$;
 the intermediate state, $\alpha_A$, where funds are held against a participant address never exists on-chain.
 
 \subsection{The Value of a State}\label{section:value-of-a-state}
@@ -255,22 +254,22 @@ for withdrawing a certain total.
 In this section, we will focus on one part of this strategy: the ability to register a given
 outcome in the adjudicator.
 
-We say an outcome, $\omega$, is \textbf{finalizable} for participant $A$, if $A$ has an unbeatable
+We say an outcome, $\Omega_\chi$, is \textbf{finalizable} for participant $A$, if $A$ has an unbeatable
 strategy for registering this outcome in the adjudicator.
-We use the notation $\enf{\beta_\rchi(\omega)}_A$, to represent a state of a channel, $\rchi$,
-where the outcome, $\omega$, is finalizable by $A$.
+We use the notation $\enf{\Omega_\rchi}_A$, to represent a state of a channel, $\rchi$,
+where the outcome, $\Omega_\rchi$, is finalizable by $A$.
 \begin{align*}
-  \enf{\beta_\rchi(\omega)}_A \xrightarrow{\text{A's unbeatable strategy}} \adj{\beta_\rchi(\omega)}
+  \enf{\Omega_\rchi}_A \xrightarrow{\text{A's unbeatable strategy}} \adj{\Omega_\rchi}
 \end{align*}
 
 It follows from the definition that exactly one of the following statements is true about
 a channel $\rchi$ at any point in time:
 \begin{enumerate}
   \item No participants apart from $p$ have a finalizable outcome.
-        Participant $p$ has one or more finalizable outcome(s), $\omega_1, \dots, \omega_m$.
-        We write this $\enf{\beta_\rchi(\omega_1) \dots \beta_\rchi(\omega_m)}_p$.
+        Participant $p$ has one or more finalizable outcome(s), $\Omega_\rchi^{(1)}, \dots, \Omega_\rchi^{(m)}$.
+        We write this $\enf{\Omega_\rchi^{(1)} \dots \Omega_\rchi^{(m)}}_p$.
   \item There are at least two participants, $P = \{p_1, \dots, p_m \}$, who share the same
-        finalizable outcome, $\omega$. We write this $\enf{\beta_\rchi(\omega)}_{p_1, \dots, p_m}$.
+        finalizable outcome, $\Omega_\rchi$. We write this $\enf{\Omega_\rchi}_{p_1, \dots, p_m}$.
   \item There are no participants with any finalizable outcomes.
 \end{enumerate}
 The definition of finalizability excludes the case where two different finalizable outcomes are held
@@ -283,7 +282,7 @@ except the last case, which usually means something has gone wrong.
 One example of when a finalizable outcome occurs is for the next mover in a ForceMove channel.
 In ForceMove, participants take turns to sign states, so that in a channel with $n$ participants,
 $p_i$ can only sign state $\sigma_m$ if $i = m \% n$.
-If $p_i$ has just received $\sigma_{m-1}$, with current outcome $\omega$, then $\omega$
+If $p_i$ has just received $\sigma_{m-1}$, with \textit{current outcome}\footnote{The current outcome is stored as part of the state in ForceMove.} $\Omega_\rchi$, then $\Omega_\rchi$
 is a finalizable outcome for $p_i$.
 There are a couple of strategies here: one is to refuse to sign $\sigma_m$, trigger a force-move
 on $\sigma_{m-1}$ and wait for the timeout. 
@@ -309,7 +308,7 @@ If a participant has no finalizable outcomes, their analysis of the system needs
 in terms of their \textbf{enabled outcomes}.
 The enabled outcomes for a participant, $p$, is defined as the set of outcomes that $p$ has
 no strategy to prevent from being finalized.
-We write the set of enabled outcomes for $p$ as $\enf{\beta_1 \dots \beta_m}_{(p)}$.
+We write the set of enabled outcomes for $p$ as $\enf{\Omega_\rchi^{(1)} \dots \Omega_\rchi^{(m)}}_{(p)}$.
 
 For any participant, $p$, in a channel, $\rchi$, exactly one of the following statements is
 true at a given point in time:
@@ -322,11 +321,11 @@ that if a participant has only enabled a single outcome, that outcome must be fi
 
 \begin{example}{}
   All ForceMove channels start with a setup phase of $2n$ states, where $n$ is the number of participants.
-  During this phase, the framework transition rules prevent the current outcome, $\omega$, from changing.
+  During this phase, the framework transition rules prevent the current outcome, $\Omega_\rchi$, from changing.
   At the midpoint, when state $\sigma_n$ has just been broadcast, the outcome
-  $\omega$ is finalizable for every participant, i.e. we have
-  $\enf{\beta_\rchi(\omega)}_{p_1, \dots, p_n}$.
-  The outcome $\omega$ is finalizable because, due to the special transition rules,
+  $\Omega_\rchi$ is finalizable for every participant, i.e. we have
+  $\enf{\Omega_\rchi}_{p_1, \dots, p_n}$.
+  The outcome $\Omega_\rchi$ is finalizable because, due to the special transition rules,
   it is the only outcome that each participant has enabled by the states they have signed so far.
   As we will see later, this property of a ForceMove channel is important when opening and
   closing channels.
@@ -334,9 +333,9 @@ that if a participant has only enabled a single outcome, that outcome must be fi
 
 We will finish this section on finalizable outcomes by talking about \textbf{universal finalizability}.
 A state channel with participants $P = \{p_1, \dots, p_n\}$ is said to be in a universally finalizable
-state if there is an outcome, $\omega$, that is finalizable for every participant, i.e.
-$\enf{\beta_\rchi(\omega)}_{p_1,\dots, p_n}$.
-We will sometimes write this state using the shortened notation $\enf{\beta_\rchi(\omega)}_P$.
+state if there is an outcome, $\Omega_\rchi$, that is finalizable for every participant, i.e.
+$\enf{\Omega_\rchi}_{p_1,\dots, p_n}$.
+We will sometimes write this state using the shortened notation $\enf{\Omega_\rchi}_P$.
 
 We have already come across two important examples of times when a ForceMove state channel
 gets into a universally finalizable state:
@@ -358,12 +357,12 @@ channel.
 We give a complete definition of the consensus game in the appendix.
 
 At a very high level, the consensus game provides a mechanism for moving from one universally
-finalizable outcome, $\omega_1$, to another, $\omega_2$. 
-In order for this to happen, one participant proposes the new outcome, $\omega_2$, and then
+finalizable outcome, $\Omega_\rchi^{(1)}$, to another, $\Omega_\rchi^{(2)}$. 
+In order for this to happen, one participant proposes the new outcome, $\Omega_\rchi^{(2)}$, and then
 every other participant must sign off on it. 
 If any participant disagrees, they can cancel the transition.
 This process has the important property that throughout its operation no participant enables
-any outcome other than $\omega_1$ and $\omega_2$.
+any outcome other than $\Omega_\rchi^{(1)}$ and $\Omega_\rchi^{(2)}$.
 We call this a \textbf{consensus transition} between the two outcomes.
 
 In the presentation of Turbo and Nitro, we will often use the fact that, if you use the
@@ -375,15 +374,15 @@ off-chain.
 \textbf{Value Preserving Consensus Transitions (VPCTs)}:
 If I have two system states, $\Sigma$ and $\Sigma'$, which only differ in the state of
 a consensus game chanel, $\rchi$, with participants $P$ and universally enforceable outcomes
-$\enf{\beta_\rchi(\omega)}_P \in \Sigma$ and $\enf{\beta_\rchi(\omega')}_P \in \Sigma'$, and 
+$\enf{\Omega_\rchi}_P \in \Sigma$ and $\enf{\Omega'_\rchi}_P \in \Sigma'$, and 
 for some participant $p \in P$, $\nu_p(\Sigma) = \nu_p(\Sigma') = x$, then
 applying a consensus game transition gives a sequence of system states 
 $\Sigma = \Sigma_0, \dots, \Sigma_m = \Sigma'$ where $\nu_p(\Sigma_i) = x$ for all $\Sigma_i$.
 
 Proof (sketch): As $\nu_p(\Sigma) = \nu_p(\Sigma) = x$ and $\Sigma$ and $\Sigma'$ only differ
-in $\rchi$, we know that if $p$ can register either outcome $\omega$ or $\omega'$ on-chain, then
+in $\rchi$, we know that if $p$ can register either outcome $\Omega_\rchi$ or $\Omega'_\rchi$ on-chain, then
 they can obtain value $x$. The consensus transition allows the participants to transition
-from outcome $\omega$ to $\omega'$ without any participant enabling any other outcome.
+from outcome $\Omega_\rchi$ to $\Omega'_\rchi$ without any participant enabling any other outcome.
 Therefore at all points, $p$ is capable of registering one of those outcomes on-chain (though
 in general they cannot choose which).
 Therefore, at all points, the value of the system to $p$ is $x$.
@@ -434,27 +433,38 @@ possible.
 
 \subsection{Turbo Outcomes and Operations}
 
-Turbo protocol specifies the interpretation of channel outcomes and the operations that
+Turbo protocol specifies the format of channel outcomes and the operations that
 manipulate them once they are on-chain.
 The process of registering the outcome with the chain is not specified, but could be accomplished
 using the ForceMove protocol.
 
-Outcomes in Turbo take the form of an ordered list of address-value pairs.
-To write outcomes we will use the notation $\{a_1{:}v_1, \dots, a_n{:}v_n \}$, where the $a_i$
+The outcome of a Turbo channel is an \textbf{allocation} of the channel's funds to other addresses.
+These allocations take the form of an ordered list of address-value pairs.
+To write allocations we will use the notation $(a_1{:}v_1, \dots, a_n{:}v_n)$, where the $a_i$
 represent addresses and the $v_i$ represent values.
-The key idea behind Turbo is that the addresses in the outcomes are not limited to being
+The key idea behind Turbo is that the addresses in the allocations are not limited to being
 participant addresses but that they can also be addresses of other \textit{channels}.
 
-The ordering in the outcome is significant and is used to determine a priority order for payouts,
-which becomes important if channel does not hold enough funds to cover the entire outcome.
+The ordering in the allocation is significant and is used to determine a priority order for payouts,
+which becomes important if channel does not hold enough funds to cover the entire allocation.
 
-The naive algorithm for distributing the funds is to work along the outcome from the front,
+The naive algorithm for distributing the funds is to work along the allocation from the front,
 paying funds out to the corresponding address until no funds are remaining.
 In practice, we avoid introducing a dependency on the order of the payouts by using
 the \textbf{overlap} function $\texttt{overlap}(p, \omega, x)$, which returns the payout owed
 to $p$ from outcome $\omega$ when the channel is funded with $x$.
 If we have $\adj{\beta_\rchi(\omega)}$ and $\texttt{overlap}(p, \omega, x) = y$, we say that $\rchi$ \textbf{allocates} $y$ to $p$ \textbf{within} $x$.
 A python implementation of $\texttt{overlap}$ is given in the appendix.
+
+\begin{align*}
+  \texttt{overlap}(p, (), x) &= 0 \\
+  \texttt{overlap}(p, \omega, 0) &= 0 \\
+  \texttt{overlap}(p, (a:v, \omega), x) &=
+  \begin{cases}
+    \texttt{min}(v, x) & \text{if } a = p \\
+    \texttt{overlap}(p, \omega, \texttt{max}(x - v, 0)) & \text{otherwise}
+  \end{cases}
+\end{align*}
 
 \begin{figure}[ht]
   \centering
@@ -463,7 +473,7 @@ A python implementation of $\texttt{overlap}$ is given in the appendix.
   \caption{Overlap and remove}
 \end{figure}
 
-Once an outcome, $\omega$, has paid out a total, $x$, to an address, $A$, we will \textbf{remove} the total to create a new outcome $\omega' = \texttt{remove}(A, \omega, x)$.
+Once an allocation, $\omega$, has paid out a total, $x$, to an address, $A$, we will \textbf{remove} the total to create a new outcome $\omega' = \texttt{remove}(A, \omega, x)$.
 The remove operation works through the outcome from the start, reducing the totals for $A$ until $x$ coins have been removed.
 A python implementation of $\texttt{remove}$ is given in the appendix.
 
@@ -604,70 +614,13 @@ In this section, we will introduce the new outcomes and operations, along with t
 Nitro extends Turbo by adding a new type of channel whose outcomes are interpreted differently.
 We refer to these new channels as \textbf{guarantor} channels.
 In all ways apart from the interpretation of the outcomes, guarantor channels behave exactly like regular channels: they follow the ForceMove update rules and are finalized on-chain in the same way, and they can run ForceMove applications, like the consensus game.
+- outcome is a guarantee instead of an allocation
 
-The outcome of a guarantor channel specifies certain parts of another channel's outcome to guarantee.
-We will use the notation $\gamma_{A, B}(\omega)$ to represent the outcome, $\omega$, of channel $A$, which is acting as a guarantor for $B$.
+- nitro channels change the order of precedence of an allocation
+- of the outcome
+
 
 Along with the new type of channel, Nitro adds one operation: the \textbf{claim} operation, $G_{A, B, C}(x)$, which is used to claim on the guarantee of $A$ on $B$'s payout to $C$.
-
-Before proceeding with the definitions, we are going to start with some examples to give an idea of how these new additions interact:
-
-\begin{example}
-  This example shows the simplest case of claiming on a guarantee:
-  \begin{align*}
-    G_{A, B, C}(5)\adj{\alpha_A(5)\gamma_{A, B}(C: 5)\beta_B(C:5)} = \adj{\alpha_C(5)}
-  \end{align*}
-  Guarantor channel $A$ holds 5 and guarantees 5 for $B$s allocation to $C$, within 5.
-  $B$ allocates 5 to $C$, so the claim operation is successful, paying 5 from $A$ to $C$ through the outcome of $B$.
-\end{example}
-
-\begin{example}
-  The next example shows a slightly more complicated case:
-  \begin{align*}
-    G_{A, B, C}(2)\adj{\alpha_A(3)\gamma_{A, B}(C: 2)\beta_B(C: 3)} = \adj{\alpha_C(2)\alpha_A(1)\beta_B(C:1)}
-  \end{align*}
-  Here 2 is transferred from $A$ to $C$ through $B$, but this does not completely eliminate $B$'s payout to $C$.
-\end{example}
-
-\begin{example}
-  The claim only goes through if the balances in $\alpha$, $\gamma$ and $\beta$ are all large enough.
-  \begin{align*}
-    G_{A, B, C}(3)\adj{\alpha_A(3)\gamma_{A, B}(C: 2)\beta_B(C: 3)} &= \adj{\alpha_A(3)\gamma_{A, B}(C: 2)\beta_B(C: 3)} \\
-    G_{A, B, C}(3)\adj{\alpha_A(3)\gamma_{A, B}(C: 3)\beta_B(C: 2)} &= \adj{\alpha_A(3)\gamma_{A, B}(C: 3)\beta_B(C: 2)}
-  \end{align*}
-  In both these cases, the operation has no effect.
-  In the first instance, this is because the total in the guarantee is not large enough;
-  in the second, it is the total in $B$'s outcome that is not large enough.
-\end{example}
-
-\begin{example}
-  The guarantee can be used to modify the order of payouts:
-  \begin{multline*}
-    G_{A, B, C}(2)\adj{\alpha_A(2)\gamma_{A, B}(C: 2, D: 1)\beta_B(D: 1, C: 2)} =\\ \adj{\alpha_C(2)\gamma_{A, B}(D: 1)\beta_B(D: 1)}
-  \end{multline*}
-  Note that in this case, the payout to $C$ went through because it appeared first in the guarantee outcome, even though it was lower priority in $B$'s outcome.
-\end{example}
-
-\begin{example}
-  Multiple guarantees can also be used to cover the outcome of a single channel:
-  \begin{multline*}
-    G_{A', B, D}(2)G_{A, B, C}(2)\\\adj{\alpha_A(2)\alpha_{A'}(2)\gamma_{A, B}(C: 2, D: 2)\gamma_{A', B}(C: 2, D: 2)\beta_B(C: 2, D: 2)}\\ = \adj{\alpha_C(2)\alpha_D(2)}
-  \end{multline*}
-  In this example, we managed to set up a situation where it did not matter which of $A$ and $A'$ went to $C$ and which went to $D$ but $C$ would always receive their funds first.
-  This trick will be used in the virtual channel construction.
-\end{example}
-
-
-In order to specify the claim operation, it will be useful to introduce a utility operation first: the \textbf{cap} operation.
-By capping outcome $\omega_1$ by $\omega_2$ you ensure that $\omega_1$ will never pay out more to any address $A$ than $\omega_2$ would.
-The python code for the cap operation is given in the appendix (\ref{appendix:cap}), so here we will settle for a few examples:
-\begin{align*}
-  \texttt{cap}(\{A: 10\}, \{A:4\}) &= \{A: 4 \} \\
-  \texttt{cap}(\{A: 10\}, \{A:4, B: 2, A: 4\}) &= \{A: 8 \} \\
-  \texttt{cap}(\{A: 2, B: 3, A: 3, D: 2\}, \{A: 1, B: 2, A: 2\}) &= \{A: 2, B: 2, A:1\}
-\end{align*}
-
-We will use the cap operation to define the \textbf{claim} operation, $T_{A,B,C}(x)$, as follows: if $A$ holds $a$, and the outcome of $A$ capped by the outcome of $B$ allocates $x$ to $C$ within $y$, then decrease the amount held by $A$ by $x$, increase the amount held by $C$ by $x$, remove $x$ from $A$'s allocation to $C$ and also remove $x$ from $B$'s allocation to $C$. A python implementation of the claim operation can be found in \ref{appendix:claim}.
 
 \subsection{Value Calculations}
 
@@ -699,6 +652,7 @@ We will use the cap operation to define the \textbf{claim} operation, $T_{A,B,C}
 
 - outline how we can use guarantee channels to create virtual channels
 - the construction we will use is as follows
+
 
 \input{figures/virtual-channels}
 

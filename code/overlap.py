@@ -1,11 +1,10 @@
 def overlap(recipient, outcome, funding):
-  result = 0
   for [address, allocation] in outcome:
     if funding <= 0:
-      break;
+      return 0;
+    elif address == recipient:
+      return min(allocation, funding)
+    else:
+      funding -= allocation
 
-    if address == recipient:
-      result += min(allocation, funding)
-    funding -= allocation
-
-  return result
+  return 0
