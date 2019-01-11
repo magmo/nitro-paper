@@ -12,6 +12,7 @@
 \usepackage{graphicx}
 \usepackage{subcaption}
 \usepackage{listings}
+\usepackage{todonotes}
 
 \graphicspath{ {./drawio/} }
 
@@ -71,7 +72,7 @@ As the channel updates are created and exchanged off-chain, the channel-update t
 Given that channel updates only needed to be communicated between participants and the system is therefore highly parallelizable, it is difficult to put a bound on the total transaction throughput of a system of state channels.
 In practice the system is only limited by the on-chain operations required to move assets when opening and closing channels.
 
-In this paper, we allow channels to be opened and closed off-chain. We enable the construction of efficient state channel networks.[TODO]
+In this paper, we allow channels to be opened and closed off-chain. We enable the construction of efficient state channel networks.\todo{TODO}
 
 \section{Existing work}
 
@@ -88,7 +89,7 @@ Perun
 - but using a validity time
 - and then state channel networks
 - constrained
-[Connext - have removed the time limit with a trade-off of trusting the hub - TODO: check this]
+\todo{Connext - have removed the time limit with a trade-off of trusting the hub - check this}
 
 Counterfactual
 - thinks about counterfactual instantiation
@@ -148,6 +149,14 @@ We write this statement $\adj{\alpha_\rchi(x)}$, where the $\alpha$ denotes fund
 and the $\adj{\quad}$ is used to indicate that the statement refers to state on the chain.
 Note that in ForceMove, the only information stored on chain is the channel address and the quantity of the asset held for it - all other information resides in the off-chain states and is only visible on-chain in the case of a dispute.
 
+\todo{
+  How about jus tusing $\alpha = \{(\chi, x)\}$ to denote that, in allocation $\alpha$, $\chi$ holds $x$?
+  IE, $\alpha$ is a function from the set of channels to $\mathbb{R}$, and we could say
+  $\alpha: \chi \mapsto x$, or $\alpha(\chi) = x$, like normal.
+
+  We could use $\overline{\alpha}$ to indicate that $\alpha$ 
+}
+
 The \textbf{deposit} operation, $D_\rchi(x)$, is an on-chain operation used to assign $x$ coins to channel $\chi$.
 There are no restrictions on who can deposit coins into a channel - only that the
 transaction must include a transfer of $x$ coins into the adjudicator.
@@ -168,7 +177,10 @@ Once an outcome is registered on-chain, it can be used to transfer coins between
 through the application of one or more on-chain operations:
 \begin{align*}
 O \adj{\alpha_\rchi(a + b)\beta_\rchi(\omega)} = \adj{\alpha_A(a)\alpha_\rchi(b)\beta_\rchi(\omega')}
-\end{align*}
+\end{align*} \todo{
+  This notation seems confusing.
+  I feel like I should be able to guess what it means without seeing the definition.
+}
 The specification of the precise format for the outcome, $\omega$, and the operations, $O$,
 will be given in the sections on Turbo and Nitro.
 In the equation above, $A$ could be either a channel address or a participant address.
@@ -183,7 +195,7 @@ W_A(x) \adj{\alpha_A(x')} = \adj{\alpha_A(x'-x)}
 \end{align*}
 In practice the withdrawal should also specify the blockchain address where the funds should be sent.
 A potential method signature is \texttt{withdraw(fromAddr, toAddr, amount, signature)}, 
-where \texttt{signature} is $A$'s signature of the other parameters
+where \texttt{signature} is $A$'s\todo{\texttt{fromAddr}'s signature? or, specify that \texttt{fromAddr} is $A$'s address?} signature of the other parameters
 \footnote{In practice, we can add the \texttt{senderAddress} to the parameters to sign,
 in order to prevent replay attacks.}.
 
@@ -204,18 +216,18 @@ the entire state of all channels plus the adjudicator.
 We will call the latter the \textbf{system state} and usually denote it with the symbol $\Sigma$.
 
 We define the \textbf{value}, $\nu_A(\Sigma)$, of a system state $\Sigma$ for participant $A$,
-to be the largest $x$ such that $A$ has an \textit{unbeatable strategy} to withdraw $x$
+to be the largest $x$ such that $A$ has an \textit{unbeatable strategy}\todo{I wonder if it makes sense to use terminology from game theory. IE, an unbeatable strategy to withdraw $x$ is just a strategy that guarantees an eventual withdrawal of $x$ (in bounded time)} to withdraw $x$
 coins from the adjudicator.
 The unbeatable strategy can involve signing (or refusing to sign) states off-chain, as well as
 applying one or more on-chain operations.
 The strategy might have to adapt based on the actions of other players but regardless of
 the actions they take, it should still be possible for $A$ to withdraw $x$ coins.
 
-In terms of applying operations on-chain, we need to
+In terms of applying operations on-chain, we need to \todo{finish sentence}
 If it is currently time $t$, and I want to apply operation $O$ on-chain before time $t + \epsilon$
 then it is possible for me to do so.
 But I cannot prevent you from applying $O'$ beforehand.
-Ignore gas + censorship, allow front-running
+\todo{Ignore gas + censorship, allow front-running}
 
 In general, as a state channel system transitions from one state to another the value of the system
 for each participant will change - otherwise state channels would be useless!
@@ -248,6 +260,7 @@ a channel $\rchi$ at any point in time:
 \begin{enumerate}
   \item No participants apart from $p$ have a finalizable outcome.
         Participant $p$ has one or more finalizable outcome(s), $\omega_1, \dots, \omega_m$.
+        \todo{Swap statements -- who is $p$ in the first sentence?}
         We write this $\enf{\beta_\rchi(\omega_1) \dots \beta_\rchi(\omega_m)}_p$.
   \item There are at least two participants, $P = \{p_1, \dots, p_m \}$, who share the same
         finalizable outcome, $\omega$. We write this $\enf{\beta_\rchi(\omega)}_{p_1, \dots, p_m}$.
@@ -257,7 +270,7 @@ The definition of finalizability excludes the case where two different finalizab
 by different participants, as in this case at least one participant's strategy would be beatable
 by the other participant's strategy.
 We will see that all these possibilities naturally occur in sensible state channel protocols
-except the last case, which usually means something has gone wrong.
+except the last case, which usually means something has gone wrong. \todo{``that the first two possibilities naturally...''}
 
 \begin{example}
 One example of when a finalizable outcome occurs is for the next mover in a ForceMove channel.
@@ -267,7 +280,7 @@ If $p_i$ has just received $\sigma_{m-1}$, with current outcome $\omega$, then $
 is a finalizable outcome for $p_i$.
 There are a couple of strategies here: one is to refuse to sign $\sigma_m$, trigger a force-move
 on $\sigma_{m-1}$ and wait for the timeout. 
-Another is to transition to transition to the conclude state, to allow a conclusion proof
+Another is to transition to transition to\todo{repetition} the\todo{replace `the' with `a'} conclude state, to allow a conclusion proof
 to be created for $\omega$, so that the participants can avoid waiting for the timeout
 \footnote{The fact that the first strategy exists is why ForceMove allows a transition to
 conclude from any state, to allow participants to attempt the second strategy and save everyone some time}.
@@ -316,7 +329,7 @@ We will finish this section on finalizable outcomes by talking about \textbf{uni
 A state channel with participants $P = \{p_1, \dots, p_n\}$ is said to be in a universally finalizable
 state if there is an outcome, $\omega$, that is finalizable for every participant, i.e.
 $\enf{\beta_\rchi(\omega)}_{p_1,\dots, p_n}$.
-We will sometimes write this state using the shortened notation $\enf{\beta_\rchi(\omega)}_P$.
+We will sometimes write this state using the shortened notation $\enf{\beta_\rchi(\omega)}_P$.\todo{This is confusing, because above, $P$ is used to denote a subset of participants}
 
 We have already come across two important examples of times when a ForceMove state channel
 gets into a universally finalizable state:
@@ -354,7 +367,7 @@ off-chain.
 
 \textbf{Value Preserving Consensus Transitions (VPCTs)}:
 If I have two system states, $\Sigma$ and $\Sigma'$, which only differ in the state of
-a consensus game chanel, $\rchi$, with participants $P$ and universally enforceable outcomes
+a consensus game chanel\todo{channel}, $\rchi$, with participants $P$ and universally enforceable outcomes
 $\enf{\beta_\rchi(\omega)}_P \in \Sigma$ and $\enf{\beta_\rchi(\omega')}_P \in \Sigma'$, and 
 for some participant $p \in P$, $\nu_p(\Sigma) = \nu_p(\Sigma') = x$, then
 applying a consensus game transition gives a sequence of system states 
@@ -385,6 +398,7 @@ The winner of the game of chess should receive 2 coins from the loser and $\rchi
 \begin{center}
   \includegraphics[scale=0.5]{turbo_start} % TODO: tikz
 \end{center}
+\todo{The channel $\rchi_L$ should probably be referenced somewhere in this graphic. (Likewise below)}
 
 Alice and Bob proceed by creating a new channel $\rchi_C$ for the chess game with the appropriate starting state.
 They then update $\rchi_L$ to allocate funds to these games.
@@ -517,7 +531,7 @@ taken to come from a conclusion proof.
 S_1 &= \adj{\alpha_L(x)} &&\enf{\beta_L(A: a, B: b, \rchi: a' + b')}_{A, B}&\enf{\beta_\rchi(A: a', B: b')}_{A, B}\\
 S_2 &= \adj{\alpha_L(x)} &&\enf{\beta_L(A: a + a', B: b + b')}_{A, B}&\enf{\beta_\rchi(A: a', B: b')}_{A, B} \\
 S_3 &= \adj{\alpha_L(x)} &&\enf{\beta_L(A: a + a', B: b + b')}_{A, B} & 
-\end{align*}
+\end{align*}\todo{Perhaps start with $S_3$, matching the above states}
 where $x = a + a' + b + b'$.
 The analysis here is exactly the same as in the opening case, where $\nu_A(S_i) = a + a'$ and $\nu_B(S_i) = b + b'$.
 We then apply the VPCT result to argue that we can transition between these states without changing the value for either player.
@@ -629,7 +643,7 @@ Before proceeding with the definitions, we are going to start with some examples
   Multiple guarantees can also be used to cover the outcome of a single channel:
   \begin{multline*}
     G_{A', B, D}(2)G_{A, B, C}(2)\\\adj{\alpha_A(2)\alpha_{A'}(2)\gamma_{A, B}(C: 2, D: 2)\gamma_{A', B}(C: 2, D: 2)\beta_B(C: 2, D: 2)}\\ = \adj{\alpha_C(2)\alpha_D(2)}
-  \end{multline*}
+  \end{multline*}\todo{This should probably be expanded over multiple lines, showing the effects of the application of $G_{A, B, C}(2)$, followed by the effect of $G_{A', B, D}$}
   In this example, we managed to set up a situation where it did not matter which of $A$ and $A'$ went to $C$ and which went to $D$ but $C$ would always receive their funds first.
   This trick will be used in the virtual channel construction.
 \end{example}
@@ -645,6 +659,8 @@ The python code for the cap operation is given in the appendix (\ref{appendix:ca
 \end{align*}
 
 We will use the cap operation to define the \textbf{claim} operation, $T_{A,B,C}(x)$, as follows: if $A$ holds $a$, and the outcome of $A$ capped by the outcome of $B$ allocates $x$ to $C$ within $y$, then decrease the amount held by $A$ by $x$, increase the amount held by $C$ by $x$, remove $x$ from $A$'s allocation to $C$ and also remove $x$ from $B$'s allocation to $C$. A python implementation of the claim operation can be found in \ref{appendix:claim}.
+\todo{The claim {\em operator} is called $G$, and the claim {\em operation} is called $T$. This is confusing.}
+\todo{You should specify that $y \geq x$}
 
 \subsection{Value Calculations}
 
