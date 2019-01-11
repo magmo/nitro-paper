@@ -12,6 +12,7 @@
 \usepackage{graphicx}
 \usepackage{subcaption}
 \usepackage{listings}
+\usepackage{xifthen}% provides \isempty test
 
 \graphicspath{ {./drawio/} }
 
@@ -43,9 +44,17 @@
 \newcommand{\adj}[1]{\llbracket #1 \rrbracket} 
 \newcommand{\enf}[1]{[#1]} 
 
-\newcommand{\holds}[1]{: #1} 
+\newcommand{\holds}[3]{#1 %
+  \ifthenelse{\isempty{#2}}{}{: #2} %
+  \ifthenelse{\isempty{#3}}{}{\rightarrow #3} %
+} 
+\newcommand{\alloc}[1]{( #1 )} 
+\newcommand{\guar}[2]{( #1 \sim #2 )} 
+
 \newcommand{\allocs}[2]{\rightarrow ( #1 )_{#2}} 
+\newcommand{\allocsb}[2]{\rightarrow #1_{#2}} 
 \newcommand{\guars}[3]{\rightarrow ( #1 \sim #2 )_{#3}} 
+\newcommand{\finalizable}[3]{[#1 \rightarrow #2]_{#3}}
 
 \begin{document}
 
@@ -148,15 +157,15 @@ In practice, the adjudicator functionality and deposits could be split across mu
 
 We say that $\rchi$ \textbf{holds} $x$, in the case where there is a quantity of $x$ coins
 locked on-chain against $\rchi$'s address.
-We write this statement $\adj{\rchi\holds{x}}$, where the $\alpha$ denotes funds being held
-and the $\adj{\quad}$ is used to indicate that the statement refers to state on the chain.
+We write this statement $\adj{\holds{\rchi}{x}{}}$,
+where $\adj{\;}$ indicates that the statement refers to state on the chain.
 Note that in ForceMove, the only information stored on chain is the channel address and the quantity of the asset held for it - all other information resides in the off-chain states and is only visible on-chain in the case of a dispute.
 
 The \textbf{deposit} operation, $D_\rchi(x)$, is an on-chain operation used to assign $x$ coins to channel $\chi$.
 There are no restrictions on who can deposit coins into a channel - only that the
 transaction must include a transfer of $x$ coins into the adjudicator.
 \begin{align*}
-D_\rchi(x) \adj{\rchi\holds{y}, } = \adj{\rchi\holds{x + y}}
+D_\rchi(x) \adj{\holds{\rchi}{y}{}} = \adj{\holds{\rchi}{x + y}{}}
 \end{align*}
 
 In order to distribute the coins it holds, a state channel, $\rchi$, must have one or more mechanisms for
@@ -165,12 +174,15 @@ This registration must be done in a way that ensures that at most one outcome ca
 In ForceMove, outcomes are registered either via an unanswered challenge or by the presentation
 of a \textit{conclusion proof} - a special set of states signed by participants indicating
 that the channel has concluded, thus allowing them to skip the challenge timeout.
-We write  $\adj{\Omega_\rchi}$ to represent the situation where the outcome $\Omega_\rchi$ for channel $\rchi$ has been registered on-chain.
+We write $\adj{\holds{\rchi}{}{\Omega}}$ to represent the situation where the outcome $\Omega$ for channel $\rchi$ has been registered on-chain.
+
+- holding nothing
 
 Once an outcome is registered on-chain, it can be used to transfer coins between addresses,
 through the application of one or more on-chain operations:
 \begin{align*}
-O \adj{\rchi\holds{a + b}, \Omega_\rchi} = \adj{A\holds{a}\rchi\holds{b}\Omega_\rchi'}
+  O \adj{\holds{\rchi}{(a + b)}{}\allocsb{\Omega}{}} = \adj{\holds{A}{a}{\Omega'
+}, \holds{\rchi}{b}{}}
 \end{align*}
 The specification of the precise format for the outcome, $\Omega_\rchi$, and the operations, $O$,
 will be given in the sections on Turbo and Nitro.
@@ -182,13 +194,13 @@ Note that the signature requirement coupled with the no-collision assumption mea
 it is only possible to withdraw from a participant address.
 If $x \leq x'$ then
 \begin{align*}
-W_A(x) \adj{A\holds{x'}, } = \adj{A\holds{x'-x}}
+W_A(x) \adj{\holds{A}{x'}{}} = \adj{\holds{A}{x'-x}{}}
 \end{align*}
 In practice the withdrawal should also specify the blockchain address where the funds should be sent.
 A potential method signature is \texttt{withdraw(fromAddr, toAddr, amount, signature)}, 
 where \texttt{signature} is $A$'s signature of the other parameters
-\footnote{In practice, we can add the \texttt{senderAddress} to the parameters to sign,
-in order to prevent replay attacks.}.
+\footnote{In practice, we add the \texttt{senderAddress} to the parameters to sign,
+in order to prevent replay attacks by other parties.}.
 
 In practice, the operations $O$ and $W$ do not need to be separate blockchain transactions.
 For example, in the ForceMove SimpleAdjudicator, funds are withdrawn directly using $\alpha_\chi$ and $\Omega_\chi$;
@@ -258,12 +270,12 @@ for withdrawing a certain total.
 In this section, we will focus on one part of this strategy: the ability to register a given
 outcome in the adjudicator.
 
-We say an outcome, $\Omega_\chi$, is \textbf{finalizable} for participant $A$, if $A$ has an unbeatable
+We say an outcome, $\Omega$, is \textbf{finalizable} for participant $A$, if $A$ has an unbeatable
 strategy for registering this outcome in the adjudicator.
-We use the notation $\enf{\Omega_\rchi}_A$, to represent a state of a channel, $\rchi$,
-where the outcome, $\Omega_\rchi$, is finalizable by $A$.
+We use the notation $\finalizable{\rchi}{\Omega}{A}$, to represent a state of a channel, $\rchi$,
+where the outcome, $\Omega$, is finalizable by $A$.
 \begin{align*}
-  \enf{\Omega_\rchi}_A \xrightarrow{\text{A's unbeatable strategy}} \adj{\Omega_\rchi}
+  \finalizable{\rchi}{\Omega}{A} \xrightarrow{\text{A's unbeatable strategy}} \adj{\holds{\rchi}{}{}{\Omega}}
 \end{align*}
 
 It follows from the definition that exactly one of the following statements is true about
@@ -457,7 +469,7 @@ paying funds out to the corresponding address until no funds are remaining.
 In practice, we avoid introducing a dependency on the order of the payouts by using
 the \textbf{overlap} function $\texttt{overlap}(p, \omega, x)$, which returns the payout owed
 to $p$ from outcome $\omega$ when the channel is funded with $x$.
-If we have $\adj{\beta_\rchi(\omega)}$ and $\texttt{overlap}(p, \omega, x) = y$, we say that $\rchi$ \textbf{allocates} $y$ to $p$ \textbf{within} $x$.
+If we have $\adj{\holds{\rchi}{}{\omega}}$ and $\texttt{overlap}(p, \omega, x) = y$, we say that $\rchi$ \textbf{allocates} $y$ to $p$ \textbf{within} $x$.
 A python implementation of $\texttt{overlap}$ is given in the appendix.
 
 \begin{align*}
@@ -495,7 +507,7 @@ Otherwise, do nothing.
 We provide a python implementation of transfer in the appendix.
 By way of an example:
 \begin{align*}
-T_{A,B}(3) \adj{A\holds{10}, \beta_A(B: 3, C: 7)} = \adj{A\holds{7}B\holds{3}\beta_A(C: 7)}
+T_{A,B}(3) \adj{\holds{A}{10}{}, \beta_A(B: 3, C: 7)} = \adj{\holds{A}{7}{}B\holds{3}\beta_A(C: 7)}
 \end{align*}
 
 Combined with the deposit and withdrawal operations, the transfer operation gives us everything we need to create a system that supports ledger channels.
@@ -512,7 +524,7 @@ For Turbo it turns out that the rule is very simple: if $p$ has any strategy for
 
 The following observation about the transfer operation is the key portion of the proof:
 if I have the operation $T_{A, B}(x)$, that causes a change to the on-chain state,
-then we must have some outcome $\adj{\beta_A(\omega)}$, which means that $A$ is a channel address and therefore withdrawals from $A$ are impossible.
+then we must have some outcome $\adj{\holds{A}{}{\omega}}$, which means that $A$ is a channel address and therefore withdrawals from $A$ are impossible.
 Therefore the only operations that can reduce the total held in $A$ are transfers of the form $T_{A, \rchi}(x)$ for addresses $\rchi$ that appear in $\omega$.
 Due to the definition of the transfer operation, all operations of this form commute.
 So no transfer operation inserted in front of $T_{A, \rchi}(x)$ can change its effect on the state.
@@ -533,9 +545,9 @@ We assume we start in a position where we have a ledger channel $L$ between $A$ 
 This sub-channel runs an arbitrary ForceMove application and starts the process at the funding point, giving the universally finalizable below.
 We progress through the following system states:
 \begin{align*}
-  S_1 &= \adj{L\holds{(a+b)}},\; L\allocs{A:a, B:b}{A,B}\\
-  S_2 &= \adj{L\holds{(a+b)}},\; L\allocs{A:a, B:b}{A,B},\;  \rchi\allocs{A: a', B: b'}{A,B} \\
-  S_3 &= \adj{L\holds(a+b)},\; L\allocs{A: a-a', B: b-b', \rchi: x }{A,B},\; \rchi\allocs{A: a', B: b' }{A, B}
+  S_1 &= \adj{\holds{L}{(a+b)}{}},\; \finalizable{L}{\alloc{A:a, B:b}}{A,B}\\
+  S_2 &= \adj{\holds{L}{(a+b)}{}},\; \finalizable{L}{\alloc{A:a, B:b}}{A,B},\;  \finalizable{\rchi}{\alloc{A: a', B: b'}}{A,B} \\
+  S_3 &= \adj{\holds{L}{(a+b)}{}},\; \finalizable{L}{\alloc{A: a-a', B: b-b', \rchi: x }}{A,B},\; \finalizable{\rchi}{\alloc{A: a', B: b' }}{A, B}
 \end{align*}
 where $x = a' + b'$.
 For all of these states, we have $\nu_A(S_i) = a$ and $\nu_B(S_i) = b$.
@@ -548,9 +560,9 @@ Closing a sub-channel is very similar to opening a sub-channel, involving the sa
 In this instance, the universally finalizable state in the sub-channel, $\rchi$, is
 taken to come from a conclusion proof.
 \begin{align*}
-S_1 &= \adj{L\holds{x}},\; L\allocs{A: a, B: b, \rchi: a' + b'}{A, B}, \; \rchi\allocs{A: a', B: b'}{A, B} \\
-S_2 &= \adj{L\holds{x}}, \; L\allocs{A: a + a', B: b + b'}{A, B}, \; \rchi\allocs{A: a', B: b'}{A, B} \\
-S_3 &= \adj{L\holds{x}}, \; L\allocs{A: a + a', B: b + b'}{A, B}
+S_1 &= \adj{\holds{L}{x}{}},\; \finalizable{L}{\alloc{A: a, B: b, \rchi: a' + b'}}{A, B}, \; \finalizable{\rchi}{\alloc{A: a', B: b'}}{A, B} \\
+S_2 &= \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{A: a + a', B: b + b'}}{A, B}, \; \finalizable{\rchi}{\alloc{A: a', B: b'}}{A, B} \\
+S_3 &= \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{A: a + a', B: b + b'}}{A, B}
 \end{align*}
 where $x = a + a' + b + b'$.
 The analysis here is exactly the same as in the opening case, where $\nu_A(S_i) = a + a'$ and $\nu_B(S_i) = b + b'$.
@@ -563,10 +575,10 @@ In the scenario below, $A$ and $B$ have a ledger channel, $L$, supporting a sub-
 Participant $A$ wants to increase their balance in the channel by an amount $a'$, through an on-chain deposit.
 The operation proceeds as follows:
 \begin{align*}
-S_1 &= \adj{L\holds{x}}, \; L\allocs{A: a, B: b, \rchi: c}{A, B} \\
-S_2 &= \adj{L\holds{x}}, \; L\allocs{B: b, \rchi: c, A: a + a'}{A, B} \\
-S_3 &= D_L(a')\adj{L\holds{x}}, \; L\allocs{B: b, \rchi: c, A: a + a'}{A, B} \\
-    &= \adj{L\holds{x + a'}}, \; L\allocs{B: b, \rchi: c, A: a + a'}{A, B}
+S_1 &= \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{A:a, B:b, \rchi: c}}{A, B} \\
+S_2 &= \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{B: b, \rchi: c, A: a + a'}}{A, B} \\
+S_3 &= D_L(a')\adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{B: b, \rchi: c, A: a + a'}}{A, B} \\
+    &= \adj{\holds{L}{x + a'}{}}, \; \finalizable{L}{\alloc{B: b, \rchi: c, A: a + a'}}{A, B}
 \end{align*}
 Here we have $\nu_A(S_1) = \nu_A(S_2) = a + c_A$, $\nu_A(S_3) = a + a' + c_A$ and the value to $B$ stays constant at $b + c_B$ throughout, where $c_A$ and $c_B$ is the value attributable to $A$ and $B$, respectively, from the $\rchi$ sub-channel.
 The operation starts by moving $A$'s entry to the end of the list.
@@ -579,13 +591,13 @@ At this point the channel is fully funded and the participants are free to reord
 A partial checkout is the opposite case to a top up: here $A$ wants to withdraw $a'$ coins from the ledger channel, without disturbing any sub-channels.
 The approach here is different to topping up.
 The general idea is to replace the ledger channel, $L$, with an equivalent ledger channel, $L'$, with $A$'s balance reduced and then switch the funding across.
-For simplicity, we assume that we start with $\adj{A\holds{0}}$, so $A$ has no funds held on-chain at the beginning.
+For simplicity, we assume that we start with $\adj{\holds{A}{0}{}}$, so $A$ has no funds held on-chain at the beginning.
 \begin{align*}
-S_1 &= \adj{L\holds x}, \; L\allocs{B: b, A: a, \rchi: c}{A, B}  \\
-S_2 &= \adj{L\holds x}, \; L\allocs{B: b, A: a, \rchi: c}{A, B}, \; L'\allocs{B: b, A: a - a', \rchi: c}{A, B} \\
-S_3 &= \adj{L\holds x)}, \; L\allocs{L': x-a', A: a'}{A, B}, \; L'\allocs{B: b, A: a - a', \rchi: c}{A, B}\\
-S_4 &= \adj{L\holds{x}\allocs{L': x-a, A: a'}{}}, \; L'\allocs{B: b, A: a - a', \rchi: c}{A, B}\\
-S_5 &= \adj{{L'}\holds{x-a'}, A\holds{a'}}, \; L'\allocs{B: b, A: a - a', \rchi: c}{A, B}
+S_1 &= \adj{L\holds x}, \; \finalizable{L}{\alloc{B: b, A: a, \rchi: c}}{A, B}  \\
+S_2 &= \adj{L\holds x}, \; \finalizable{L}{\alloc{B: b, A: a, \rchi: c}}{A, B}, \; \finalizable{L'}{\alloc{B: b, A: a - a', \rchi: c}}{A, B} \\
+S_3 &= \adj{L\holds x)}, \; \finalizable{L}{\alloc{L': x-a', A: a'}}{A, B}, \; \finalizable{L'}{\alloc{B: b, A: a - a', \rchi: c}}{A, B}\\
+S_4 &= \adj{\holds{L}{x}{}\allocs{L': x-a, A: a'}{}}, \; \finalizable{L'}{\alloc{B: b, A: a - a', \rchi: c}}{A, B}\\
+S_5 &= \adj{{L'}\holds{x-a'}, \holds{A}{a'}{}}, \; \finalizable{L'}{\alloc{B: b, A: a - a', \rchi: c}}{A, B}
 \end{align*}
 All these states have the same value for $A$ and $B$.
 The first two transitions rely on the VPCT result.
@@ -619,30 +631,22 @@ Nitro extends Turbo by adding \textbf{guarantor channels} a new type of channel 
 The outcome of a guarantor channel - a \textbf{guarantee} - is used to change the preference order of an existing allocation.
 For example, the guarantee $G\guars{\rchi}{B}{}$ means that guarantee channel $G$ pays out according to the outcome of allocation channel $\rchi$, but with $B$ pulled to the front of the list of priorities:
 \begin{align*}
-\adj{G\holds 3 \guars{\rchi}{B}{}, \rchi\allocs{A: 3, B: 3}{}} \Rightarrow \adj{B \holds 3, \rchi\allocs{A: 3}{}}
+\adj{\holds{G}{3}{\guar{\rchi}{B}{}}, \holds{\rchi}{}{\alloc{A: 3, B: 3}}} \Rightarrow \adj{\holds{B}{3}{},\holds{\rchi}{}{\alloc{A: 3}}}
 \end{align*}
 If more than one address is specified in the guarantee, then all addresses are pulled to the front in the specified order. For example, $G\guars{\rchi}{B, A}{}$ pays out according to the outcome, $\omega$, of $\rchi$: first to $B$, then to $A$, and then to any remaining addresses in the order specified in $\omega$.
 
-- nitro channels change the order of precedence of an allocation
-
-- outcome is a guarantee instead of an allocation
-
-- of the outcome
-
 Along with the new type of channel, Nitro adds one operation: the \textbf{claim} operation, $G_{A, B, C}(x)$, which is used to claim on the guarantee of $A$ on $B$'s payout to $C$.
+
+- if rearranged(allocation) allocates z to A within 5
+  - payout 5 to A through
+
+Note that a guarantee can only apply to an allocation. A guarantee has no effect on another guarantee, so it is not in the interest of any participant to create this construction.
 
 \subsection{Value Calculations}
 
 - not as simple as turbo
 - the following example shows you it is possible to have a strategy that is beatable
 - say I am D and then I can withdraw 5 by doing:
-\begin{multline*}
-  T_{B, D}(5)G_{A, B, C}(5)\adj{A\holds{5}, B\holds{5}\gamma_{A, B}(C: 5)\beta_B(C: 5, D: 5)}\\= \adj{C\holds{5}, D\holds{5}}
-\end{multline*}
-- but only if no-one calls $T_{B, C}$ first
-\begin{multline*}
-  T_{B, C}(5)\adj{A\holds{5}, B\holds{5}\gamma_{A, B}(C: 5)\beta_B(C: 5, D: 5)} \\= \adj{C\holds{5}, A\holds{5}\gamma_{A, B}(C: 5)\beta_B(D: 5)}
-\end{multline*}
 
 - a bit contrived, unusual to have both guarantees on channels which hold their own funds
 
@@ -669,6 +673,8 @@ Along with the new type of channel, Nitro adds one operation: the \textbf{claim}
 - offload
 - key is the joint A-B-C channel, source of truth for state of channel
 
+- if A or B wants out they do the usual thing
+- if C wants out they can too -> offload the channel, without disturbing it
 
 \subsubsection{Opening a Virtual Channel}
 

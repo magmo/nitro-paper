@@ -1,13 +1,13 @@
 \begin{tikzpicture}[x=2.4cm, y=1cm, framed, background rectangle/.style={draw=black,dashed, rounded corners}] 
 
   % Specification of nodes (position, etc.)
-  \node (a0) at (0,0) { $\adj{L\holds x, L' \holds x}$ };
-  \node (b0) at (-1,-1) { $L\allocs{G: x}{A, C}$ };
-  \node (b1) at (1,-1) { $L'\allocs{G': x}{B, C}$ };
-  \node (g0) at (-1,-2) { $G\guars{J}{\rchi, A, C}{A, C}$ };
-  \node (g1) at (1,-2) { $G'\guars{J}{\rchi, B, C}{B, C}$ };
-  \node (j) at (0,-3) { $J\allocs{\rchi: x, C: x}{A,B,C}$ };
-  \node (c) at (0,-4) { $\rchi\allocs{A: a, B: b}{A,B}$ };
+  \node (a0) at (0,0) { $\adj{\holds{L}{x}{}, \holds{L'}{x}{}}$ };
+  \node (b0) at (-1,-1) { $\finalizable{L}{\alloc{G: x}}{A, C}$ };
+  \node (b1) at (1,-1) { $\finalizable{L'}{\alloc{G': x}}{B, C}$ };
+  \node (g0) at (-1,-2) { $\finalizable{G}{\guar{J}{\rchi, A, C}}{A, C}$ };
+  \node (g1) at (1,-2) { $\finalizable{G'}{\guar{J}{\rchi, B, C}}{B, C}$ };
+  \node (j) at (0,-3) { $\finalizable{J}{\alloc{\rchi: x, C: x}}{A,B,C}$ };
+  \node (c) at (0,-4) { $\finalizable{\rchi}{\alloc{A: a, B: b}}{A,B}$ };
 
   \begin{scope}[-]
     \tikzstyle{every node}=[draw=none,below]
