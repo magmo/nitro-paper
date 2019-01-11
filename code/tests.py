@@ -18,10 +18,5 @@ def test_transfer():
   assert transfer('a', [['a', 5]], 10, 2) == (2, [['a', 3]], 8)
   assert transfer('b', [['a', 5]], 10, 2) == (0, [['a', 5]], 10)
 
-def test_cap():
-  assert cap([['a', 5], ['b', 3]], [['a', 4]]) == [['a', 4], ['b', 0]]
-  assert cap([['a', 5], ['b', 3]], [['a', 6]]) == [['a', 5], ['b', 0]]
-  assert cap([['a', 5], ['b', 3]], [['b', 2]]) == [['a', 0], ['b', 2]]
-
 def test_claim():
-  assert claim('a', [['a', 10]], [['a', 5]], 5, 5) == (5, [['a', 0]], [['a', 0]], 0)
+  assert claim('b', ['b'], [['a', 5], ['b', 5]], 5, 5) == (5, ['b'], [['a', 5], ['b', 0]], 0)

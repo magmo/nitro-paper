@@ -1,12 +1,12 @@
 \begin{tikzpicture}[x=2.4cm, y=1cm, framed, background rectangle/.style={draw=black,dashed, rounded corners}] 
   % Specification of nodes (position, etc.)
-  \node (a0) at (0,0) { $\adj{\alpha_L(x)\alpha_{L'}(x)}$ };
-  \node (b0) at (-1,-1) { $\enf{\beta_L(A: a, C: b)}_{A, C}$ };
-  \node (b1) at (1,-1) { $\enf{\beta_{L'}(C:a, B: b)}_{B, C}$ };
-  \node (g0) at (-1,-2) { $\enf{\gamma_{G, J}(\rchi, A, C)}_{A, C}$ };
-  \node (g1) at (1,-2) { $\enf{\gamma_{G', J}(\rchi, B, C)}_{B, C}$ };
-  \node (j) at (0,-3) { $\enf{\beta_J(A:a, B:b, C: x)}_{A,B,C}$ };
-  \node (c) at (0,-4) { $\enf{\beta_\rchi(A: a, B: b)}_{A,B}$ };
+  \node (a0) at (0,0) { $\adj{L\holds x, L' \holds x}$ };
+  \node (b0) at (-1,-1) { $L \allocs{A: a, C: b}{A, C}$ };
+  \node (b1) at (1,-1) { $L' \allocs{C:a, B:b}{B, C}$ };
+  \node (g0) at (-1,-2) { $G \guars{J}{\rchi, A, C}{A, C}$ };
+  \node (g1) at (1,-2) { $G' \guars{J}{\rchi, B, C}{B, C}$ };
+  \node (j) at (0,-3) { $J \allocs{A: a, B: b, C: x}{A, B, C}$ };
+  \node (c) at (0,-4) { $\rchi \allocs{A:a, B: b}{A, B}$ };
 
   \begin{scope}[-]
     \tikzstyle{every node}=[draw=none,below]
