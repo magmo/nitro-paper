@@ -1,0 +1,53 @@
+
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{color}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows.meta,backgrounds}
+\usepackage{etoolbox}
+\usepackage{url} % for urls in bibliography
+\usepackage[parfill]{parskip} % no paragraph indents, leave blank line
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{listings}
+\usepackage{xifthen}% provides \isempty test
+
+\graphicspath{ {./drawio/} }
+
+% Need this to keep the space before theorems when using parfill parskip
+% https://tex.stackexchange.com/questions/25346/wrong-spacing-before-theorem-environment-amsthm
+\begingroup
+    \makeatletter
+    \@for\theoremstyle:=definition,remark,plain\do{%
+        \expandafter\g@addto@macro\csname th@\theoremstyle\endcsname{%
+            \addtolength\thm@preskip\parskip
+            }%
+        }
+\endgroup
+
+\DeclareRobustCommand{\rchi}{{\mathpalette\irchi\relax}}
+\newcommand{\irchi}[2]{\raisebox{\depth}{$#1\chi$}} % inner command, used by \rchi
+
+\usepackage{mathtools}
+\usepackage{bm}
+\usepackage{stmaryrd} % for llbracket and rrbracket
+
+\theoremstyle{definition}
+\newtheorem{example}{Example}[section]
+\newtheorem{defn}{Definition}[section]
+
+\newcommand{\adj}[1]{\llbracket #1 \rrbracket} 
+\newcommand{\enf}[1]{[#1]} 
+
+\newcommand{\holds}[3]{#1 %
+  \ifthenelse{\isempty{#2}}{}{: #2} %
+  \ifthenelse{\isempty{#3}}{}{\rightarrow #3} %
+} 
+\newcommand{\alloc}[1]{( #1 )} 
+\newcommand{\guar}[2]{( #1 \sim #2 )} 
+
+\newcommand{\allocs}[2]{\rightarrow ( #1 )_{#2}} 
+\newcommand{\allocsb}[2]{\rightarrow #1_{#2}} 
+\newcommand{\guars}[3]{\rightarrow ( #1 \sim #2 )_{#3}} 
+\newcommand{\finalizable}[3]{[#1 \rightarrow #2]_{#3}}

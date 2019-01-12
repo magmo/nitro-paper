@@ -1,60 +1,8 @@
 \documentclass{article}
-
-\usepackage{amsmath}
-\usepackage{amsthm}
-\usepackage{amssymb}
-\usepackage{color}
-\usepackage{tikz}
-\usetikzlibrary{shapes,arrows.meta,backgrounds}
-\usepackage{etoolbox}
-\usepackage{url} % for urls in bibliography
-\usepackage[parfill]{parskip} % no paragraph indents, leave blank line
-\usepackage{graphicx}
-\usepackage{subcaption}
-\usepackage{listings}
-\usepackage{xifthen}% provides \isempty test
-
-\graphicspath{ {./drawio/} }
-
-% Need this to keep the space before theorems when using parfill parskip
-% https://tex.stackexchange.com/questions/25346/wrong-spacing-before-theorem-environment-amsthm
-\begingroup
-    \makeatletter
-    \@for\theoremstyle:=definition,remark,plain\do{%
-        \expandafter\g@addto@macro\csname th@\theoremstyle\endcsname{%
-            \addtolength\thm@preskip\parskip
-            }%
-        }
-\endgroup
-
-\DeclareRobustCommand{\rchi}{{\mathpalette\irchi\relax}}
-\newcommand{\irchi}[2]{\raisebox{\depth}{$#1\chi$}} % inner command, used by \rchi
+\input{preamble}
 
 \title{Nitro Protocol}
 \author{Tom Close}
-
-\usepackage{mathtools}
-\usepackage{bm}
-\usepackage{stmaryrd} % for llbracket and rrbracket
-
-\theoremstyle{definition}
-\newtheorem{example}{Example}[section]
-\newtheorem{defn}{Definition}[section]
-
-\newcommand{\adj}[1]{\llbracket #1 \rrbracket} 
-\newcommand{\enf}[1]{[#1]} 
-
-\newcommand{\holds}[3]{#1 %
-  \ifthenelse{\isempty{#2}}{}{: #2} %
-  \ifthenelse{\isempty{#3}}{}{\rightarrow #3} %
-} 
-\newcommand{\alloc}[1]{( #1 )} 
-\newcommand{\guar}[2]{( #1 \sim #2 )} 
-
-\newcommand{\allocs}[2]{\rightarrow ( #1 )_{#2}} 
-\newcommand{\allocsb}[2]{\rightarrow #1_{#2}} 
-\newcommand{\guars}[3]{\rightarrow ( #1 \sim #2 )_{#3}} 
-\newcommand{\finalizable}[3]{[#1 \rightarrow #2]_{#3}}
 
 \begin{document}
 
@@ -593,11 +541,11 @@ The approach here is different to topping up.
 The general idea is to replace the ledger channel, $L$, with an equivalent ledger channel, $L'$, with $A$'s balance reduced and then switch the funding across.
 For simplicity, we assume that we start with $\adj{\holds{A}{0}{}}$, so $A$ has no funds held on-chain at the beginning.
 \begin{align*}
-S_1 &= \adj{L\holds x}, \; \finalizable{L}{\alloc{B: b, A: a, \rchi: c}}{A, B}  \\
-S_2 &= \adj{L\holds x}, \; \finalizable{L}{\alloc{B: b, A: a, \rchi: c}}{A, B}, \; \finalizable{L'}{\alloc{B: b, A: a - a', \rchi: c}}{A, B} \\
-S_3 &= \adj{L\holds x)}, \; \finalizable{L}{\alloc{L': x-a', A: a'}}{A, B}, \; \finalizable{L'}{\alloc{B: b, A: a - a', \rchi: c}}{A, B}\\
-S_4 &= \adj{\holds{L}{x}{}\allocs{L': x-a, A: a'}{}}, \; \finalizable{L'}{\alloc{B: b, A: a - a', \rchi: c}}{A, B}\\
-S_5 &= \adj{{L'}\holds{x-a'}, \holds{A}{a'}{}}, \; \finalizable{L'}{\alloc{B: b, A: a - a', \rchi: c}}{A, B}
+S_1 &= \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{B: b, A: a, \rchi: c}}{A, B}  \\
+S_2 &= \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{B: b, A: a, \rchi: c}}{A, B}, \; \finalizable{L'}{\alloc{B: b, A: a - a', \rchi: c}}{A, B} \\
+S_3 &= \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{L': x-a', A: a'}}{A, B}, \; \finalizable{L'}{\alloc{B: b, A: a - a', \rchi: c}}{A, B}\\
+S_4 &= \adj{\holds{L}{x}{\alloc{L': x-a, A: a'}}}, \; \finalizable{L'}{\alloc{B: b, A: a - a', \rchi: c}}{A, B}\\
+S_5 &= \adj{\holds{L'}{(x-a')}{}, \holds{A}{a'}{}}, \; \finalizable{L'}{\alloc{B: b, A: a - a', \rchi: c}}{A, B}
 \end{align*}
 All these states have the same value for $A$ and $B$.
 The first two transitions rely on the VPCT result.
@@ -609,26 +557,76 @@ The final transition involves applying the transfer operations $T_{L, L'}(x-a')$
 \section{Nitro Protocol}
 
 Nitro Protocol is an extension to Turbo that introduces a new type of outcome and the on-chain operations to support it. 
-We will show how this extension enables a channel between two participants to be supported through a third party.
+We will show how this extension enables a channel between two participants to be funded off-chain with the help of a third party.
 Following the terminology in the Perun paper, we will refer to these channels as \textbf{virtual channels}.
-
-As an example, suppose that Alice wants to open an $\{A:5, B:5\}$ chess game with Bob, but they do not share an existing ledger channel.
-Alice does, however, have an $\{A:5, C:5\}$ ledger channel open with Carol and Bob and Carol have a $\{B:5, C:5\}$ ledger channel open too.
-
-Nitro Protocol allows Alice and Bob to open their chess game, using their existing ledger channels with Carol, without the need for any on-chain transactions.
-Suppose that Alice wins all of the funds in the channel, so that the final outcome is $\{A: 10, B: 0\}$.
-Then Nitro allows Alice and Bob to close their chess game off-chain too, rebalancing through Carol, so that the final state of the ledger channels is $\{A: 10, C: 0\}$ and $\{B: 0, C: 10\}$.
-
-In this interaction, Carol contributed 10 of her coins at the beginning, which had to remain locked while Alice and Bob were playing.
-She got those 10 coins back but they were distributed differently between the her ledger channels.
-By locking up her coins for a period of time, she enabled Alice and Bob to play chess entirely off-chain.
-
-In this section, we will introduce the new outcomes and operations, along with the network construction to make interactions like the above possible.
 
 \subsection{Nitro Outcomes and Operations}
 
+Strategy for explaining: words only in the paper. Code in the appendix
+
+
+- allocations - list of 
+- appears once
+- priority order
+- Y allocates y to A within x
+
+- allocation thought of as describing debts
+- debts are in priority order
+
+Allocation
+Transfer 
+- given that X holds y, can X afford z for Z
+- if so pay out x to X from Z and reduce the debt by 
+
+
+Guarantor channels. They pay off someone else's debt
+
+
+$T(A, B, x)\adj{\holds{A}{x'}{\omega}} = \adj{\holds{A}{(x'-x)}{\texttt{rm}(\omega, B:x)},\holds{B}{x}{}}$
+
+$G(A, B, x)\adj{\holds{A}{x'}{\guar{C}{\omega_p}}, \holds{B}{}{\omega_a}} = \adj{\holds{A}{(x'-x)}{\guar{C}{\omega_p}}, \holds{B}{}{\texttt{rm}(\omega, B:x)},\holds{B}{x}{}}$
+
+
+- allocatesWithin(allocation, x, A)
+-  if Y = () or x <= 0:
+    return 0
+- [address, amount] = allocation[0]
+-  if address == A:
+      return min(x, amount)
+-  else:
+    return allocatesTo(allocation[1:], A, x - amount)
+
+- notation
+
+Define transfer
+- remove()
+
+
+- adaptor channels
+- can hold funds
+- require the outcome of another channel (the channel they adapt) to be present
+
+- priority channel
+- is an adaptor channel used to change the priority of the allocation from another channel
+
+- X reprioritized by Z
+
+- if Z holds 
+- if X reprioritized by Z, allocates y to A within 
+- then reduce the allocation of 
+
+- in terms of notation we write a priority outcome or a reprioritization as 
+
+- note that the way these channels pay out is, in general, coupled. which is good
+
+
+
+
+
+
 Nitro extends Turbo by adding \textbf{guarantor channels} a new type of channel with a new type of outcome.
 The outcome of a guarantor channel - a \textbf{guarantee} - is used to change the preference order of an existing allocation.
+
 For example, the guarantee $G\guars{\rchi}{B}{}$ means that guarantee channel $G$ pays out according to the outcome of allocation channel $\rchi$, but with $B$ pulled to the front of the list of priorities:
 \begin{align*}
 \adj{\holds{G}{3}{\guar{\rchi}{B}{}}, \holds{\rchi}{}{\alloc{A: 3, B: 3}}} \Rightarrow \adj{\holds{B}{3}{},\holds{\rchi}{}{\alloc{A: 3}}}
@@ -637,7 +635,11 @@ If more than one address is specified in the guarantee, then all addresses are p
 
 Along with the new type of channel, Nitro adds one operation: the \textbf{claim} operation, $G_{A, B, C}(x)$, which is used to claim on the guarantee of $A$ on $B$'s payout to $C$.
 
-- if rearranged(allocation) allocates z to A within 5
+
+
+
+
+- if reprioritized(allocation) allocates z to A within 5
   - payout 5 to A through
 
 Note that a guarantee can only apply to an allocation. A guarantee has no effect on another guarantee, so it is not in the interest of any participant to create this construction.
