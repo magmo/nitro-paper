@@ -88,7 +88,7 @@ The source of funding for a channel can even change from off-chain to on-chain, 
 Overall, by forcing channels to operate independently and only be coupled through funding relationships, it becomes a lot easier to reason about the behaviour of any applications running within a state channel.
 
 
-\subsection{Participants, Addresses and Assets}
+\subsection{Addresses and Coins}
 
 A ForceMove state channel belongs to a set of \textbf{participants}, each defined by a unique cryptographic address.
 The private keys corresponding to these addresses are used to sign updates to the channel.
@@ -137,8 +137,6 @@ of a \textit{conclusion proof} - a special set of states signed by participants 
 that the channel has concluded, thus allowing them to skip the challenge timeout.
 We write $\adj{\holds{\rchi}{}{\Omega}}$ to represent the situation where the outcome $\Omega$ for channel $\rchi$ has been registered on-chain.
 
-- holding nothing
-
 Once an outcome is registered on-chain, it can be used to transfer coins between addresses,
 through the application of one or more on-chain operations:
 \begin{align*}
@@ -180,41 +178,37 @@ the entire state of all channels plus the adjudicator.
 We will call the latter the \textbf{system state} and usually denote it with the symbol $\Sigma$.
 
 We define the \textbf{value}, $\nu_A(\Sigma)$, of a system state $\Sigma$ for participant $A$,
-to be the largest $x$ such that $A$ has an \textit{unbeatable strategy} to extract $x$
-coins from the adjudicator, where by extract we mean to withdraw $x$ coins more than any we needed to deposit to execute the strategy.
+to be the largest $x$ such that $A$ has an \textit{unbeatable strategy} to extract
+\footnote{By \textit{extract} we mean to withdraw $x$ more coins than were deposited in the execution of the strategy.}
+$x$ coins from the adjudicator
 The unbeatable strategy can involve signing (or refusing to sign) states off-chain, as well as
 applying one or more on-chain operations.
 The strategy might have to adapt based on the actions of other players but regardless of
 the actions they take, it should still be possible for $A$ to extract $x$ coins.
 
-In order to make the concept of an unbeatable strategy more tangible, we make the following assumptions about blockchain transactions:
+When evaluating whether a strategy is unbeatable, we make the following assumptions about blockchain transactions:
 \begin{enumerate}
   \item \textbf{Transactions are unimpeded}: given that the current time is $t$ and $\epsilon > 0$, then it is possible for any party to apply any operation, $O$, on-chain before time $t + \epsilon$.
-  This assumption sidesteps issues of censorship, chain congestion and timing considerations around the creation of blocks.
-  In practice, this assumption should be reasonable, provided that $\epsilon$ is sufficiently large.
   \item \textbf{Transactions \textit{can} be front-run}: given two parties, $p_1$ and $p_2$, and two operations, $O_1$ and $O_2$, there is no way for $p_1$ to ensure that they can apply $O_1$ to the chain before $p_2$ applies $O_2$.
-  This assumption means that strategies that rely on executing a given transaction on-chain before someone else executes a different one are not allowed.
   \item \textbf{Transactions are free}: we ignore the cost of gas fees when calculating the value of a state.
-  Modelling the effect of gas fees on state channel networks is an interesting and important area of research but falls beyond the scope of this paper.
 \end{enumerate}
+The first assumption sidesteps issues of censorship, chain congestion and timing considerations around the creation of blocks.
+In practice, this assumption should hold if $\epsilon$ is sufficiently large, which can be accomplished by picking sensible channel timeouts.
+The second assumption rules out any strategies that rely on executing a given transaction on-chain before someone else executes a different.
 
-Although the main utility of state channels comes from transitions where the value changes,
-in this paper we will be looking primarily at state transitions where the value of the system
-remains the same.
-We will use the fact that certain transitions preserve value for all participants, to allow us
-to prove the correctness of operations involving the construction of state channel networks.
-
-In particular, we will make use of the \textbf{principle of value equivalence}: if two system
-states hold the same value for all participants, then we assume that all participants will
-be willing to transition between them.
+Throughout this paper we will present sequences of states that interpolate between a start state and a target state, and that preserve value for all participants.
+We will make the argument that, as the value is constant\footnote{
 The one exception is any transition involving a deposit, where we assume that a participant depositing
 $x$ coins into the system, will proceed if the value of the resulting state to them increases by $x$.
+}, participants will be willing to transition between these states.
+We call these transitions \textbf{safe transitions}.
 
 If we were considering transactions fees here, we would need to argue this principle more
 carefully: with transaction fees, some of the transitions we see as value preserving here
 would actually involve moving to a state of slightly lower value. 
 We assume that the utility gained in being able to open and close channels off-chain overcomes
 this issues in practice.
+In general, modelling the effect of gas fees on state channel networks is an interesting and important area of research but falls outside the scope of this paper.
 
 When analysing Turbo and Nitro, we will often need to calculate the value of a given system
 state for a participant.
@@ -236,56 +230,39 @@ strategy for registering this outcome in the adjudicator.
 We use the notation $\finalizable{\rchi}{\Omega}{A}$, to represent a state of a channel, $\rchi$,
 where the outcome, $\Omega$, is finalizable by $A$.
 \begin{align*}
-  \finalizable{\rchi}{\Omega}{A} \xrightarrow{\text{A's unbeatable strategy}} \adj{\holds{\rchi}{}{}{\Omega}}
+  \finalizable{\rchi}{\Omega}{A} \xrightarrow{\text{A's unbeatable strategy}} \adj{\holds{\rchi}{}{\Omega}}
 \end{align*}
 
 It follows from the definition that exactly one of the following statements is true about
 a channel $\rchi$ at any point in time:
 \begin{enumerate}
   \item No participants apart from $p$ have a finalizable outcome.
-        Participant $p$ has one or more finalizable outcome(s), $\Omega_\rchi^{(1)}, \dots, \Omega_\rchi^{(m)}$.
-        We write this $\enf{\Omega_\rchi^{(1)} \dots \Omega_\rchi^{(m)}}_p$.
+        Participant $p$ has one or more finalizable outcome(s), $\Omega_1, \dots, \Omega_m$.
+        We write this $\finalizable{\rchi}{\Omega_1, \dots, \Omega_m}{p}$.
   \item There are at least two participants, $P = \{p_1, \dots, p_m \}$, who share the same
-        finalizable outcome, $\Omega_\rchi$. We write this $\enf{\Omega_\rchi}_{p_1, \dots, p_m}$.
+        finalizable outcome, $\Omega_\rchi$. We write this $\finalizable{\rchi}{\Omega}{p_1, \dots, p_m}$.
   \item There are no participants with any finalizable outcomes.
 \end{enumerate}
 The definition of finalizability excludes the case where two different finalizable outcomes are held
 by different participants, as in this case at least one participant's strategy would be beatable
 by the other participant's strategy.
-We will see that all these possibilities naturally occur in sensible state channel protocols
-except the last case, which usually means something has gone wrong.
 
-\begin{example}
-One example of when a finalizable outcome occurs is for the next mover in a ForceMove channel.
-In ForceMove, participants take turns to sign states, so that in a channel with $n$ participants,
-$p_i$ can only sign state $\sigma_m$ if $i = m \% n$.
-If $p_i$ has just received $\sigma_{m-1}$, with \textit{current outcome}\footnote{The current outcome is stored as part of the state in ForceMove.} $\Omega_\rchi$, then $\Omega_\rchi$
-is a finalizable outcome for $p_i$.
-There are a couple of strategies here: one is to refuse to sign $\sigma_m$, trigger a force-move
-on $\sigma_{m-1}$ and wait for the timeout. 
-Another is to transition to transition to the conclude state, to allow a conclusion proof
-to be created for $\omega$, so that the participants can avoid waiting for the timeout
-\footnote{The fact that the first strategy exists is why ForceMove allows a transition to
-conclude from any state, to allow participants to attempt the second strategy and save everyone some time}.
-\end{example}
-
-\begin{example}
-A ForceMove channel with two different conclusion proofs are held by two different participants
-is an example of a situation where there are no finalizable outcomes for any participant.
-Each conclusion proof can be immediately finalized on-chain, with no opportunity for challenge.
-Therefore, the first conclusion proof to be presented to the adjudicator wins. 
-Due to our decision to allow front-running, there is no strategy that can ensure that one
-conclusion proof will always hit the adjudicator first.
-As discussed above, this is not a desireable situation.
-This is the reason that participants should never sign two conclusion proofs
-with different outcomes.
-\end{example}
+In the special case where the outcome of a channel is finalizable by all its participants, we say that the outcome is \textbf{universally finalizable}.
+This happens at two points of every ForceMove channel's lifecycle:
+\begin{enumerate}
+  \item After the first $n$ states have been broadcast. In this state, we say the channel is at the \textbf{funding point}.
+  \item When a single conclusion proof exists. In this state, we say the channel is in the \textbf{concluded state}.
+\end{enumerate}
+It is an important property of ForceMove that all channels have one universally finalizable
+state at the beginning of their lifecycle and one at the end
+\footnote{If a channel does not end with a conclusion proof, it ends with an expired on-chain challenge,
+in which case the outcome is already finalized on-chain.}.
 
 If a participant has no finalizable outcomes, their analysis of the system needs to be performed
 in terms of their \textbf{enabled outcomes}.
 The enabled outcomes for a participant, $p$, is defined as the set of outcomes that $p$ has
 no strategy to prevent from being finalized.
-We write the set of enabled outcomes for $p$ as $\enf{\Omega_\rchi^{(1)} \dots \Omega_\rchi^{(m)}}_{(p)}$.
+We write the set of enabled outcomes for $p$ as $\finalizable{\rchi}{\Omega_1 \dots \Omega_m}{p}$.
 
 For any participant, $p$, in a channel, $\rchi$, exactly one of the following statements is
 true at a given point in time:
@@ -296,39 +273,10 @@ true at a given point in time:
 Note that, due to the property that any participant can force an outcome within a finite time,
 that if a participant has only enabled a single outcome, that outcome must be finalizable for them.
 
-\begin{example}{}
-  All ForceMove channels start with a setup phase of $2n$ states, where $n$ is the number of participants.
-  During this phase, the framework transition rules prevent the current outcome, $\Omega_\rchi$, from changing.
-  At the midpoint, when state $\sigma_n$ has just been broadcast, the outcome
-  $\Omega_\rchi$ is finalizable for every participant, i.e. we have
-  $\enf{\Omega_\rchi}_{p_1, \dots, p_n}$.
-  The outcome $\Omega_\rchi$ is finalizable because, due to the special transition rules,
-  it is the only outcome that each participant has enabled by the states they have signed so far.
-  As we will see later, this property of a ForceMove channel is important when opening and
-  closing channels.
-\end{example}
+\subsection{The Consensus Application}
 
-We will finish this section on finalizable outcomes by talking about \textbf{universal finalizability}.
-A state channel with participants $P = \{p_1, \dots, p_n\}$ is said to be in a universally finalizable
-state if there is an outcome, $\Omega_\rchi$, that is finalizable for every participant, i.e.
-$\enf{\Omega_\rchi}_{p_1,\dots, p_n}$.
-We will sometimes write this state using the shortened notation $\enf{\Omega_\rchi}_P$.
-
-We have already come across two important examples of times when a ForceMove state channel
-gets into a universally finalizable state:
-\begin{enumerate}
-  \item After the first $n$ states have been broadcast. In this state, we say the channel is at the \textbf{funding point}.
-  \item When a single conclusion proof exists. In this state, we say the channel is in the \textbf{concluded state}.
-\end{enumerate}
-It is an important property of ForceMove that all channels have one universally finalizable
-state at the beginning of their lifecycle and one at the end
-\footnote{If a channel does not end with a conclusion proof, it ends with an expired on-chain challenge,
-in which case the outcome is already finalized on-chain.}.
-
-\subsection{Value Preserving Consensus Transitions}
-
-Another important example of universally finalizable states comes from the \textbf{consensus game}.
-The consensus game is a ForceMove \textit{application}, which means it specifies a certain
+Another important example of universally finalizable states comes from the \textbf{consensus application}.
+The consensus application is a ForceMove \textit{application}, which means it specifies a certain
 set of transitions rules that can be used to define the allowed state transitions for a ForceMove
 channel.
 We give a complete definition of the consensus game in the appendix.
@@ -338,31 +286,10 @@ finalizable outcome, $\Omega_\rchi^{(1)}$, to another, $\Omega_\rchi^{(2)}$.
 In order for this to happen, one participant proposes the new outcome, $\Omega_\rchi^{(2)}$, and then
 every other participant must sign off on it. 
 If any participant disagrees, they can cancel the transition.
-This process has the important property that throughout its operation no participant enables
-any outcome other than $\Omega_\rchi^{(1)}$ and $\Omega_\rchi^{(2)}$.
-We call this a \textbf{consensus transition} between the two outcomes.
 
-In the presentation of Turbo and Nitro, we will often use the fact that, if you use the
-consensus game transition to move between two system states with the same value to a
-participant, then all the intermediate states also have the same value to that participant.
-This is the key observation that allows us to prove that we can open and close channels
-off-chain.
+The consensus application has some nice properties in terms of enabling value preserving transitions between system states, which are useful when proving the correctness of state channel network constructions.
+Because of this the consensus application channels will feature heavily in Turbo and Nitro protocols.
 
-\textbf{Value Preserving Consensus Transitions (VPCTs)}:
-If I have two system states, $\Sigma$ and $\Sigma'$, which only differ in the state of
-a consensus game chanel, $\rchi$, with participants $P$ and universally enforceable outcomes
-$\enf{\Omega_\rchi}_P \in \Sigma$ and $\enf{\Omega'_\rchi}_P \in \Sigma'$, and 
-for some participant $p \in P$, $\nu_p(\Sigma) = \nu_p(\Sigma') = x$, then
-applying a consensus game transition gives a sequence of system states 
-$\Sigma = \Sigma_0, \dots, \Sigma_m = \Sigma'$ where $\nu_p(\Sigma_i) = x$ for all $\Sigma_i$.
-
-Proof (sketch): As $\nu_p(\Sigma) = \nu_p(\Sigma) = x$ and $\Sigma$ and $\Sigma'$ only differ
-in $\rchi$, we know that if $p$ can register either outcome $\Omega_\rchi$ or $\Omega'_\rchi$ on-chain, then
-they can obtain value $x$. The consensus transition allows the participants to transition
-from outcome $\Omega_\rchi$ to $\Omega'_\rchi$ without any participant enabling any other outcome.
-Therefore at all points, $p$ is capable of registering one of those outcomes on-chain (though
-in general they cannot choose which).
-Therefore, at all points, the value of the system to $p$ is $x$.
 
 \section{Turbo}
 
@@ -659,6 +586,29 @@ The same sequence of states, when taken in reverse, can be used to close a virtu
 
 \subsection{Overview of ForceMove}
 \subsection{The Consensus Game}
+
+In the presentation of Turbo and Nitro, we will often use the fact that, if you use the
+consensus game transition to move between two system states with the same value to a
+participant, then all the intermediate states also have the same value to that participant.
+This is the key observation that allows us to prove that we can open and close channels
+off-chain.
+
+\textbf{Value Preserving Consensus Transitions (VPCTs)}:
+If I have two system states, $\Sigma$ and $\Sigma'$, which only differ in the state of
+a consensus game chanel, $\rchi$, with participants $P$ and universally enforceable outcomes
+$\enf{\Omega_\rchi}_P \in \Sigma$ and $\enf{\Omega'_\rchi}_P \in \Sigma'$, and 
+for some participant $p \in P$, $\nu_p(\Sigma) = \nu_p(\Sigma') = x$, then
+applying a consensus game transition gives a sequence of system states 
+$\Sigma = \Sigma_0, \dots, \Sigma_m = \Sigma'$ where $\nu_p(\Sigma_i) = x$ for all $\Sigma_i$.
+
+Proof (sketch): As $\nu_p(\Sigma) = \nu_p(\Sigma) = x$ and $\Sigma$ and $\Sigma'$ only differ
+in $\rchi$, we know that if $p$ can register either outcome $\Omega_\rchi$ or $\Omega'_\rchi$ on-chain, then
+they can obtain value $x$. The consensus transition allows the participants to transition
+from outcome $\Omega_\rchi$ to $\Omega'_\rchi$ without any participant enabling any other outcome.
+Therefore at all points, $p$ is capable of registering one of those outcomes on-chain (though
+in general they cannot choose which).
+Therefore, at all points, the value of the system to $p$ is $x$.
+
 \subsection{Virtual Channels on Turbo}
 \subsection{Payouts to Non-Participants}
 \subsection{Possible Extensions}
