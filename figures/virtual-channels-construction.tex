@@ -1,4 +1,4 @@
-\begin{tikzpicture}[x=2cm, y=1cm, framed, background rectangle/.style={draw=black,dashed, rounded corners}] 
+\begin{tikzpicture}[x=2.4cm, y=1cm, framed, background rectangle/.style={draw=black,dashed, rounded corners}] 
 
   % Specification of nodes (position, etc.)
   \node (a0) at (0,0) { $\adj{\holds{L}{x}{}, \holds{L'}{x}{}}$ };
@@ -7,7 +7,6 @@
   \node (g0) at (-1,-2) { $\finalizable{G}{\guar{J}{\rchi, A, C}}{A, C}$ };
   \node (g1) at (1,-2) { $\finalizable{G'}{\guar{J}{\rchi, B, C}}{B, C}$ };
   \node (j) at (0,-3) { $\finalizable{J}{\alloc{\rchi: x, C: x}}{A,B,C}$ };
-  \node (c) at (0,-4) { $\finalizable{\rchi}{\alloc{A: a, B: b}}{A,B}$ };
 
   \begin{scope}[-]
     \tikzstyle{every node}=[draw=none,below]
@@ -17,7 +16,6 @@
     \draw (b1) to (g1);
     \draw (g0) to (j);
     \draw (g1) to (j);
-    \draw (j) to (c);
   \end{scope}
 
 \end{tikzpicture}

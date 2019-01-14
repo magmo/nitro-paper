@@ -41,13 +41,12 @@
 \newcommand{\enf}[1]{[#1]} 
 
 \newcommand{\holds}[3]{#1 %
-  \ifthenelse{\isempty{#2}}{}{: #2} %
-  \ifthenelse{\isempty{#3}}{}{\rightarrow #3} %
+  \ifthenelse{\isempty{#2}}{}{{:} #2} %
+  \ifthenelse{\isempty{#3}}{}{\mapsto #3} %
 } 
 \newcommand{\alloc}[1]{( #1 )} 
-\newcommand{\guar}[2]{( #1 \sim #2 )} 
+\newcommand{\guar}[2]{( #1 | #2 )} 
 
-\newcommand{\allocs}[2]{\rightarrow ( #1 )_{#2}} 
-\newcommand{\allocsb}[2]{\rightarrow #1_{#2}} 
-\newcommand{\guars}[3]{\rightarrow ( #1 \sim #2 )_{#3}} 
-\newcommand{\finalizable}[3]{[#1 \rightarrow #2]_{#3}}
+\newcommand{\finalizable}[3]{[#1 \mapsto #2]_{#3}}
+\newcommand{\transfer}[3]{T_{#1, #2}(#3)}
+\newcommand{\claim}[3]{C_{#1, #2}(#3)}

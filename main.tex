@@ -129,7 +129,7 @@ We write $\adj{\holds{\rchi}{}{\Omega}}$ to represent the situation where the ou
 Once an outcome is registered on-chain, it can be used to transfer coins between addresses,
 through the application of one or more on-chain operations:
 \begin{align*}
-  O \adj{\holds{\rchi}{(a + b)}{}\allocsb{\Omega}{}} = \adj{\holds{A}{a}{\Omega'
+  O \adj{\holds{\rchi}{(a + b)}{\Omega}} = \adj{\holds{A}{a}{\Omega'
 }, \holds{\rchi}{b}{}}
 \end{align*}
 The specification of the precise format for the outcome, $\Omega_\rchi$, and the operations, $O$,
@@ -627,11 +627,11 @@ Define transfer
 Nitro extends Turbo by adding \textbf{guarantor channels} a new type of channel with a new type of outcome.
 The outcome of a guarantor channel - a \textbf{guarantee} - is used to change the preference order of an existing allocation.
 
-For example, the guarantee $G\guars{\rchi}{B}{}$ means that guarantee channel $G$ pays out according to the outcome of allocation channel $\rchi$, but with $B$ pulled to the front of the list of priorities:
+For example, the guarantee $G\guar{\rchi}{B}{}$ means that guarantee channel $G$ pays out according to the outcome of allocation channel $\rchi$, but with $B$ pulled to the front of the list of priorities:
 \begin{align*}
 \adj{\holds{G}{3}{\guar{\rchi}{B}{}}, \holds{\rchi}{}{\alloc{A: 3, B: 3}}} \Rightarrow \adj{\holds{B}{3}{},\holds{\rchi}{}{\alloc{A: 3}}}
 \end{align*}
-If more than one address is specified in the guarantee, then all addresses are pulled to the front in the specified order. For example, $G\guars{\rchi}{B, A}{}$ pays out according to the outcome, $\omega$, of $\rchi$: first to $B$, then to $A$, and then to any remaining addresses in the order specified in $\omega$.
+If more than one address is specified in the guarantee, then all addresses are pulled to the front in the specified order. For example, $G\guar{\rchi}{B, A}{}$ pays out according to the outcome, $\omega$, of $\rchi$: first to $B$, then to $A$, and then to any remaining addresses in the order specified in $\omega$.
 
 Along with the new type of channel, Nitro adds one operation: the \textbf{claim} operation, $G_{A, B, C}(x)$, which is used to claim on the guarantee of $A$ on $B$'s payout to $C$.
 

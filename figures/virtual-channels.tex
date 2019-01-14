@@ -1,22 +1,28 @@
-\begin{figure}[h]\centering
-  \begin{tikzpicture}[x = 2cm, y=1cm]
-    \node (expanded0) at (0, 0) { \input{figures/virtual-channels-0} };
-    \node[scale=0.4, rectangle, draw, dashed, rounded corners] (state0) at (3, 1.5) { \input{figures/virtual-channels-mini-0} };
-    \node[scale=0.4] (state1a) at (4, 1.5) { \input{figures/virtual-channels-mini-1a} };
-    \node[scale=0.4] (state1b) at (3, -1) { \input{figures/virtual-channels-mini-1b} };
-    \node[scale=0.4] (state2) at (4, -1) { \input{figures/virtual-channels-mini-2} };
-    \node[scale=0.4, rectangle, draw, dashed, rounded corners] (state3) at (4, -3.5) { \input{figures/virtual-channels-mini-3} };
-    \node (expanded3) at (1, -6) { \input{figures/virtual-channels-3} };
+\newsavebox\mysubpic
+\sbox{\mysubpic}{%
+  \begin{tikzpicture}[remember picture, x=2.5cm, y=2.5cm] %sub-picture
 
-    \begin{scope}[ultra thick]
-      \tikzstyle{every node}=[below]
-      \draw[-{Latex[length=3mm,width=4mm]}] (state0) edge (state1a)
-                (state0) edge (state1b)
-                (state1a) edge (state2)
-                (state1b) edge (state2)
-                (state2) edge (state3);
-    \end{scope}
-  \end{tikzpicture}
-  \caption{Ledger channels, $x = a + b$}
-  \label{fig:modes}
-\end{figure} 
+  \node[scale=0.4, rectangle, draw, dashed, rounded corners] (state0) at (0, 0) { \input{figures/virtual-channels-mini-0} };
+  \node[scale=0.4] (state1a) at (1, 0) { \input{figures/virtual-channels-mini-1a} };
+  \node[scale=0.4] (state1b) at (0, -1) { \input{figures/virtual-channels-mini-1b} };
+  \node[scale=0.4] (state2) at (1, -1) { \input{figures/virtual-channels-mini-2} };
+  \node[scale=0.4, rectangle, draw, dashed, rounded corners] (state3) at (1, -2) { \input{figures/virtual-channels-mini-3} };
+
+  \begin{scope}[ultra thick]
+    \tikzstyle{every node}=[below]
+    \draw[-{Latex[length=3mm,width=4mm]}] (state0) edge (state1a)
+              (state0) edge (state1b)
+              (state1a) edge (state2)
+              (state1b) edge (state2)
+              (state2) edge (state3);
+  \end{scope}
+  \end{tikzpicture}% needed, otherwise anchors are wrong!
+}
+
+
+\begin{tikzpicture}[x=6.5cm, y=5.5cm, remember picture]
+  \node (expanded0) at (0, 0) { \input{figures/virtual-channels-0} };
+  \node (minipics) at (1, -0.5) { \usebox{\mysubpic} };
+  \node (expanded3) at (0, -1) { \input{figures/virtual-channels-3} };
+
+\end{tikzpicture}
