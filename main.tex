@@ -486,7 +486,7 @@ If the outcome of $B$ is not yet registered on-chain, or if $A$ cannot afford $x
 \begin{example}
   In the following example, we have a guarantee channel, $G$, which holds $5$ coins and guarantees $L$'s allocation, with $\rchi$ as highest priority.
   \begin{multline*}
-    \claim{G}{\rchi}{2}\adj{\holds{G}{5}{\guar{L}{A}}, \holds{L}{\alloc{A: 5, \rchi: 5}}{}} =\\ \adj{\holds{G}{3}{\guar{L}{A}}, \holds{L}{\alloc{A: 5, \rchi: 3}}{}, \holds{\rchi}{4}{}}
+    \claim{G}{\rchi}{2}\adj{\holds{G}{5}{\guar{L}{\rchi}}, \holds{L}{\alloc{A: 5, \rchi: 5}}{}} =\\ \adj{\holds{G}{3}{\guar{L}{\rchi}}, \holds{L}{\alloc{A: 5, \rchi: 3}}{}, \holds{\rchi}{2}{}}
   \end{multline*}
   Note that after the claim has gone through, $L$'s debt to $\rchi$ has decreased.
 \end{example}
