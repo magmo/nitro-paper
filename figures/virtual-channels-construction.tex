@@ -2,11 +2,11 @@
 
   % Specification of nodes (position, etc.)
   \node (a0) at (0,0) { $\adj{\holds{L}{x}{}, \holds{L'}{x}{}}$ };
-  \node (b0) at (-1,-1) { $\finalizable{L}{\alloc{G: x}}{A, C}$ };
-  \node (b1) at (1,-1) { $\finalizable{L'}{\alloc{G': x}}{B, C}$ };
-  \node (g0) at (-1,-2) { $\finalizable{G}{\guar{J}{\rchi, A, C}}{A, C}$ };
-  \node (g1) at (1,-2) { $\finalizable{G'}{\guar{J}{\rchi, B, C}}{B, C}$ };
-  \node (j) at (0,-3) { $\finalizable{J}{\alloc{\rchi: x, C: x}}{A,B,C}$ };
+  \node (b0) at (-1,-1) { $\finalizable{L}{\alloc{G: x}}{A, I}$ };
+  \node (b1) at (1,-1) { $\finalizable{L'}{\alloc{G': x}}{B, I}$ };
+  \node (g0) at (-1,-2) { $\finalizable{G}{\guar{J}{\rchi, A, I}}{A, I}$ };
+  \node (g1) at (1,-2) { $\finalizable{G'}{\guar{J}{\rchi, B, I}}{B, I}$ };
+  \node (j) at (0,-3) { $\finalizable{J}{\alloc{\rchi: x, I: x}}{A,B,I}$ };
 
   \begin{scope}[-]
     \tikzstyle{every node}=[draw=none,below]
