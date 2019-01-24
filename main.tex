@@ -601,7 +601,7 @@ We assume that $I$ has started by registering all their finalizable channels on-
   \end{align}
 \end{enumerate}
 \begin{multline}
-  \claim{G'}{G}{I}\claim{G}{\rchi}{x}\adj{\holds{G}{x}{\guar{J}{\rchi,A,I}}, \holds{G'}{x}{\guar{J}{\rchi, B, I}},\\ \holds{J}{}{\alloc{\rchi: x, I: x}}} =
+  \claim{G'}{G}{x}\claim{G}{\rchi}{x}\adj{\holds{G}{x}{\guar{J}{\rchi,A,I}}, \holds{G'}{x}{\guar{J}{\rchi, B, I}},\\ \holds{J}{}{\alloc{\rchi: x, I: x}}} =
   \adj{\holds{L'}{x}{}, \holds{\rchi}{x}{}, \holds{I}{x}{}}
 \end{multline}
 Note that $I$ has to claim on both guarantees, offloading $\rchi$ before being able to reclaim their funds.
@@ -795,6 +795,7 @@ For a given $\beta$, the consensus counter will increase from $0\dots (n-1)$ as 
 \subsection{Possible Extensions}
 
 \subsection{On-chain Operations Code}
+
 
 
 \end{document}
