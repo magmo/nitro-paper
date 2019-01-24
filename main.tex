@@ -1,6 +1,10 @@
 \documentclass{article}
 \input{preamble}
 
+\usepackage{draftwatermark}
+\SetWatermarkText{DRAFT}
+\SetWatermarkScale{5}
+
 \title{Nitro Protocol}
 \author{Tom Close}
 
@@ -9,7 +13,7 @@
 \maketitle
 \begin{abstract}
   State channels are an important technique for scaling blockchains, allowing a fixed set of participants to trustlessly execute a series of state transitions off-chain, in order to determine how a set of assets should be distributed between them.
-  In this paper we present constructions that allow state channels to be fund one another, significantly reducing the number of on-chain deposits required.
+  In this paper we present constructions that allow state channels to fund one another, significantly reducing the number of on-chain deposits required.
   Unlike in previous constructions, channels funded by parent channels operate identically to channels funded on-chain, making it easier to reason about the applications that run within them.
   We develop the logic to prove the correctness of our constructions.
 \end{abstract}
@@ -20,8 +24,6 @@ State channels are an important technique for scaling blockchains.
 In a state channel, a fixed set of participants execute a series of state transitions off-chain, in order to determine how a set of assets should be distributed between them.
 By allowing participants to execute these transitions off-chain, the state channel removes load from the blockchain, allowing it to support the same level of activity with fewer transactions.
 
-
-- state channels allow state updates
 Unlike many other scaling techniques, state channels provide a way to run arbitrary state update protocols, instead of just providing a method for realizing transfers off-chain.
 
 Beyond scaling, state channels bring instant finality to blockchain transactions:
@@ -96,24 +98,36 @@ Virtual channels hold the biggest potential in terms of scaling, requiring only 
 
 \section{Existing work}
 
-- lightning network
-- raiden
-- in production, payments only
+There are many examples of state channels and off-chain scaling projects. In this section we limit ourselves to a review of published work on the subject of off-chain payment channel and state channel networks.
 
-- celer network proposes using 
+The Lightning network, which went live in March 2018, allows for off-chain payments on the Bitcoin network.
+The payments make use of hashed timelocked contracts (HTLCs), which can be thought of as payments that are conditional on the revelation of a hash pre-image before a given point in time.
+This construction allows payments to be routed through an arbitrary number of intermediaries but is strictly limited to payments.
+The Raiden network provides the same functionality for the Ethereum blockchain and launched on the mainnet in December 2018.
 
-- counterfactual using counterfactual instantiation
-- high level overview about how to implement meta channels details are not presented in the paper
+Celer Network proposes a state channel construction that extends HTLCs to allow payments that are conditional on the outcome of an arbitrary calculation.
+The outcome of the calculation can specify the amount of funds that move, as well as whether the payments should go through at all.
+The paper gives a high-level justification of how the construction yields state channels capable of running arbitrary state machine transitions.
 
-- perun virtual channels
+Perun proposed a different flavour of state channel construction, viewing state channels as a direct interaction between two parties instead of a series of conditional payments.
+This makes it very clear that state channel updates themselves need only be shared between the participants in the channel, and do not need to be routed through a network.
+They precisely specify a virtual channel construction, allowing two-party channels to be supported through intermediaries, and prove its correctness using the UC framework.
+The proof relies on the fact that their virtual channels have a pre-determined validity time, after which the channel must be settled.
 
-
+Counterfactual gives a state channel construction using the technique of counterfactual instantiation, a form of logic that reasons about constructions that could be deployed to the chain if required.
+The channels they describe are $n$-party and they give a high-level overview of how to construct `meta-channels' that allow channels to be supported through intermediaries.
+While the paper itself does not specify the details of how to construct meta-channels, many of these details can be found in their publicly released source code.
 
 \subsection{Our contribution}
 
-- virtual and ledger channels
-- channels are unrestricted
-- no time limits or special update rules due to being in a virtual channel
+This paper specifies in detail how to build virtual channels on top of the ForceMove state channel framework.
+Along with the construction we provide some high-level proofs to justify that the construction is correct (TODO: need to add this to the appendix).
+
+Unlike Perun's detailed construction, our state channel networks place no restrictions on the operation of virtual channels:
+we remove the channel validity time, instead allowing intermediaries to `off-load' their channels as protection against arbitrarily long locking of their deposit.
+The off-load procedure converts a virtual channel to a regular on-chain channel, without interrupting the operation within that channel.
+
+The protocol described here readily extends to virtual channels between $n$-parties, although we do not give this construction in the paper.
 
 We will now proceed with a more technical exposition of our protocol, which achieves the functionality outlined above.
 
@@ -130,18 +144,6 @@ We refer to the set of instructions that determine how the funds should be appor
 We define the \textbf{operation} of a state channel to be the process by which the channel reaches an outcome. 
 The \textbf{funding} of a state channel is the method of ensuring that the assets exist and that they will ultimately be distributed according to the channel's outcome.
 
-\begin{table}[]
-  \begin{tabular}{|l|l|l|}
-  \hline
-  \textbf{Operation} & \textbf{Funding} \\ \hline
-  States &        Deposits \\ 
-  Transitions &   Withdrawals \\ 
-  Challenges &     \\ 
-  Responses &    \\ \hline
-  \end{tabular}
-  \end{table}
-
-Specifying the operation of a state channel involves specifying the format of the states and the update rules that define the allowed transitions between these states.
 The operation specification also defines the rules surrounding on-chain challenges and the various ways to respond to them.
 The ForceMove protocol is an example of a protocol that specifies the operation of a state channel.
 In this paper, we will not specify the operation of state channels, but will use ForceMove as an example where required.
@@ -687,7 +689,69 @@ THIS APPENDIX IS STILL A WIP.
 
 \subsection{Overview of ForceMove}
 
+The ForceMove protocol describes the message format and the supporting on-chain behaviour
+to enable generalized, $n$-party state channels on any blockchain that supports Turing-complete, general-purpose computation.
+Here we give a brief overview of the protocol to the level required to understand
+the rest of the paper. For a more comprehensive explanation please refer to \cite{}.
 
+\begin{table}[h]
+  \begin{tabular}{|l|l|l|p{5cm}|}
+    \hline
+    \texttt{participants} & \texttt{address[]} & $P$ & The addresses used to sign updates to the channel. \\ \hline
+    \texttt{nonce} & \texttt{unit256} & $k$ & Chosen to make the channel's address unique. \\ \hline
+    \texttt{gameLibrary} & \texttt{address} & $L$ & The address of the gameLibrary, which defines the transition rules for this channel \\ \hline
+    \texttt{challengeDuration} & \texttt{unit256} & $\eta$ & \\ \hline
+    \texttt{turnNum} & \texttt{unit256} & $i$ & Increments as new states are produced. \\ \hline
+    \texttt{balances} & \texttt{(address, uint256)[]} & $\beta$ & Current \textit{outcome} of the channel. \\ \hline
+    \texttt{isFinal} & \texttt{bool} & $f$ & \\ \hline
+    \texttt{data} & \texttt{bytes} & $\delta$ & \\ \hline
+    \texttt{v} & \texttt{uint8} & &  ECDSA signature of the above arguments by the moving participant. \\ \cline{1-2}
+    \texttt{r} & \texttt{bytes32} & & \\ \cline{1-2}
+    \texttt{s} & \texttt{bytes32} & & \\ \hline
+  \end{tabular}
+  \caption{ForceMove state format}
+  \label{table:force-move-state}
+\end{table}
+
+A ForceMove \textbf{state}, $\sigma_\chi^i(\beta, f, \delta)$, is specified by \textbf{turn number}, $i$,
+a set of \textbf{balances}, $\beta$, a boolean flag \textbf{finalized}, $f \in \{T, F\}$, and
+a chunk of unstructured \textbf{game data}, $\delta$, that will be interpreted by the game library. The
+balances can be thought of as an ordered set of $(\texttt{address}, \texttt{uint256})$ pairs,
+which specify how any funds allocated to the channel should be distributed if the channel 
+were to finalize in the current state.
+
+In order for a state, $\sigma_\chi^i$, to be valid it must be signed by participant, $p_j$,
+where $j = i \% n$ is the remainder mod $n$. This requirement specifies that participants
+in the channel must take turns when signing states.
+
+The game library is responsible for defining a set of states and allowed transitions that
+in turn define the `application' that will run inside the state channel. It does this by
+defining a single boolean function, $t_L(i, \beta, \delta, \beta', \delta') \rightarrow \{ T, F\}$.
+This function is used to derive an overall boolean transition function, $t$, specifying whether
+a transition between two states is permitted under the rules of the protocol:
+\begin{align*}
+  t(\sigma_\chi^i(\beta, f, \delta), \sigma_{\chi'}^j(\beta', f', \delta') ) \Leftrightarrow &
+    \chi = \chi'
+    \wedge j = i + 1
+    \wedge \\
+    & [ (\neg f \wedge \neg f' \wedge j \leq 2n \wedge \beta = \beta' \wedge \delta = \delta') \vee \\
+    & (\neg f \wedge \neg f' \wedge j > 2n \wedge t_L(n, \beta, \delta, \beta', \delta')) \vee \\
+    & (f' \wedge \beta = \beta' \wedge \delta' = 0) ]
+\end{align*}
+
+In all transitions the channel properties must remain unchanged and the turn number must increment.
+There are then three different modes of operation. The first mode applies in the first $2n$
+states (assuming none of these are finalized) and in this mode the balances and game data
+must remain unchanged. As we will see later, these states exist so that the channel can be
+funded safely. We refer to the first $n$ states as the \textbf{pre-fund setup} states and
+the subsequent $n$ as the \textbf{post-fund setup} states. The second mode applies to the
+`normal' operation of the channel, when the game library is used to determine the allowed
+transitions. The final mode concerns the finalization of the channel: at any point the current
+participant can choose to exit the channel and lock in the balances in the current state.
+Once this happens the only allowed transitions are to additional finalized states. Because
+of this, we have no further use for the game data, $\delta$, so can remove this from the state.
+Once a sequence of $n$ finalized states have been produced the channel is considered closed. We
+call this sequence of $n$ finalized states a \textbf{conclusion proof}, which we will write $\bm{\sigma}^*$.
 
 
 
@@ -704,6 +768,18 @@ Like all ForceMove applications, the transition rules for the Consensus Game are
 \end{align*}
 For a given $\beta$, the consensus counter will increase from $0\dots (n-1)$ as the participants sign off on the new balances. Once all participants have signed, consensus has been reached and the channel's balances are updated.
 
+
+\subsection{Proofs of Correctness}
+
+- what do we need to prove?
+- we gave the algorithms in terms of universally finalizable states.
+- we now need to find the intermediate states to move betweenthem
+
+- if we two universally finalizable states, $\sigma$, $\sigma'$
+- in a consensus game channel with $n$ participants
+- that are value preserving for all participants
+- then it is possible to find a set of $n$ state updates that preserve value for all participants and which move from $\sigma$ and $\sigma'$
+
   \begin{align*}
     \sigma^{i}(\beta, (0, \beta)) & \approx [\beta]_P \\
     \sigma^{i+1}(\beta, (0, \beta')) & \approx \{\beta'\}_{p_0}[\beta]_{p_1, ..., p_{n-1}} \\
@@ -714,26 +790,11 @@ For a given $\beta$, the consensus counter will increase from $0\dots (n-1)$ as 
   \end{align*}
 
 
-\subsection{Proofs of Correctness}
-
-- what do we need to prove?
-- we showed that 
-
-- if we two universally finalizable states, $\sigma$, $\sigma'$
-- in a consensus game channel with $n$ participants
-- that are value preserving for all participants
-- then it is possible to find a set of $n$ state updates that preserve value for all participants and which move from $\sigma$ and $\sigma'$
-
-
 \subsection{Virtual Channels on Turbo}
 \subsection{Payouts to Non-Participants}
 \subsection{Possible Extensions}
 
 \subsection{On-chain Operations Code}
-\subsubsection{Overlap}
-\begin{minipage}{\linewidth} % minipage to avoid page breaks
-  \lstinputlisting[language=Python]{code/overlap.py}
-\end{minipage}
 
 
 \end{document}
