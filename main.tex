@@ -264,6 +264,7 @@ When evaluating whether a strategy is unbeatable, we make the following assumpti
   \item \textbf{Transactions \textit{can} be front-run}: given two parties, $p_1$ and $p_2$, and two operations, $O_1$ and $O_2$, there is no way for $p_1$ to ensure that they can apply $O_1$ to the chain before $p_2$ applies $O_2$.
   \item \textbf{Transactions are free}: we ignore the cost of gas fees when calculating the value of a state.
 \end{enumerate}
+\todo{You also need a no-offline assumption for the finalizability notion to work.}
 The first assumption sidesteps issues of censorship, chain congestion and timing considerations around the creation of blocks.
 In practice, this assumption should hold if $\epsilon$ is sufficiently large, which can be accomplished by picking sensible channel timeouts.
 The second assumption rules out any strategies that rely on executing a given transaction on-chain before someone else executes a different one.
