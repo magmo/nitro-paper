@@ -204,7 +204,7 @@ D_\rchi(x) \adj{\holds{\rchi}{y}{}} = \adj{\holds{\rchi}{(x + y)}{}}
 
 In order to distribute the coins it holds, a state channel, $\rchi$, must have one or more mechanisms for
 registering its outcome, $\Omega$, on-chain.
-This registration must be done in a way that ensures that at most one outcome can be registered for each channel.
+This registration must be done in a way that ensures that at most one outcome can be registered for each channel. \todo{It seems like `finalized' and `registered' mean the same thing. If so, this should be made clear -- perhaps you should just used `finalized'}
 In ForceMove, outcomes are registered either via an unanswered challenge or by the presentation
 of a \textit{conclusion proof} - a special set of states signed by participants indicating
 that the channel has concluded, thus allowing them to avoid the challenge timeout when withdrawing their funds.
@@ -511,36 +511,48 @@ Note that $A$ was able to withdraw their funds instantly, without having to wait
 
 Nitro protocol is an extension to Turbo protocol.
 In Nitro protocol, the outcome of a channel can be either an allocation or a \textbf{guarantee}.
-A guarantee outcome specifies a target allocation, whose debts it will help to pay.
+A guarantee outcome specifies a target allocation, whose debts it will help to pay.\todo{target address?}
 When paying out debts, the guarantee outcome can choose to modify the payout priority order of its target allocation.
 
-We will use the notation $\guar{L}{A, B}$ for a guarantee with target $L$, which prioritizes first $A$, then $B$, then to any other addresses according to the priorities in $L$'s allocation.
-We say a guarantor channel, $G$, which targets an allocation channel, $L$, `can afford $x$ for $A$', if $A$ would receive at least $x$ coins, were the coins currently held in $A$ to be paid out according to $G$'s reprioritization of $L$'s allocation.
+\todo{Suggested rewording in comments}
+% A guarantee outcome specifies a target address; the nitro protocol specifies how this guarantee may be used to pay debt on its behalf.
+% When paying debt, a guarantee can be used to alter the payout priority of the allocation outcome of its target address. 
+
+We will use the notation $\guar{L}{A, B}$ for a guarantee with target $L$, which prioritizes first $A$, then $B$, then to any other addresses according to the priorities in $L$'s allocation. \todo{This is a strange definition -- it seems like a guarantee must specify the priority of exactly two addresses?}
+We say a guarantor channel, $G$, which targets an allocation channel, $L$, `can afford $x$ for $A$\todo{check why this terminology makes sense}', if $A$ would receive at least $x$ coins, were the coins currently held in $A$ to be paid out according to $G$'s reprioritization of $L$'s allocation.\todo{I think this needs some clarification, as the definition of `can afford $x$' is almost circular. Loose suggestion in comments}
+% Let $L$ be a channel whose outcome is an allocation $\omega$.
+% We say that a guarantor channel $G$ with a finalized guarantee outcome $g$, targeting an allocation channel $L$ `can afford $x$ for $A$' if:
+% $transfer_A(x)[[reprioritize(\omega, g)]]$ results with $A$ holding $x$ additional coins.
+% (or the equivalent thing said in words)
 
 Nitro adds the \textbf{claim} operation, $\claim{G}{A}{x}$, to the existing transfer, deposit and withdraw operations.
 If $G$ acts as guarantor for $L$ and can afford $x$ for $A$, then $\claim{G}{A}{x}$:
+% SUGGESTION: If $\adj{\holds{G}{5}{\omega}}$ and, and $G$ can afford $x$ for $A$, then $\claim{G}{A}{x}$ has the following three effects:
 \begin{itemize}
   \item Reduces the funds held in channel $G$ by $x$.
   \item Increases the funds held in channel $A$ by $x$.
   \item Reduces the amount owed to $A$ in the outcome of $L$ by $x$.
 \end{itemize}
 If the outcome of $L$ is not yet registered on-chain, or if $G$ cannot afford $x$ for $A$, then the operation has no effect.
+% SUGGESTION: Otherwise, the claim operation has no effect
 
 \begin{example}
-  In the following example, we have a guarantor channel, $G$, which holds $5$ coins and guarantees $L$'s allocation, with $\rchi$ as highest priority.
+  In the following example, we have a guarantor channel, $G$, which holds $5$ coins and guarantees $L$'s allocation, with $\rchi$ as highest priority. \todo{ $\rchi \mapsto B$}
   \begin{multline}
     \claim{G}{B}{5}\adj{\holds{G}{5}{\guar{L}}{B}, \holds{L}{\alloc{A: 5, B: 5}}{}} = \\ \adj{\holds{G}{}{\guar{L}{B}}, \holds{L}{\alloc{A: 5}}{}, \holds{B}{5}{}}
   \end{multline}
   Note that after the claim has gone through, $L$'s debt to $B$ has decreased.
 \end{example}
 
-We give a python implementation of the Nitro adjudicator in the appendix.
+We give a python implementation of the Nitro adjudicator in the appendix. \todo{`of an adjudicator implenenting the Nitro protocol in the appendix'}
 
 \subsection{Virtual Channels}
 
 A virtual channel is a channel between two participants who do not have a shared on-chain deposit, supported through an intermediary.
-We will now give the construction for the simplest possible virtual channel, between $A$ and $B$ through a shared intermediary, $I$.
-Our starting point for this channel is a pair of ledger channels, $L$ and $L'$, with participants $\{A,I\}$ and $\{B,I\}$ respectively.
+We give a construction for the simplest possible virtual channel, between $A$ and $B$ through a shared intermediary, $I$. \todo{Virtual channels between larger groups of participants are left as an exercise for the reader :)}
+
+Suppose we have a pair of ledger channels, $L$ and $L'$, with participants $\{A,I\}$ and $\{B,I\}$ respectively.
+Assume the following network state.
 \begin{align}
   \adj{\holds{L}{x}{}, \holds{L'}{x}{}}, \; \finalizable{L}{\alloc{A:a, I:b}}{A, I}, \; \finalizable{L'}{\alloc{B: b, I: a}}{B, I} \label{eq:virtual-channel-start-state}
 \end{align}
@@ -557,10 +569,11 @@ In order to do this the participants will need three additional channels: a join
 \end{figure}
 
 We will cover the steps for safely setting up this construction in section \ref{section:open-close-virtual-channel}. 
-In the remainder of this section we will explain why this construction can be considered to fund the channel $\rchi$.
+In the remainder of this section we will explain why this construction can be considered to fund the channel $\rchi$. \todo{In section \ref{section:offloading virtual channels}, we will explain ...}
 Similarly to the method for ledger channel construction, we will do this by demonstrating how any one of the participants can offload the channel $\rchi$: converting it to an on-chain channel that holds its own funds.
+\todo{Shouldn't you also show how the participants can jointly update }
 
-\subsection{Offloading Virtual Channels}
+\subsection{Offloading Virtual Channels}\label{section:offloading virtual channels}
 
 We will first consider the case where $A$ wishes to offload $\rchi$. $A$ proceeds as follows:
 \begin{enumerate}
@@ -582,7 +595,7 @@ As $G$ has $\rchi$ as top priority, the operation is successful.
 By symmetry, the previous case also covers the case where $B$ wants to offload.
 The final case to consider is the one where $I$ wants to offload the channel and reclaim their funds.
 This is important to ensure that $A$ and $B$ cannot lock $I$'s funds indefinitely in the channel.
-We assume that $I$ has started by registering all their finalizable channels on-chain, followed by transferring funds from $L$ to $G$ and from $L'$ to $G'$.
+We assume that $I$ has started by registering all their finalizable channels on-chain, followed by transferring funds from $L$ to $G$ and from $L'$ to $G'$. \todo{This sentence seems redundant, given that the steps are laid out in detail below}
 \begin{enumerate}
   \item $I$ starts by registering all their finalizable outcomes on-chain:
   \begin{multline}
@@ -604,12 +617,12 @@ We assume that $I$ has started by registering all their finalizable channels on-
 \begin{multline}
   \claim{G'}{G}{I}\claim{G}{\rchi}{x}\adj{\holds{G}{x}{\guar{J}{\rchi,A,I}}, \holds{G'}{x}{\guar{J}{\rchi, B, I}},\\ \holds{J}{}{\alloc{\rchi: x, I: x}}} =
   \adj{\holds{L'}{x}{}, \holds{\rchi}{x}{}, \holds{I}{x}{}}
-\end{multline}
+\end{multline}\todo{This equation isn't needed, and also appears to be nonsense}
 Note that $I$ has to claim on both guarantees, offloading $\rchi$ before being able to reclaim their funds.
 The virtual channel became a direct channel and the intermediary was able to recover their collateral.
 
 As in Turbo, the offload is an action of last resort and virtual channels are designed to be opened and closed entirely off-chain.
-We now show how this can be accomplished.
+We now show how this can be accomplished.\todo{This paragraph seems better suited at the end of subsection 5.1, or at the start of subsection 5.3}
 
 \subsection{Opening and Closing Virtual Channels}\label{section:open-close-virtual-channel}
 
@@ -617,7 +630,7 @@ In this section we present a sequence of network states written in terms of univ
 We claim that this sequence of states can be used to derive a safe procedure for opening a virtual channel, where the value of the network remains unchanged throughout for all participants involved.
 We justify this claim in the appendix.
 
-The procedure for opening a virtual channel is as follows:
+The procedure for opening a virtual channel is as follows:\todo{It seems like this section requires a proof of safety at each step, perhaps in the index.}
 \begin{enumerate}
   \item Start in the state given in equation (\ref{eq:virtual-channel-start-state}):
   \begin{align}
@@ -672,7 +685,7 @@ The same sequence of states, when taken in reverse, can be used to close a virtu
   \item The channels $\rchi$, $J$, $G$ and $G'$ are now all defunded, so can be discarded
 \end{enumerate}
 
-It is also possible to do top-ups and partial checkouts from a virtual channel.
+It is also possible to do top-ups and partial checkouts from a virtual channel.\todo{I feel like you should explain how to do this. It should be possible to reduce it to the partial checkout process from section 4.}
 
 \section{Acknowledgements}
 
