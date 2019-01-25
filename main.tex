@@ -9,7 +9,7 @@
 \maketitle
 \begin{abstract}
   State channels are an important technique for scaling blockchains, allowing a fixed set of participants to trustlessly execute a series of state transitions off-chain, in order to determine how a set of assets should be distributed between them.
-  In this paper we present constructions that allow state channels to be fund one another, significantly reducing the number of on-chain deposits required.
+  In this paper we present constructions that allow state channels to be fund\todo{`to fund' or `to be funded by'} one another, significantly reducing the number of on-chain deposits required.
   Unlike in previous constructions, channels funded by parent channels operate identically to channels funded on-chain, making it easier to reason about the applications that run within them.
   We develop the logic to prove the correctness of our constructions.
 \end{abstract}
@@ -21,7 +21,7 @@ In a state channel, a fixed set of participants execute a series of state transi
 By allowing participants to execute these transitions off-chain, the state channel removes load from the blockchain, allowing it to support the same level of activity with fewer transactions.
 
 
-- state channels allow state updates
+- state channels allow state updates \todo{complete this thought}
 Unlike many other scaling techniques, state channels provide a way to run arbitrary state update protocols, instead of just providing a method for realizing transfers off-chain.
 
 Beyond scaling, state channels bring instant finality to blockchain transactions:
@@ -74,7 +74,7 @@ To close the chess channel off-chain, Alice and Bob update the state of the ledg
 
 Virtual channels go one step further than ledger channels, allowing a state channel to be opened between two participants who do not share an on-chain deposit, but instead have a counterparty in common, with whom they both have a channel open with.
 
-As an example, suppose that Alice wants to open an $\{A:5, B:5\}$ chess game with Bob, but they do not share an existing ledger channel.
+As an example, suppose that Alice wants to open an $\{A:5, B:5\}$ chess game with Bob, but they do not share an existing ledger channel.\todo{there are two problems here: 1. the outcome notation here doesn't match the notation used later, and 2. the notation for an outcome isn't ever defined}
 Alice does, however, have an $\{A:5, C:5\}$ ledger channel open with Ingrid and Bob and Ingrid have a $\{B:5, C:5\}$ ledger channel open too.
 
 By using a virtual channel, Alice and Bob may open their chess game, using their existing ledger channels with Ingrid, without the need for any on-chain transactions.
@@ -148,7 +148,10 @@ In this paper, we will not specify the operation of state channels, but will use
 
 Specifying how state channels are funded involves specifying how funds are held in escrow on the chain, how they can be deposited and how they can be claimed according to the outcome of a state channel.
 As we will see in this paper, it can also involve specifying the rules for how the outcomes of multiple channels interact, which enables channels to be funded and defunded without on-chain operations.
-In the ForceMove paper, all funding is performed by the \textit{SimpleAdjudicator}, which only allows for direct channels between participants.
+In the ForceMove paper, all funding is performed by the \textit{SimpleAdjudicator}, which only allows for direct channels between participants.\todo{
+  Perhaps it's better to say that in the ForceMove paper, a SimpleAdjudicator is specified, which only allows a single direct channel between two participants.
+  (My point is that the ForceMove paper is about the specification of the operation of a state channel, and not really the funding of it.)
+}
 
 Decoupling the funding of a channel from its operation has several advantages.
 Provided that the channel is funded, its operation is completely independent from the other channels in the network.
@@ -163,7 +166,7 @@ The private keys corresponding to these addresses are used to sign updates to th
 We assume that the signature scheme is unforgeable, so that only the owner of the address has the capability to sign states as that participant.
 
 Each channel has a \textbf{channel address} which is formed by taking the hash of the participant addresses along with a nonce, $k$, that is chosen by the participants in order to distinguish their channels from one another.
-We assume that the hashing algorithm is cryptographically secure, so that it impossible for two different sets of participants to create a channel with the same address.
+We assume that the hashing algorithm is cryptographically secure, so that it impossible for two different sets of participants to create a channel with the same address.\todo{``it possible for any participant to force a distinct channel address, by using a unique nonce''}
 We also assume that the signature scheme and hashing algorithm together make it impossible to create a channel address that is the same as a participant address:
 we call this the `no collision' assumption.
 In practice, we accept that these statements will not be absolute but instead will hold with high probability.
@@ -213,13 +216,13 @@ through the application of one or more on-chain operations. For example:
   \transfer{\rchi}{A}{x} \adj{\holds{\rchi}{(a + b)}{\Omega}} = \adj{\holds{\rchi}{a}{\Omega'
 }, \holds{A}{b}{}}
 \end{align}
-We will explain this example in further detail in the sections on Turbo and Nitro.
+We will explain this example in further detail in the sections on Turbo and Nitro.\todo{check that this is explained}
 In equation (\ref{eq:on-chain-operations}), $A$ could be either a channel address or a participant address.
 
 The \textbf{withdrawal} operation can be used to withdraw coins held at address $A$ by any
 party with the knowledge of the corresponding private key. 
 Note that the signature requirement coupled with the no-collision assumption means
-it is only possible to withdraw from a participant address.
+it is only possible to withdraw from a participant address. \todo{... if you know the private key?}
 If $x \leq x'$ then
 \begin{align}
 W_A(x) \adj{\holds{A}{x'}{}} = \adj{\holds{A}{(x'-x)}{}}
@@ -257,7 +260,7 @@ the actions they take, it should still be possible for $A$ to extract $x$ coins.
 
 When evaluating whether a strategy is unbeatable, we make the following assumptions about blockchain transactions:
 \begin{enumerate}
-  \item \textbf{Transactions are unimpeded}: given that the current time is $t$ and $\epsilon > 0$, then it is possible for any party to apply any operation, $O$, on-chain before time $t + \epsilon$.
+  \item \textbf{Transactions are unimpeded}: given that the current time is $t$ and $\epsilon > 0$, then it is possible for any party to apply any operation, $O$, on-chain before time $t + \epsilon$.\todo{Isn't this assumption totally false in practice? Do you mean `There is an $\epsilon > 0$ such that for any $t$, it is possible ...'}
   \item \textbf{Transactions \textit{can} be front-run}: given two parties, $p_1$ and $p_2$, and two operations, $O_1$ and $O_2$, there is no way for $p_1$ to ensure that they can apply $O_1$ to the chain before $p_2$ applies $O_2$.
   \item \textbf{Transactions are free}: we ignore the cost of gas fees when calculating the value of a state.
 \end{enumerate}
@@ -312,7 +315,7 @@ In the special case where the outcome of a channel is finalizable by all its par
 This happens at two points of every ForceMove channel's lifecycle:
 \begin{enumerate}
   \item After the first $n$ states have been broadcast. In this state, we say the channel is at the \textbf{funding point}.
-  \item When a single conclusion proof exists. In this state, we say the channel is in the \textbf{concluded state}.
+  \item When a single conclusion proof exists.\todo{is known to each participant?} In this state, we say the channel is in the \textbf{concluded state}.
 \end{enumerate}
 It is an important property of ForceMove that all channels have one universally finalizable
 state at the beginning of their lifecycle and one at the end
@@ -333,7 +336,7 @@ true at a given point in time:
 \end{enumerate}
 Note that if a participant has only enabled a single outcome, that outcome must be finalizable for them.
 
-\subsection{The Consensus Game}
+\subsection{The Consensus Game}\todo{It's a bit weird to introduce the consensus game here, but say almost nothing about it. I think it would be hard to continue reading without specifying what properties the consensus game has that allows the implementation of transfer.}
 
 Another important example of universally finalizable states comes from the \textbf{consensus game}.
 The consensus game is a ForceMove \textit{application}, which means it specifies a certain
@@ -402,7 +405,7 @@ The offload converts $\rchi$ from an off-chain sub-channel to an on-chain direct
 
 The offload should be seen as an action of last-resort.
 It is important that offloading is allowed so that either player can realize the value in channel $\rchi$ if required, but it has the downside of forcing all sub-channels supported by $L$ to be closed on-chain.
-It is in the interest of both participants to open and close sub-channels collaboratively.
+\todo{In practice, with non-zero gas prices, it is ...}It is in the interest of both participants to open and close sub-channels collaboratively.
 We next show how this can be accomplished safely.
 
 Under the Turbo protocol, all ledger channels are regular ForceMove channels running the Consensus Game.
@@ -439,7 +442,7 @@ This allows the sub-channel to be defunded and closed off-chain.
   \begin{align}
     \finalizable{\rchi}{\alloc{A:a', B:b'}}{A,B}
   \end{align}
-  \item The participants then update the ledger channel to include the result of channel $\rchi$.
+  \item The participants then update\todo{It's not really clear why a participant would be forced to update the ledger channel in this way.} the ledger channel to include the result of channel $\rchi$.
   \begin{align}
     \finalizable{L}{\alloc{A: a+ a', B: b + b'}}{A, B}
   \end{align}
