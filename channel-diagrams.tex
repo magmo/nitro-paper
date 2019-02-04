@@ -1,0 +1,74 @@
+% https://tex.stackexchange.com/a/55604
+
+\usepackage{tikz}
+\usetikzlibrary{shapes,backgrounds,calc}
+\usetikzlibrary{positioning, shapes.geometric}
+
+\makeatletter
+\tikzset{fill halves/.style  args={#1,#2}{%
+ alias=tmp@name,
+  postaction={%
+    insert path={
+      \pgfextra{% 
+        % This entire script assumes that we're working with a circle, making use of the anchors
+        % we expect to find on a circle
+        % Calculates "insiderad" by looking at the distance from the center to the east anchor
+        \pgfpointdiff{\pgfpointanchor{\pgf@node@name}{center}}%
+                    {\pgfpointanchor{\pgf@node@name}{east}}%            
+        \pgfmathsetmacro\insiderad{\pgf@x}
+        % We start at the east anchor of the node and then move in by "pgflinewidth"
+        % then we draw an arc from 0 to 180
+        \fill[#1] (\pgf@node@name.base) ([xshift=-\pgflinewidth/sqrt(2), yshift=-\pgflinewidth/sqrt(2)]\pgf@node@name.north east) arc
+                          (45:225:\insiderad-\pgflinewidth)--cycle;
+        \fill[#2] (\pgf@node@name.base) ([xshift=\pgflinewidth/sqrt(2), yshift=\pgflinewidth/sqrt(2)]\pgf@node@name.south west)  arc
+                            (225:405:\insiderad-\pgflinewidth)--cycle;
+        \draw[-] (\pgf@node@name.north east) to (\pgf@node@name.south west);
+      }
+    }
+  }
+}
+}  
+\makeatother  
+
+\makeatletter
+\tikzset{fill thirds/.style  args={#1,#2,#3}{%
+ alias=tmp@name,
+  postaction={%
+    insert path={
+      \pgfextra{% 
+        % This entire script assumes that we're working with a circle, making use of the anchors
+        % we expect to find on a circle
+        % Calculates "insiderad" by looking at the distance from the center to the east anchor
+        \pgfpointdiff{\pgfpointanchor{\pgf@node@name}{center}}%
+                    {\pgfpointanchor{\pgf@node@name}{east}}%            
+        \pgfmathsetmacro\insiderad{\pgf@x - \pgflinewidth}
+        % We start at the east anchor of the node and then move in by "pgflinewidth"
+        % then we draw an arc from 0 to 180
+        \fill[#1] (\pgf@node@name.center) -- ++ (90:\insiderad pt) arc (90:210:\insiderad pt) --cycle;
+        \fill[#2] (\pgf@node@name.center) -- ++ (210:\insiderad pt) arc (210:330:\insiderad pt) --cycle;
+        \fill[#3] (\pgf@node@name.center) -- ++ (330:\insiderad pt) arc (330:450:\insiderad pt) --cycle;
+        \draw (\pgf@node@name.center) -- ++ (90:\insiderad pt);
+        \draw (\pgf@node@name.center) -- ++ (210:\insiderad pt);
+        \draw (\pgf@node@name.center) -- ++ (330:\insiderad pt);
+      }
+    }
+  }
+}
+}  
+\makeatother  
+
+\tikzset{
+  circA/.style={ draw, circle, fill=red!50, minimum size=4mm }
+}
+
+\tikzset{
+  circB/.style={ draw, circle, fill=blue!50, minimum size=4mm  }
+}
+
+\tikzset{
+  circAB/.style={ draw, circle, fill halves={blue!50,red!50}, minimum size=4mm }
+}
+
+\tikzset{
+  sqadj/.style={ draw, minimum size=4mm }
+}

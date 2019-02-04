@@ -1,0 +1,66 @@
+\begin{tikzpicture}[x=4cm]
+  \node (s0) at (0, 0) {
+    \begin{tikzpicture}[y=1cm, x=1.2cm]
+      \node[sqadj] (adj) at (0, 0) {};
+      \node[circAB, label=right:$L$] (L) at (0, -1) {};
+      \node[circA, label=below:$A$] (A) at (-0.5, -2) {};
+      \node[circB, label=below:$B$] (B) at (0.5, -2) {};
+      \draw[->] (adj) edge node[midway, left] { $10$ } (L);
+      \draw[->] (L) edge node[midway, left] { $5$ } (A);
+      \draw[->] (L) edge node[midway, right] { $5$ } (B);
+    \end{tikzpicture}
+  };
+  \node (s1) at (1, 0) {
+    \begin{tikzpicture}[y=1cm, x=1.2cm]
+      \node[sqadj] (adj) at (0, 0) {};
+      \node[circAB, label=right:$L$] (L) at (0, -1) {};
+      \node[circA, label=below:$A$] (A) at (-1, -2) {};
+      \node[circB, label=below:$B$] (B) at (0, -2) {};
+      \node[circAB, label=right:$\rchi$] (chi) at (1, -2) {};
+      \draw[->] (adj) edge node[midway, left] { $10$ } (L);
+      \draw[->] (L) edge node[midway, left] { $5$ } (A);
+      \draw[->] (L) edge node[midway, right] { $5$ } (B);
+
+      \node[circA, label=below:$A$] (chiA) at (0.5, -3) {};
+      \node[circB, label=below:$B$] (chiB) at (1.5, -3) {};
+
+      \draw[->] (chi) edge node[midway, right] { $2$ } (chiA);
+      \draw[->] (chi) edge node[midway, right] { $4$ } (chiB);
+    \end{tikzpicture}
+  };
+
+  \node (s2) at (2, 0) {
+    \begin{tikzpicture}[y=1cm, x=1.2cm]
+      \node[sqadj] (adj) at (0, 0) {};
+      \node[circAB, label=right:$L$] (L) at (0, -1) {};
+      \node[circA, label=below:$A$] (A) at (-1, -2) {};
+      \node[circB, label=below:$B$] (B) at (0, -2) {};
+      \node[circAB, label=right:$\rchi$] (chi) at (1, -2) {};
+      \draw[->] (adj) edge node[midway, left] { $10$ } (L);
+
+      \draw[->] (L) edge node[midway, left] { $3$ } (A);
+      \draw[->] (L) edge node[midway, right] { $1$ } (B);
+      \draw[->] (L) edge node[midway, right] { $6$ } (chi);
+
+      \node[circA, label=below:$A$] (chiA) at (0.5, -3) {};
+      \node[circB, label=below:$B$] (chiB) at (1.5, -3) {};
+
+      \draw[->] (chi) edge node[midway, right] { $2$ } (chiA);
+      \draw[->] (chi) edge node[midway, right] { $4$ } (chiB);
+    \end{tikzpicture}
+  };
+
+  \node (s3) at (3, 0) {
+    \begin{tikzpicture}[y=1cm, x=1.2cm]
+      \node[sqadj] (adj) at (0, 0) {};
+      \node[circAB, label=right:$L$] (L) at (0, -1) {};
+      \node[circA, label=below:$A$] (A) at (-1, -2) {};
+      \node[circB, label=below:$B$] (B) at (0, -2) {};
+      \node[circAB, label=below:$\rchi$] (chi) at (1, -2) {};
+      \draw[->] (adj) edge node[midway, left] { $10$ } (L);
+      \draw[->] (L) edge node[midway, left] { $3$ } (A);
+      \draw[->] (L) edge node[midway, right] { $1$ } (B);
+      \draw[->] (L) edge node[midway, right] { $6$ } (chi);
+    \end{tikzpicture}
+  };
+\end{tikzpicture}

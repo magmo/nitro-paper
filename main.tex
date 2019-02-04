@@ -1,9 +1,13 @@
 \documentclass{article}
 \input{preamble}
 
-\usepackage{draftwatermark}
-\SetWatermarkText{DRAFT}
-\SetWatermarkScale{5}
+\usepackage{xparse}
+\input{channel-diagrams}
+
+
+% \usepackage{draftwatermark}
+% \SetWatermarkTex2t{DRAFT}
+% \SetWatermarkScale{5}
 
 \title{Nitro Protocol}
 \author{Tom Close}
@@ -32,69 +36,22 @@ The holder of a fully signed state does not need to wait for the transaction to 
 that they have the right to claim the assets on-chain at a future point of time of their choosing.
 
 In their naive form, each state channel needs to have a corresponding \textit{state deposit} - a set of assets held in escrow on-chain, to be distributed according to the outcome of the channel.
-Each time a state channel is opened at least one party needs to perform an on-chain transaction to transfer assets into the state deposit, and each time it is closed at least one participant must perform an on-chain transaction to claim their share.
+Each time a state channel is opened, at least one party needs to perform an on-chain transaction to transfer assets into the state deposit, and each time it is closed at least one participant must perform an on-chain transaction to claim their share.
 This limits the effectiveness of state channels as a scaling solution, making it only suitable for the case where a large number of transactions are executed between a single group of participants.
 We refer to these naive channels as \textbf{direct channels}, as they are supported directly by funds held on the blockchain.
 
 \subsection{Ledger Channels and Virtual Channels}
 
-Ledger channels allow multiple channels between a given set of participants to be supported by a single on-chain deposit.
-Importantly, these channels still update independently to one another, even though they are funded by the same deposit.
+- graph of direct channels with multiple lines between nodes
 
-As an example of what ledger channels enable, suppose Alice and Bob want to play a game of chess and that
-they already have an existing ledger channel, $L$, open between them.
-The winner of the game of chess should receive 2 coins from the loser and $L$ currently holds
-5 of Alice's coins and 5 of Bob's.
+- graph of ledger channels with single lines between nodes
 
-\begin{center}
-  \includegraphics[scale=0.5]{turbo_start} % TODO: tikz
-\end{center}
+- graph of virtual channels with hub + spoke
 
-Alice and Bob proceed by preparing a new channel for the chess game with the appropriate starting state.
-Ordinarily, the chess game would now require an on-chain transaction.
-Instead, Alice and Bob then update the ledger channel to allocate funds to these games.
+- image of virtual channels, talking about the agreements
 
-\begin{center}
-  \includegraphics[scale=0.5]{turbo_open} %TODO: tikz
-\end{center}
 
-Once the funds are allocated, they are free to play the game of chess.
-Updates to the chess channel are independent from updates to the ledger channel $L$ and to
-any other sub-channels that are potentially funded by it. 
-Alice wins the chess game, so the final state in the chess channel allocates all the
-funds to her.
 
-\begin{center}
-  \includegraphics[scale=0.5]{turbo_close} %TODO: tikz
-\end{center}
-
-To close the chess channel off-chain, Alice and Bob update the state of the ledger channel to absorb the outcome of the game.
-
-\begin{center}
-  \includegraphics[scale=0.5]{turbo_finish} %TODO: tikz
-\end{center}
-
-Virtual channels go one step further than ledger channels, allowing a state channel to be opened between two participants who do not share an on-chain deposit, but instead have a counterparty in common, with whom they both have a channel open with.
-
-As an example, suppose that Alice wants to open an $\{A:5, B:5\}$ chess game with Bob, but they do not share an existing ledger channel.
-Alice does, however, have an $\{A:5, C:5\}$ ledger channel open with Ingrid and Bob and Ingrid have a $\{B:5, C:5\}$ ledger channel open too.
-
-By using a virtual channel, Alice and Bob may open their chess game, using their existing ledger channels with Ingrid, without the need for any on-chain transactions.
-Suppose that Alice wins all of the funds in the channel, so that the final outcome is $\{A: 10, B: 0\}$.
-Alice and Bob can also close their chess game off-chain, rebalancing through Ingrid, so that the final state of the ledger channels is $\{A: 10, C: 0\}$ and $\{B: 0, C: 10\}$.
-
-In this interaction, Ingrid contributed 10 of her coins at the beginning, which had to remain locked while Alice and Bob were playing.
-At the end of the interaction, Ingrid still had 10 coins but they were distributed differently between the her ledger channels.
-By locking up her coins for a period of time, she enabled Alice and Bob to play chess entirely off-chain, including the setup and conclusion phases.
-Although all this occured off-chain, Alice and Bob received security assurances similar to if the entire interaction had been on-chain.
-
-One good way of summarising the differences between these three different approaches is to look at the number of on-chain deposits required in each of them:
-\begin{itemize}
-  \item \textbf{Direct channels}: one state deposit per channel.
-  \item \textbf{Ledger channels}: one state deposit per group of interacting participants, regardless of how many channels they participate in together.
-  \item \textbf{Virtual channels}: one state deposit per user, regardless on how many channels they participate in.
-\end{itemize}
-Virtual channels hold the biggest potential in terms of scaling, requiring only one on-chain deposit per participant.
 
 \section{Existing work}
 
@@ -134,6 +91,262 @@ We will now proceed with a more technical exposition of our protocol, which achi
 \section{State Channel Background}
 
 In this section, we introduce the state channel concepts necessary to understand the rest of the paper.
+
+- basic balances / toy system / informal description
+- proving things
+- 
+
+\subsection{Basic setup}
+
+Start with a simple system of balances and show how to build it into a system of state channels
+
+- balances + addresses
+- [diagram: adjudicator, including circle/square diagram]
+
+
+\newcommand{\splitcirc}[2]{% #1: color of circle, 
+                           % #2: color of semicircle
+\tikz[node distance=0mm,baseline]
+    {
+    \node (s1) [circle, fill=#1, minimum size=4mm, draw] {};
+    \node      [semicircle, fill=#2,
+                inner sep=0pt, outer sep=0pt, minimum size=2mm,
+                anchor=south,
+                at={(s1.center)}, rotate=45] {};
+     }
+}% end of command
+
+
+
+  \begin{tikzpicture}[x=5.5cm,y=1.5cm]
+    % \statcirc[red]{orange}
+    \node[draw=black, rounded corners=0.5cm, outer sep=0.2cm] (adj0) at (0, 0) {
+      \begin{tabular}{c|c}
+        \multicolumn{2}{c}{\textbf{Adjudicator}} \\
+        Address & Balance \\
+        \hline
+        Bob & 5 \\
+        & \\
+      \end{tabular}
+    };
+
+    \node[draw=black, rounded corners=0.5cm, outer sep=0.2cm] (adj1) at (1, 0) {
+      \begin{tabular}{c|c}
+        \multicolumn{2}{c}{\textbf{Adjudicator}} \\
+        Address & Balance \\
+        \hline
+        Bob & 5 \\
+        Alice & 4 \\
+      \end{tabular}
+    };
+
+    \node[draw=black, rounded corners=0.5cm, outer sep=0.2cm] (adj2) at (2, 0) {
+      \begin{tabular}{c|c}
+        \multicolumn{2}{c}{\textbf{Adjudicator}} \\
+        Address & Balance \\
+        \hline
+        Bob & 2 \\
+        Alice & 4 \\
+      \end{tabular}
+    };
+
+    \node (not0) at (0, -1) {$\adj{\holds{\text{Bob}}{5}{}}$ };
+    \node (not0) at (1, -1) {$\adj{\holds{\text{Bob}}{5}{},\;\holds{\text{Alice}}{4}{}}$ };
+    \node (not0) at (2, -1) {$\adj{\holds{\text{Bob}}{2}{},\;\holds{\text{Alice}}{4}{}}$ };
+
+    \node (diag0) at (0, -2) {
+      \begin{tikzpicture}[y=1cm]
+        \node[sqadj] (a0) at (0, 0) {};
+        \node[circB, label=below:Bob] (p0) at (0, -1) {};
+        \draw[->] (a0) edge node[midway, left] { $5$ } (p0);
+      \end{tikzpicture}
+    };
+
+    \node (diag1) at (1, -2) {
+      \begin{tikzpicture}[y=1cm, x=1cm]
+        \node[sqadj] (a0) at (0, 0) {};
+        \node[circB, label=below:Bob] (p0) at (0, -1) {};
+        \node[sqadj] (a1) at (1, 0) {};
+        \node[circA, label=below:Alice] (p1) at (1, -1) {};
+        \draw[->] (a0) edge node[midway, left] { $5$ } (p0);
+        \draw[->] (a1) edge node[midway, left] { $4$ } (p1);
+      \end{tikzpicture}
+    };
+
+    \node (diag2) at (2, -2) {
+      \begin{tikzpicture}[y=1cm, x=1cm]
+        \node[sqadj] (a0) at (0, 0) {};
+        \node[circB, label=below:Bob] (p0) at (0, -1) {};
+        \node[sqadj] (a1) at (1, 0) {};
+        \node[circA, label=below:Alice] (p1) at (1, -1) {};
+        \draw[->] (a0) edge node[midway, left] { $2$ } (p0);
+        \draw[->] (a1) edge node[midway, left] { $4$ } (p1);
+      \end{tikzpicture}
+    };
+
+    \draw[->] (adj0) edge node[midway, above] { $D_\text{Alice}(4)$} (adj1);
+    \draw[->] (adj1) edge node[midway, above] { $W_\text{Bob}(3)$} (adj2);
+  \end{tikzpicture}
+
+  \begin{tikzpicture}[x=8cm, y=2cm]
+    \node[draw=black, rounded corners=0.5cm] (adj0) at (0, 0) {
+      \begin{tabular}{c|c|c}
+        \multicolumn{3}{c}{\textbf{Adjudicator}} \\
+        Address & Balance & Outcome \\
+        \hline
+        L & 5 & Bob: 2, Alice: 3 \\
+        Bob & 4 \\
+
+      \end{tabular}
+    };
+
+    \node[draw=black, rounded corners=0.5cm] (adj0) at (1, 0) {
+      \begin{tabular}{c|c|c}
+        \multicolumn{3}{c}{\textbf{Adjudicator}} \\
+        Address & Balance & Outcome \\
+        \hline
+        L & 5 & Bob: 2 \\
+        Bob & 4 \\
+        Alice & 3 \\
+      \end{tabular}
+    };
+
+    \node (not0) at (0, -1) { $\adj{\holds{L}{5}{\alloc{\text{Bob}: 2, \text{Alice}: 3}}, \;\holds{\text{Bob}}{4}{}}$ };
+    \node (not0) at (1, -1) { $\adj{\holds{L}{5}{\alloc{\text{Bob}: 2}}, \;\holds{\text{Bob}}{4}{}, \; \holds{\text{Alice}}{3}{}}$ };
+
+    \node (diag0) at (0, -2) {
+      \begin{tikzpicture}[y=1cm, x=2cm]
+        \node[sqadj] (a0) at (0, 0) {};
+        \node[circB, label=below:Bob] (p0) at (0, -1) {};
+        \draw[->] (a0) edge node[midway, left] { $4$ } (p0);
+
+        \node[sqadj] (a0) at (1, 0) {};
+        \node[circAB, label=right:L] (p0) at (1, -1) {};
+        \node[circB, label=below:Bob] (p1) at (0.58, -2) {};
+        \node[circA, label=below:Alice] (p2) at (1.42, -2) {};
+
+
+        \draw[->] (a0) edge node[midway, left] { $5$ } (p0);
+        \draw[->] (p0) edge node[midway, left] { $2$ } (p1);
+        \draw[->] (p0) edge node[midway, left] { $3$ } (p2);
+
+      \end{tikzpicture}
+    };
+
+    \node (diag1) at (1, -2) {
+      \begin{tikzpicture}[y=1cm, x=2cm]
+        \node[sqadj] (a0) at (0, 0) {};
+        \node[circB, label=below:Bob] (p0) at (0, -1) {};
+        \draw[->] (a0) edge node[midway, left] { $4$ } (p0);
+
+        \node[sqadj] (a1) at (1, 0) {};
+        \node[circAB, label=right:L] (pab) at (1, -1) {};
+        \node[circB, label=below:Bob] (pabb) at (1, -2) {};
+        \draw[->] (a1) edge node[midway, left] { $5$ } (pab);
+        \draw[->] (pab) edge node[midway, left] { $2$ } (pabb);
+
+        \node[sqadj] (a2) at (2, 0) {};
+        \node[circA, label=below:Alice] (pa) at (2, -1) {};
+        \draw[->] (a2) edge node[midway, left] { $3$ } (pa);
+
+      \end{tikzpicture}
+    };
+  \end{tikzpicture}
+
+\input{figures/partial-withdrawal}
+
+- coins
+- deposit + withdraw 
+
+- so far this is pointless
+
+- state channel participants and addresses
+- operation + finalization
+
+\begin{figure}[h]\centering
+  \begin{tikzpicture}[x=4cm,y=2cm]
+    \tikzstyle{every node}=[draw, ellipse]
+
+    % Specification of nodes (position, etc.)
+    \node (Setup) at (-0.8,0) {Setup};
+    \node (Running) at (0,0) {Running};
+    \node (Concluded) at (1, 0) {Concluded};
+    \node (Challenge) at (0.5, 1) {Challenge};
+    \node (Finalized) at (1.5, 1) {Finalized};
+
+    \begin{scope}[->]
+      \tikzstyle{every node}=[draw=none,below]
+      \draw (Setup) to (Running);
+      \draw (Running) to (Concluded);
+      \draw (Concluded) edge[bend right] node[midway, below] {  } (Finalized);
+      \draw (Running) edge[bend left] node[midway,above left] {force-move} (Challenge) ;
+      \draw (Challenge) edge[bend left] node[right] {respond} (Running);
+      \draw (Challenge) edge node[midway, below] {timeout} (Finalized) ;
+    \end{scope}
+  \end{tikzpicture}
+\caption{Channel Operation}\label{fig:modes}
+\end{figure}
+
+
+- outcomes (in the abstract) - outcome is what gets put on chain
+- outcomes used for redistribution
+- [diagram: redistribution, including circle/square diagram]
+
+\subsection{Value}
+
+- paper aims to put in place a framework for reasoning about the correctness of state channel constructions
+- reasoning about what I hold off-chain and what if means to me
+
+- how to extract value
+- states ---> outcomes ---> money
+- what can I definitely finalize?
+- what can I definitely redistribute?
+
+- definition: statement
+- definition: channel state
+- definition: adjudicator state
+
+- definition: system state
+- updates with a statement. Statements are atomic. We don't allow cross-channel updates.
+
+- definition: value
+- definition: a channel being funded
+- definition: offloaded
+
+- paper will be concerned with funding constructions
+- when evaluating a construction :
+  - that a construction funds a channel
+  - that we can build the construction in a safe manner with single statement updates
+- building is important. update channels independently
+
+- this guarantees that if any participant stops cooperating at any point, the other participants don't lose out
+- present protocols. If any participant stops at any point, need to know that all other participants can recover their funds
+- by "in a safe manner" we mean to find a sequence of states where the value is fixed
+
+- safety = constant value at each step
+
+- definition: safe transition
+
+- present a construction
+- show that it funds a given channel
+- show that there's a safe path to it from a known safe starting point
+
+- how do we do this? it's hard to write these states down. 
+- it's also hard to talk about unbeatable strategies
+- three key parts: finalizable outcomes, the consensus game, redistribution results
+1. write a construction in terms of finalizable outcomes of consensus game channels
+2. apply results about redistribution in turbo / nitro to argue that the construction funds a channel 
+3. show how you can construct a safe path using the consensus game
+
+In fact we will only do 1.
+
+\subsection{Finalizable outcomes}
+- the rules of strategies
+
+- how to calculate value 
+- this paper is about constructions that fund channels
+
+
 
 \subsection{Operating vs. Funding State Channels}
 
