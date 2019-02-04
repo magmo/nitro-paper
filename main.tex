@@ -3,6 +3,7 @@
 
 \usepackage{xparse}
 \input{channel-diagrams}
+\usetikzlibrary{patterns, decorations.pathreplacing}
 
 
 % \usepackage{draftwatermark}
@@ -88,211 +89,58 @@ The protocol described here readily extends to virtual channels between $n$-part
 
 We will now proceed with a more technical exposition of our protocol, which achieves the functionality outlined above.
 
-\section{State Channel Background}
+\section{Our State Channel Model}
 
-In this section, we introduce the state channel concepts necessary to understand the rest of the paper.
+- introduce our model for networks of channels
+- both turbo and nitro work on this
+
+- build up the foundations
 
 - basic balances / toy system / informal description
 - proving things
-- 
 
-\subsection{Basic setup}
+\subsection{A System of Balances}
 
 Start with a simple system of balances and show how to build it into a system of state channels
+
 
 - balances + addresses
 - [diagram: adjudicator, including circle/square diagram]
 
-
-\newcommand{\splitcirc}[2]{% #1: color of circle, 
-                           % #2: color of semicircle
-\tikz[node distance=0mm,baseline]
-    {
-    \node (s1) [circle, fill=#1, minimum size=4mm, draw] {};
-    \node      [semicircle, fill=#2,
-                inner sep=0pt, outer sep=0pt, minimum size=2mm,
-                anchor=south,
-                at={(s1.center)}, rotate=45] {};
-     }
-}% end of command
-
-
-
-  \begin{tikzpicture}[x=5.5cm,y=1.5cm]
-    % \statcirc[red]{orange}
-    \node[draw=black, rounded corners=0.5cm, outer sep=0.2cm] (adj0) at (0, 0) {
-      \begin{tabular}{c|c}
-        \multicolumn{2}{c}{\textbf{Adjudicator}} \\
-        Address & Balance \\
-        \hline
-        Bob & 5 \\
-        & \\
-      \end{tabular}
-    };
-
-    \node[draw=black, rounded corners=0.5cm, outer sep=0.2cm] (adj1) at (1, 0) {
-      \begin{tabular}{c|c}
-        \multicolumn{2}{c}{\textbf{Adjudicator}} \\
-        Address & Balance \\
-        \hline
-        Bob & 5 \\
-        Alice & 4 \\
-      \end{tabular}
-    };
-
-    \node[draw=black, rounded corners=0.5cm, outer sep=0.2cm] (adj2) at (2, 0) {
-      \begin{tabular}{c|c}
-        \multicolumn{2}{c}{\textbf{Adjudicator}} \\
-        Address & Balance \\
-        \hline
-        Bob & 2 \\
-        Alice & 4 \\
-      \end{tabular}
-    };
-
-    \node (not0) at (0, -1) {$\adj{\holds{\text{Bob}}{5}{}}$ };
-    \node (not0) at (1, -1) {$\adj{\holds{\text{Bob}}{5}{},\;\holds{\text{Alice}}{4}{}}$ };
-    \node (not0) at (2, -1) {$\adj{\holds{\text{Bob}}{2}{},\;\holds{\text{Alice}}{4}{}}$ };
-
-    \node (diag0) at (0, -2) {
-      \begin{tikzpicture}[y=1cm]
-        \node[sqadj] (a0) at (0, 0) {};
-        \node[circB, label=below:Bob] (p0) at (0, -1) {};
-        \draw[->] (a0) edge node[midway, left] { $5$ } (p0);
-      \end{tikzpicture}
-    };
-
-    \node (diag1) at (1, -2) {
-      \begin{tikzpicture}[y=1cm, x=1cm]
-        \node[sqadj] (a0) at (0, 0) {};
-        \node[circB, label=below:Bob] (p0) at (0, -1) {};
-        \node[sqadj] (a1) at (1, 0) {};
-        \node[circA, label=below:Alice] (p1) at (1, -1) {};
-        \draw[->] (a0) edge node[midway, left] { $5$ } (p0);
-        \draw[->] (a1) edge node[midway, left] { $4$ } (p1);
-      \end{tikzpicture}
-    };
-
-    \node (diag2) at (2, -2) {
-      \begin{tikzpicture}[y=1cm, x=1cm]
-        \node[sqadj] (a0) at (0, 0) {};
-        \node[circB, label=below:Bob] (p0) at (0, -1) {};
-        \node[sqadj] (a1) at (1, 0) {};
-        \node[circA, label=below:Alice] (p1) at (1, -1) {};
-        \draw[->] (a0) edge node[midway, left] { $2$ } (p0);
-        \draw[->] (a1) edge node[midway, left] { $4$ } (p1);
-      \end{tikzpicture}
-    };
-
-    \draw[->] (adj0) edge node[midway, above] { $D_\text{Alice}(4)$} (adj1);
-    \draw[->] (adj1) edge node[midway, above] { $W_\text{Bob}(3)$} (adj2);
-  \end{tikzpicture}
-
-  \begin{tikzpicture}[x=8cm, y=2cm]
-    \node[draw=black, rounded corners=0.5cm] (adj0) at (0, 0) {
-      \begin{tabular}{c|c|c}
-        \multicolumn{3}{c}{\textbf{Adjudicator}} \\
-        Address & Balance & Outcome \\
-        \hline
-        L & 5 & Bob: 2, Alice: 3 \\
-        Bob & 4 \\
-
-      \end{tabular}
-    };
-
-    \node[draw=black, rounded corners=0.5cm] (adj0) at (1, 0) {
-      \begin{tabular}{c|c|c}
-        \multicolumn{3}{c}{\textbf{Adjudicator}} \\
-        Address & Balance & Outcome \\
-        \hline
-        L & 5 & Bob: 2 \\
-        Bob & 4 \\
-        Alice & 3 \\
-      \end{tabular}
-    };
-
-    \node (not0) at (0, -1) { $\adj{\holds{L}{5}{\alloc{\text{Bob}: 2, \text{Alice}: 3}}, \;\holds{\text{Bob}}{4}{}}$ };
-    \node (not0) at (1, -1) { $\adj{\holds{L}{5}{\alloc{\text{Bob}: 2}}, \;\holds{\text{Bob}}{4}{}, \; \holds{\text{Alice}}{3}{}}$ };
-
-    \node (diag0) at (0, -2) {
-      \begin{tikzpicture}[y=1cm, x=2cm]
-        \node[sqadj] (a0) at (0, 0) {};
-        \node[circB, label=below:Bob] (p0) at (0, -1) {};
-        \draw[->] (a0) edge node[midway, left] { $4$ } (p0);
-
-        \node[sqadj] (a0) at (1, 0) {};
-        \node[circAB, label=right:L] (p0) at (1, -1) {};
-        \node[circB, label=below:Bob] (p1) at (0.58, -2) {};
-        \node[circA, label=below:Alice] (p2) at (1.42, -2) {};
-
-
-        \draw[->] (a0) edge node[midway, left] { $5$ } (p0);
-        \draw[->] (p0) edge node[midway, left] { $2$ } (p1);
-        \draw[->] (p0) edge node[midway, left] { $3$ } (p2);
-
-      \end{tikzpicture}
-    };
-
-    \node (diag1) at (1, -2) {
-      \begin{tikzpicture}[y=1cm, x=2cm]
-        \node[sqadj] (a0) at (0, 0) {};
-        \node[circB, label=below:Bob] (p0) at (0, -1) {};
-        \draw[->] (a0) edge node[midway, left] { $4$ } (p0);
-
-        \node[sqadj] (a1) at (1, 0) {};
-        \node[circAB, label=right:L] (pab) at (1, -1) {};
-        \node[circB, label=below:Bob] (pabb) at (1, -2) {};
-        \draw[->] (a1) edge node[midway, left] { $5$ } (pab);
-        \draw[->] (pab) edge node[midway, left] { $2$ } (pabb);
-
-        \node[sqadj] (a2) at (2, 0) {};
-        \node[circA, label=below:Alice] (pa) at (2, -1) {};
-        \draw[->] (a2) edge node[midway, left] { $3$ } (pa);
-
-      \end{tikzpicture}
-    };
-  \end{tikzpicture}
-
-\input{figures/partial-withdrawal}
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/deposit-withdrawal}}
+  \caption{Cool, huh?}
+\end{figure}
 
 - coins
 - deposit + withdraw 
 
 - so far this is pointless
 
+\subsection{Channel Operation}
+
 - state channel participants and addresses
 - operation + finalization
 
 \begin{figure}[h]\centering
-  \begin{tikzpicture}[x=4cm,y=2cm]
-    \tikzstyle{every node}=[draw, ellipse]
+  \input{figures/channel-operation}
 
-    % Specification of nodes (position, etc.)
-    \node (Setup) at (-0.8,0) {Setup};
-    \node (Running) at (0,0) {Running};
-    \node (Concluded) at (1, 0) {Concluded};
-    \node (Challenge) at (0.5, 1) {Challenge};
-    \node (Finalized) at (1.5, 1) {Finalized};
-
-    \begin{scope}[->]
-      \tikzstyle{every node}=[draw=none,below]
-      \draw (Setup) to (Running);
-      \draw (Running) to (Concluded);
-      \draw (Concluded) edge[bend right] node[midway, below] {  } (Finalized);
-      \draw (Running) edge[bend left] node[midway,above left] {force-move} (Challenge) ;
-      \draw (Challenge) edge[bend left] node[right] {respond} (Running);
-      \draw (Challenge) edge node[midway, below] {timeout} (Finalized) ;
-    \end{scope}
-  \end{tikzpicture}
-\caption{Channel Operation}\label{fig:modes}
+  \caption{Channel Operation}\label{fig:modes}
 \end{figure}
 
+\subsection{Redistribution}
+
+- 
 
 - outcomes (in the abstract) - outcome is what gets put on chain
 - outcomes used for redistribution
-- [diagram: redistribution, including circle/square diagram]
 
-\subsection{Value}
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/redistribution}}
+  \caption{Cool, huh?}
+\end{figure}
+
+\section{Reasoning about State Channels}
 
 - paper aims to put in place a framework for reasoning about the correctness of state channel constructions
 - reasoning about what I hold off-chain and what if means to me

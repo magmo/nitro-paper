@@ -1,0 +1,65 @@
+
+\begin{tikzpicture}[x=8cm, y=2cm]
+  \node[draw=black, rounded corners=0.5cm] (adj0) at (0, 0) {
+    \begin{tabular}{c|c|c}
+      \multicolumn{3}{c}{\textbf{Adjudicator}} \\
+      Address & Balance & Outcome \\
+      \hline
+      L & 5 & Bob: 2, Alice: 3 \\
+      Bob & 4 \\
+
+    \end{tabular}
+  };
+
+  \node[draw=black, rounded corners=0.5cm] (adj0) at (1, 0) {
+    \begin{tabular}{c|c|c}
+      \multicolumn{3}{c}{\textbf{Adjudicator}} \\
+      Address & Balance & Outcome \\
+      \hline
+      L & 5 & Bob: 2 \\
+      Bob & 4 \\
+      Alice & 3 \\
+    \end{tabular}
+  };
+
+  \node (not0) at (0, -1) { $\adj{\holds{L}{5}{\alloc{\text{Bob}: 2, \text{Alice}: 3}}, \;\holds{\text{Bob}}{4}{}}$ };
+  \node (not0) at (1, -1) { $\adj{\holds{L}{5}{\alloc{\text{Bob}: 2}}, \;\holds{\text{Bob}}{4}{}, \; \holds{\text{Alice}}{3}{}}$ };
+
+  \node (diag0) at (0, -2) {
+    \begin{tikzpicture}[y=1cm, x=2cm]
+      \node[sqadj] (a0) at (0, 0) {};
+      \node[circB, label=below:Bob] (p0) at (0, -1) {};
+      \draw[->] (a0) edge node[midway, left] { $4$ } (p0);
+
+      \node[sqadj] (a0) at (1, 0) {};
+      \node[circAB, label=right:L] (p0) at (1, -1) {};
+      \node[circB, label=below:Bob] (p1) at (0.58, -2) {};
+      \node[circA, label=below:Alice] (p2) at (1.42, -2) {};
+
+
+      \draw[->] (a0) edge node[midway, left] { $5$ } (p0);
+      \draw[->] (p0) edge node[midway, left] { $2$ } (p1);
+      \draw[->] (p0) edge node[midway, left] { $3$ } (p2);
+
+    \end{tikzpicture}
+  };
+
+  \node (diag1) at (1, -2) {
+    \begin{tikzpicture}[y=1cm, x=2cm]
+      \node[sqadj] (a0) at (0, 0) {};
+      \node[circB, label=below:Bob] (p0) at (0, -1) {};
+      \draw[->] (a0) edge node[midway, left] { $4$ } (p0);
+
+      \node[sqadj] (a1) at (1, 0) {};
+      \node[circAB, label=right:L] (pab) at (1, -1) {};
+      \node[circB, label=below:Bob] (pabb) at (1, -2) {};
+      \draw[->] (a1) edge node[midway, left] { $5$ } (pab);
+      \draw[->] (pab) edge node[midway, left] { $2$ } (pabb);
+
+      \node[sqadj] (a2) at (2, 0) {};
+      \node[circA, label=below:Alice] (pa) at (2, -1) {};
+      \draw[->] (a2) edge node[midway, left] { $3$ } (pa);
+
+    \end{tikzpicture}
+  };
+\end{tikzpicture}

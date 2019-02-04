@@ -1,0 +1,32 @@
+\begin{tikzpicture}[x=3.5cm,y=1.5cm]
+  \node[draw=black, rounded corners=0.5cm, outer sep=0.2cm] (adj0) {
+    \begin{tabular}{c|c}
+      \multicolumn{2}{c}{\textbf{Adjudicator}} \\
+      Address & Balance \\
+      \hline
+      Bob & 5 \\
+      Alice & 2 \\
+    \end{tabular}
+  };
+
+  \node[right=of adj0] (not0) { $\adj{\holds{\text{Bob}}{5}{}, \;\holds{\text{Alice}}{2}{}}$ };
+
+  \node[right=of not0] (diag0) {
+    \begin{tikzpicture}[y=1cm, x=1.5cm]
+      \node[sqadj] (a0) at (0, 0) {};
+      \node[circB, label=below:Bob] (p0) at (0, -1) {};
+      \node[sqadj] (a1) at (1, 0) {};
+      \node[circA, label=below:Alice] (p1) at (1, -1) {};
+      \draw[->] (a0) edge node[midway, left] { $5$ } (p0);
+      \draw[->] (a1) edge node[midway, left] { $2$ } (p1);
+    \end{tikzpicture}
+  };
+
+  \begin{scope}
+  \draw ([yshift=-1.3cm]adj0.west) to[out=270,in=90] ([yshift=-2.1cm]adj0.center)node[yshift=-0.3cm] {on-chain state} to[in=270, out=90] ([yshift=-1.3cm]adj0.east);
+  \draw ([yshift=-1.3cm]not0.west) to[out=270,in=90] ([yshift=-2.1cm]not0.center)node[yshift=-0.3cm] {channel notation} to[in=270, out=90] ([yshift=-1.3cm]not0.east);
+  \draw ([yshift=-1.3cm]diag0.west) to[out=270,in=90] ([yshift=-2.1cm]diag0.center)node[yshift=-0.3cm] {channel diagram} to[in=270, out=90] ([yshift=-1.3cm]diag0.east);
+  \end{scope}
+
+
+\end{tikzpicture}

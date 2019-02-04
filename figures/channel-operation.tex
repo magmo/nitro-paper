@@ -1,0 +1,20 @@
+\begin{tikzpicture}[x=4cm,y=2cm]
+  \tikzstyle{every node}=[draw, ellipse]
+
+  % Specification of nodes (position, etc.)
+  \node (Setup) at (-0.8,0) {Setup};
+  \node (Running) at (0,0) {Running};
+  \node (Concluded) at (1, 0) {Concluded};
+  \node (Challenge) at (0.5, 1) {Challenge};
+  \node (Finalized) at (1.5, 1) {Finalized};
+
+  \begin{scope}[->]
+    \tikzstyle{every node}=[draw=none,below]
+    \draw (Setup) to (Running);
+    \draw (Running) to (Concluded);
+    \draw (Concluded) edge[bend right] node[midway, below] {  } (Finalized);
+    \draw (Running) edge[bend left] node[midway,above left] {force-move} (Challenge) ;
+    \draw (Challenge) edge[bend left] node[right] {respond} (Running);
+    \draw (Challenge) edge node[midway, below] {timeout} (Finalized) ;
+  \end{scope}
+\end{tikzpicture}
