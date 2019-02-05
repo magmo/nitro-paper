@@ -6,7 +6,7 @@
 
 \makeatletter
 \tikzset{fill halves/.style  args={#1,#2}{%
- alias=tmp@name,
+  circle,
   postaction={%
     insert path={
       \pgfextra{% 
@@ -32,7 +32,7 @@
 
 \makeatletter
 \tikzset{fill thirds/.style  args={#1,#2,#3}{%
- alias=tmp@name,
+  circle,
   postaction={%
     insert path={
       \pgfextra{% 
@@ -57,6 +57,37 @@
 }  
 \makeatother  
 
+\makeatletter
+\tikzset{guarantee thirds/.style  args={#1,#2,#3}{%
+  semicircle,
+  rotate=180,
+  postaction={%
+    insert path={
+      \pgfextra{% 
+        % This entire script assumes that we're working with a circle, making use of the anchors
+        % we expect to find on a circle
+        % Calculates "insiderad" by looking at the distance from the center to the east anchor
+        \pgfpointdiff{\pgfpointanchor{\pgf@node@name}{south}}%
+                    {\pgfpointanchor{\pgf@node@name}{north}}%            
+        \pgfmathsetmacro\insiderad{\pgf@y-1.5\pgflinewidth}
+        % We start at the east anchor of the node and then move in by "pgflinewidth"
+        % then we draw an arc from 0 to 180
+        \fill[#1] ([yshift=\pgflinewidth/2]\pgf@node@name.south) -- ++ (0:\insiderad pt) arc (0:60:\insiderad pt) --cycle;
+        \fill[#2] ([yshift=\pgflinewidth/2]\pgf@node@name.south) -- ++ (60:\insiderad pt) arc (60:120:\insiderad pt) --cycle;
+        \fill[#3] ([yshift=\pgflinewidth/2]\pgf@node@name.south) -- ++ (120:\insiderad pt) arc (120:180:\insiderad pt) --cycle;
+        \draw ([yshift=\pgflinewidth/2]\pgf@node@name.south) -- ++ (0:\insiderad pt);
+        \draw ([yshift=\pgflinewidth/2]\pgf@node@name.south) -- ++ (60:\insiderad pt);
+        \draw ([yshift=\pgflinewidth/2]\pgf@node@name.south) -- ++ (120:\insiderad pt);
+        \draw ([yshift=\pgflinewidth/2]\pgf@node@name.south) -- ++ (180:\insiderad pt);
+      }
+    }
+  }
+}
+}  
+\makeatother  
+
+
+
 \tikzset{
   circA/.style={ draw, circle, fill=red!50, minimum size=4mm }
 }
@@ -66,7 +97,22 @@
 }
 
 \tikzset{
-  circAB/.style={ draw, circle, fill halves={blue!50,red!50}, minimum size=4mm }
+  circAB/.style={ draw, fill halves={blue!50,red!50}, minimum size=4mm }
+}
+\tikzset{
+  circAI/.style={ draw, circle, fill halves={blue!50,green!50}, minimum size=4mm }
+}
+\tikzset{
+  circBI/.style={ draw, circle, fill halves={red!50,green!50}, minimum size=4mm }
+}
+\tikzset{
+  circABI/.style={ draw, semicircle, rotate=180, minimum size=2mm }
+}
+\tikzset{
+  guarAI/.style={ draw, semicircle, minimum size=2mm }
+}
+\tikzset{
+  guarBI/.style={ draw, semicircle, minimum size=2mm }
 }
 
 \tikzset{

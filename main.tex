@@ -103,6 +103,10 @@ We will now proceed with a more technical exposition of our protocol, which achi
 
 Start with a simple system of balances and show how to build it into a system of state channels
 
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/balance-notation}}
+  \caption{Cool, huh?}
+\end{figure}
 
 - balances + addresses
 - [diagram: adjudicator, including circle/square diagram]
@@ -147,53 +151,54 @@ Start with a simple system of balances and show how to build it into a system of
 
 - how to extract value
 - states ---> outcomes ---> money
-- what can I definitely finalize?
-- what can I definitely redistribute?
+- reducing channel diagrams --> value
+
+- outcome diagrams
+- fundamental rule of state channels - if two states are worth the same, I will transition between them
+- the "simple rule of state channels" - we ignore other factors
+- value
+- funded ?
+- offloaded
+
+- safe
+- this is the guarantee that if a participant stops at any point other participants don't lose out
+
+- allows rewriting
+- [diagram] example: closing off-chain
+
+- two questions (finalization + redistribution)
+  - what can I definitely finalize?
+  - what can I definitely redistribute to myself?
+
+- protocol design: how can I move between states in single moves that keep the value the same
+- .. when we don't allow atomic changes across channels
+
+- presenting a construction / protocol
+- in particular when presenting a protocol we must demonstrate a series single state updates, demonstrate that the value is preserved
+- in particular the way we do this:
+  - demostrate a construction funds a channel
+  - demonstrate we can build it from another state
+    - give a series of waypoint states - universally finalizable outcomes
+    - of a special type of channel - consensus channels, running a particilar protocol
+    - use the specifics of this channel to say we can move between them in a safe manner
+
+
+\subsection{Finalizable outcomes}
 
 - definition: statement
 - definition: channel state
 - definition: adjudicator state
-
 - definition: system state
-- updates with a statement. Statements are atomic. We don't allow cross-channel updates.
 
-- definition: value
-- definition: a channel being funded
-- definition: offloaded
-
-- paper will be concerned with funding constructions
-- when evaluating a construction :
-  - that a construction funds a channel
-  - that we can build the construction in a safe manner with single statement updates
-- building is important. update channels independently
-
-- this guarantees that if any participant stops cooperating at any point, the other participants don't lose out
-- present protocols. If any participant stops at any point, need to know that all other participants can recover their funds
-- by "in a safe manner" we mean to find a sequence of states where the value is fixed
-
-- safety = constant value at each step
-
-- definition: safe transition
-
-- present a construction
-- show that it funds a given channel
-- show that there's a safe path to it from a known safe starting point
-
-- how do we do this? it's hard to write these states down. 
-- it's also hard to talk about unbeatable strategies
-- three key parts: finalizable outcomes, the consensus game, redistribution results
-1. write a construction in terms of finalizable outcomes of consensus game channels
-2. apply results about redistribution in turbo / nitro to argue that the construction funds a channel 
-3. show how you can construct a safe path using the consensus game
-
-In fact we will only do 1.
-
-\subsection{Finalizable outcomes}
 - the rules of strategies
 
-- how to calculate value 
-- this paper is about constructions that fund channels
+subsection consensus game
+[diagram] - pictorial representation of consensus game
 
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/consensus-game}}
+  \caption{Cool, huh?}
+\end{figure}
 
 
 \subsection{Operating vs. Funding State Channels}
@@ -535,6 +540,7 @@ They can do this without disturbing any sub-channels supported by the ledger cha
 
 \subsubsection{Partial checkout from a ledger channel}
 
+
 A partial checkout is the opposite of a top up: 
 one participant has excess funds in the ledger channel that they wish to withdraw on-chain.
 The participants want to do this without disturbing any sub-channels supported by the ledger channels.
@@ -574,6 +580,35 @@ In Nitro protocol, the outcome of a channel can be either an allocation or a \te
 A guarantee outcome specifies the address of a target allocation channel; the protocol specifies how this guarantee may be used to pay debt on its behalf.
 When paying debt, a guarantee can be used to alter the payout priority of the allocation outcome of its target address. 
 
+\begin{tikzpicture}
+  \node[semicircle, draw] (upper) at (0,0) {};
+  \node[semicircle, draw, rotate=180] (lower) at (0,-1) {};
+
+  \draw[-] (upper.220) to (lower.320);
+  \draw[-] (upper.270) to (lower.270);
+  \draw[-] (upper.320) to (lower.220);
+
+  \node[semicircle, draw] (upper1) at (1,0) {};
+  \node[semicircle, draw, rotate=180] (lower1) at (1,-1) {};
+
+  \draw[-] (upper1.220) to[out=270, in=90] (lower1.270);
+  \draw[-] (upper1.270) to[out=270, in=90] (lower1.220);
+  \draw[-] (upper1.320) to[out=270, in=90] (lower1.320);
+
+  \node[semicircle, draw, rotate=30] (upper2a) at (2,0) {};
+  \node[semicircle, draw, rotate=-30] (upper2b) at (3,0) {};
+  \node[semicircle, draw, rotate=180] (lower2) at (2.5,-1) {};
+
+  \draw[-] (upper2a.220) to[out=300, in=90] (lower2.320);
+  \draw[-] (upper2a.270) to[out=300, in=90] (lower2.220);
+  \draw[-] (upper2a.320) to[out=300, in=90] (lower2.270);
+
+  \draw[-] (upper2b.220) to[out=240, in=90] (lower2.270);
+  \draw[-] (upper2b.270) to[out=240, in=90] (lower2.220);
+  \draw[-] (upper2b.320) to[out=240, in=90] (lower2.320);
+\end{tikzpicture}
+
+
 We will use the notation $\guar{L}{A_1, A_2, \dots, A_m}$ for a guarantee with target $L$, which prioritizes payouts to $A_1$ above $A_2$, $A_2$ above $A_3$, and so on.
 Any addresses which occur in the outcome of $L$ but not in the guarantee are prioritized after $A_m$, in the order they occur in the outcome.
 We say a guarantor channel, $G$, which targets an allocation channel, $L$, `can afford $x$ for $A$', if $A$ would receive at least $x$ coins, were the coins currently held in $A$ to be paid out according to $G$'s reprioritization of $L$'s allocation.
@@ -586,6 +621,73 @@ If $G$ acts as guarantor for $L$ and can afford $x$ for $A$, then $\claim{G}{A}{
   \item Reduces the amount owed to $A$ in the outcome of $L$ by $x$.
 \end{itemize}
 Otherwise, the claim operation has no effect.
+
+
+\begin{tikzpicture}[x=8cm, y=2cm]
+  \node[draw=black, rounded corners=0.5cm] (adj0) at (0, 0) {
+    \begin{tabular}{c|c|c}
+      \multicolumn{3}{c}{\textbf{Adjudicator}} \\
+      Address & Balance & Outcome \\
+      \hline
+      $G$ & 3 & $\guar{L}{\text{Alice}}$\\
+      $L$ &  & Bob: 2, Alice: 3 \\
+    \end{tabular}
+  };
+
+  \node[draw=black, rounded corners=0.5cm] (adj0) at (1, 0) {
+    \begin{tabular}{c|c|c}
+      \multicolumn{3}{c}{\textbf{Adjudicator}} \\
+      Address & Balance & Outcome \\
+      \hline
+      $G$ &  & $\guar{L}{\text{Alice}}$\\
+      $L$ &  & Bob: 2 \\
+      Alice & 3 \\
+    \end{tabular}
+  };
+
+  \node (not0) at (0, -1) { $\adj{\holds{G}{3}{\guar{L}{\text{Alice}}}, \;\holds{L}{}{\alloc{\text{Bob}:2, \text{Alice}:3}}}$ };
+  \node (not1) at (1, -1) { $\adj{\holds{G}{}{\guar{L}{\text{Alice}}}, \;\holds{L}{}{\alloc{\text{Bob}:2}}, \;\holds{\text{Alice}}{3}{}}$ };
+
+  \node (diag0) at (0, -2) {
+    \begin{tikzpicture}[y=1cm, x=2cm]
+      \node[sqadj] (a0) at (0, 0) {};
+      \node[circB, label=below:Bob] (p0) at (0, -1) {};
+      \draw[->] (a0) edge node[midway, left] { $4$ } (p0);
+
+      \node[sqadj] (a0) at (1, 0) {};
+      \node[circAB, label=right:L] (p0) at (1, -1) {};
+      \node[circB, label=below:Bob] (p1) at (0.58, -2) {};
+      \node[circA, label=below:Alice] (p2) at (1.42, -2) {};
+
+
+      \draw[->] (a0) edge node[midway, left] { $5$ } (p0);
+      \draw[->] (p0) edge node[midway, left] { $2$ } (p1);
+      \draw[->] (p0) edge node[midway, left] { $3$ } (p2);
+
+    \end{tikzpicture}
+  };
+
+  \node (diag1) at (1, -2) {
+    \begin{tikzpicture}[y=1cm, x=2cm]
+      \node[sqadj] (a0) at (0, 0) {};
+      \node[circB, label=below:Bob] (p0) at (0, -1) {};
+      \draw[->] (a0) edge node[midway, left] { $4$ } (p0);
+
+      \node[sqadj] (a1) at (1, 0) {};
+      \node[circAB, label=right:L] (pab) at (1, -1) {};
+      \node[circB, label=below:Bob] (pabb) at (1, -2) {};
+      \draw[->] (a1) edge node[midway, left] { $5$ } (pab);
+      \draw[->] (pab) edge node[midway, left] { $2$ } (pabb);
+
+      \node[sqadj] (a2) at (2, 0) {};
+      \node[circA, label=below:Alice] (pa) at (2, -1) {};
+      \draw[->] (a2) edge node[midway, left] { $3$ } (pa);
+
+    \end{tikzpicture}
+  };
+\end{tikzpicture}
+
+
 
 \begin{example}
   In the following example, we have a guarantor channel, $G$, which holds $5$ coins and guarantees $L$'s allocation, with $B$ as highest priority.
@@ -709,6 +811,98 @@ We give a visual representation of this procedure in figure \ref{fig:virtual-cha
   \caption{Opening a virtual channel}
   \label{fig:virtual-channel-opening}
 \end{figure}
+
+\begin{tikzpicture}[x=4cm, y=0.7cm]
+  \node at (0, 0) {
+    \begin{tikzpicture}[x=.8cm]
+      \node[sqadj] (a0) at (-1,0) {};
+      \node[sqadj] (a1) at (1,0) {};
+      \node[circAI] (b0) at (-1,-1) {};
+      \node[circBI] (b1) at (1,-1) {};
+      \node[guarAI] (g0) at (-1,-2) {};
+      \node[guarBI] (g1) at (1,-2) {};
+      \node[circABI] (j) at (0,-3) {};
+      \node[circAB] (c) at (0,-4) {};
+
+      \begin{scope}[-]
+        \tikzstyle{every node}=[draw,below]
+        \draw[solid] (a0) to (b0);
+        \draw[solid] (a1) to (b1);
+        \draw[solid] (g0) to (j);
+        \draw[solid] (g1) to (j);
+      \end{scope}
+    \end{tikzpicture}
+  };
+
+  \node at (1, 0) {
+    \begin{tikzpicture}[x=0.8cm]
+      \node[sqadj] (a0) at (-1,0) {};
+      \node[sqadj] (a1) at (1,0) {};
+      \node[circAI] (b0) at (-1,-1) {};
+      \node[circBI] (b1) at (1,-1) {};
+      \node[guarAI] (g0) at (-1,-2) {};
+      \node[guarBI] (g1) at (1,-2) {};
+      \node[circABI] (j) at (0,-3) {};
+      \node[circAB] (c) at (0,-4) {};
+
+      \begin{scope}[-]
+        \tikzstyle{every node}=[draw,below]
+        \draw[solid] (a0) to (b0);
+        \draw[solid] (a1) to (b1);
+        \draw[solid] (b0) to (g0);
+        \draw[solid] (g0) to (j);
+        \draw[solid] (g1) to (j);
+      \end{scope}
+    \end{tikzpicture}
+  };
+
+  \node at (2, 0) {
+    \begin{tikzpicture}[x=0.8cm]
+      \node[sqadj] (a0) at (-1,0) {};
+      \node[sqadj] (a1) at (1,0) {};
+      \node[circAI] (b0) at (-1,-1) {};
+      \node[circBI] (b1) at (1,-1) {};
+      \node[guarAI] (g0) at (-1,-2) {};
+      \node[guarBI] (g1) at (1,-2) {};
+      \node[circABI] (j) at (0,-3) {};
+      \node[circAB] (c) at (0,-4) {};
+
+      \begin{scope}[-]
+        \tikzstyle{every node}=[draw,below]
+        \draw[solid] (a0) to (b0);
+        \draw[solid] (a1) to (b1);
+        \draw[solid] (b0) to (g0);
+        \draw[solid] (b1) to (g1);
+        \draw[solid] (g0) to (j);
+        \draw[solid] (g1) to (j);
+      \end{scope}
+    \end{tikzpicture}
+  };
+
+  \node at (3, 0) {
+    \begin{tikzpicture}[x=0.8cm]
+      \node[sqadj] (a0) at (-1,0) {};
+      \node[sqadj] (a1) at (1,0) {};
+      \node[circAI] (b0) at (-1,-1) {};
+      \node[circBI] (b1) at (1,-1) {};
+      \node[guarAI] (g0) at (-1,-2) {};
+      \node[guarBI] (g1) at (1,-2) {};
+      \node[circABI] (j) at (0,-3) {};
+      \node[circAB] (c) at (0,-4) {};
+
+      \begin{scope}[-]
+        \tikzstyle{every node}=[draw,below]
+        \draw[solid] (a0) to (b0);
+        \draw[solid] (a1) to (b1);
+        \draw[solid] (b0) to (g0);
+        \draw[solid] (b1) to (g1);
+        \draw[solid] (g0) to (j);
+        \draw[solid] (g1) to (j);
+        \draw[solid] (j) to (c);
+      \end{scope}
+    \end{tikzpicture}
+  };
+\end{tikzpicture}
 
 The same sequence of states, when taken in reverse, can be used to close a virtual channel:
 \begin{enumerate}

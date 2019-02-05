@@ -1,0 +1,37 @@
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \node[draw=black, rounded corners=0.5cm, outer sep=0.2cm] (adj0) at (0, 0) {
+    \begin{tabular}{c|c|c}
+      \multicolumn{3}{c}{\textbf{Adjudicator}} \\
+      Address & Balance & Outcome \\
+      \hline
+      $L$ & $5$ & $A$: 1, $B$: 2 \\
+      $L'$ & $2$ & \\
+      $L''$ &  & $A$: 3, $B$: 4 \\
+    \end{tabular}
+  };
+
+  \node (not0) at (3, -2.4) { $\adj{\holds{\text{L}}{5}{\alloc{A:1, B:2}}, \;\holds{\text{L'}}{2}{}, \; \holds{L''}{}{\alloc{A:2,b:1}}}$ };
+
+  \node (diag0) at (7, 0) {
+    \begin{tikzpicture}[y=1cm, x=1.5cm]
+      \node[sqadj] (adj0) at (0, 0) {};
+      \node[circAB, label=left:$L$] (L) at (0, -1) {};
+      \draw[->] (adj0) edge node[midway, left] { $5$ } (L);
+      \node[circA, label=below:$A$] (LA) at (-0.5, -2) {};
+      \node[circB, label=below:$B$] (LB) at (0.5, -2) {};
+      \draw[->] (L) edge node[midway, left] { $1$ } (LA);
+      \draw[->] (L) edge node[midway, right] { $2$ } (LB);
+
+      \node[sqadj] (a1) at (1, 0) {};
+      \node[circA, label=below:$L'$] (p1) at (1, -1) {};
+      \draw[->] (a1) edge node[midway, left] { $2$ } (p1);
+
+      \node[circAB, label=right:$L''$] (L'') at (2, -1) {};
+      \node[circA, label=below:$A$] (L''A) at (1.5, -2) {};
+      \node[circB, label=below:$B$] (L''B) at (2.5, -2) {};
+      \draw[->] (L'') edge node[midway, left] { $1$ } (L''A);
+      \draw[->] (L'') edge node[midway, right] { $2$ } (L''B);
+    \end{tikzpicture}
+  };
+
+\end{tikzpicture}
