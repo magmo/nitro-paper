@@ -51,9 +51,6 @@ We refer to these naive channels as \textbf{direct channels}, as they are suppor
 
 - image of virtual channels, talking about the agreements
 
-
-
-
 \section{Existing work}
 
 There are many examples of state channels and off-chain scaling projects. In this section we limit ourselves to a review of published work on the subject of off-chain payment channel and state channel networks.
@@ -91,39 +88,91 @@ We will now proceed with a more technical exposition of our protocol, which achi
 
 \section{Our State Channel Model}
 
-- introduce our model for networks of channels
-- both turbo and nitro work on this
+In this section we will present a model for state channel networks, which will serve as a foundation
+for the protocols introduced later in the paper.
+It will also form the basis for the section \ref{sec:reasoning}, where we present the logic
+to reason about state channels.
 
-- build up the foundations
-
-- basic balances / toy system / informal description
-- proving things
+- opinionated
+- capture all the features
 
 \subsection{A System of Balances}
 
-Start with a simple system of balances and show how to build it into a system of state channels
+At the heart of our model lies a simple system of balances. 
+We start by describing that system.
+
+In this paper, we simplify the explanation by only considering a single asset, which we will refer to as \textbf{coins}.
+We will further simplify matters by specifying that quantities of coins will have no maximum
+size, taking values in $\mathbb{Z}^+$.
+This allows us to avoid dealing with integer overflows when presenting operations.
+These simplifications do not cause any limitations in practice and all the work
+here can be applied to state channel networks that manage an arbitrary number of 
+real-world assets.
+
+In order to store value, a state channel network must be backed by assets held on-chain.
+In our explanation, we assume that these funds are held and managed by a single\footnote{
+In practice, the adjudicator functionality could be split across multiple smart contracts.
+} smart contract,
+which we will refer to as the \textbf{adjudicator}.
+
+The first purpose of the adjudicator is to store the balance of coins held for a given address.
+Addresses can correspond either to participants in the network or to state channels.
+A \textbf{participant address} is a regular blockchain address, generated in the standard way from the signature scheme.
+A \textbf{channel address} is formed by taking the hash of the participant addresses along with a nonce, $k$, that is chosen by the participants in order to distinguish their channels from one another.
+Given an arbitrary address, $A$, we assume that the properties of the signature scheme and hashing algorithm make it neither possible to find a private key for $A$ nor to find a channel whose address is $A$.
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/balance-notation}}
-  \caption{Cool, huh?}
+  \caption{
+    Three different ways of representing the situation where Bob has $5$ coins
+    stored against his address in the adjudicator and Alice has $2$.
+  }\label{fig:balance-notation}
 \end{figure}
 
-- balances + addresses
-- [diagram: adjudicator, including circle/square diagram]
+We model the adjudicator as having a simple mapping that stores the quantity of coins for
+an address.
+If an address does not appear in the table we take the balance to be zero.
+Figure \ref{fig:balance-notation} introduces the notation we will use to describe the system.
+
+The \textbf{deposit} operation, $D_A(x)$, is an on-chain operation used to increase $A$'s balance by $x$ coins.
+There are no restrictions on who can deposit coins for an address, but the
+transaction must always include a transfer of $x$ coins into the adjudicator.
+
+The \textbf{withdrawal} operation, $W_A(x)$, can be used to withdraw coins held at participant address, $A$, by any
+party with the knowledge of the corresponding private key. 
+In practice the withdrawal should also specify the blockchain address where the funds should be sent.
+A potential method signature is \texttt{withdraw(fromAddr, toAddr, amount, signature)}, 
+where \texttt{signature} is $A$'s signature of the other parameters
+\footnote{In practice, we could add the \texttt{senderAddress} to the parameters to sign,
+in order to prevent replay attacks by other parties.}.
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/deposit-withdrawal}}
-  \caption{Cool, huh?}
+  \caption{Deposits and withdrawals.}\label{fig:deposit-withdrawal}
 \end{figure}
 
-- coins
-- deposit + withdraw 
+To recap, we now have a simple smart contract that can store a balance against an address, which either represents a participant or a channel.
+The balances can be increased and decreased through deposits and withdrawals.
+Anyone can deposit into an address of either type\footnote{But there is nothing to be gained from depositing into a participant address.} but withdrawals can only occur from 
+participant addresses - and only by a party who knows the private key.
+The total coins held by the smart contract should always equal the sum of the balances.
 
-- so far this is pointless
+\subsection{Channel Outcomes}
 
-\subsection{Channel Operation}
 
-- state channel participants and addresses
+
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/outcome-notation}}
+  \caption{
+    Three different ways of representing the situation where Bob has $5$ coins
+    stored against his address in the adjudicator and Alice has $2$.
+  }\label{fig:outcome-notation}
+\end{figure} 
+
+- the purpose of the state channel is to get to an 'outcome'
+- in this section, we will use the simplest possible outcome - allocations
+
+- how do we create an outcome and get it on-chain
 - operation + finalization
 
 \begin{figure}[h]\centering
@@ -132,9 +181,13 @@ Start with a simple system of balances and show how to build it into a system of
   \caption{Channel Operation}\label{fig:modes}
 \end{figure}
 
+- operation + finalization
+
+
 \subsection{Redistribution}
 
-- 
+- you can only withdraw from a participant address
+- you can only get an outcome for a channel address
 
 - outcomes (in the abstract) - outcome is what gets put on chain
 - outcomes used for redistribution
@@ -144,10 +197,14 @@ Start with a simple system of balances and show how to build it into a system of
   \caption{Cool, huh?}
 \end{figure}
 
-\section{Reasoning about State Channels}
+\section{Reasoning about State Channels}\label{sec:reasoning}
 
 - paper aims to put in place a framework for reasoning about the correctness of state channel constructions
 - reasoning about what I hold off-chain and what if means to me
+
+The model is opinionated, in that it makes certain choices about the working details of state channel
+networks that will not be true in general.
+
 
 - how to extract value
 - states ---> outcomes ---> money
@@ -200,224 +257,6 @@ subsection consensus game
   \caption{Cool, huh?}
 \end{figure}
 
-
-\subsection{Operating vs. Funding State Channels}
-
-At the heart of our approach lies the decision to make the funding of a state channel independent from its operation.
-
-We view a state channel as a device for allowing a fixed set of participants to determine how a set of shared assets should be apportioned between them.
-We refer to the set of instructions that determine how the funds should be apportioned as the  \textbf{outcome} the state channel.
-We define the \textbf{operation} of a state channel to be the process by which the channel reaches an outcome. 
-The \textbf{funding} of a state channel is the method of ensuring that the assets exist and that they will ultimately be distributed according to the channel's outcome.
-
-The operation specification also defines the rules surrounding on-chain challenges and the various ways to respond to them.
-The ForceMove protocol is an example of a protocol that specifies the operation of a state channel.
-In this paper, we will not specify the operation of state channels, but will use ForceMove as an example where required.
-
-Specifying how state channels are funded involves specifying how funds are held in escrow on the chain, how they can be deposited and how they can be claimed according to the outcome of a state channel.
-As we will see in this paper, it can also involve specifying the rules for how the outcomes of multiple channels interact, which enables channels to be funded and defunded without on-chain operations.
-In the ForceMove paper, a \textit{SimpleAdjudicator} was specified, which only allows for direct channels between two participants.
-
-Decoupling the funding of a channel from its operation has several advantages.
-Provided that the channel is funded, its operation is completely independent from the other channels in the network.
-The source of funding for a channel can even change from off-chain to on-chain, all without interrupting the operation of that channel.
-Overall, by forcing channels to operate independently and to only be coupled through funding relationships, it becomes far easier to reason about the behaviour of any applications running within a state channel.
-
-
-\subsection{Addresses and Coins}
-
-A state channel is a protocol followed by a set of \textbf{participants}, each defined by a unique cryptographic address.
-The private keys corresponding to these addresses are used to sign updates to the channel.
-We assume that the signature scheme is unforgeable, so that only the owner of the address has the capability to sign states as that participant.
-
-Each channel has a \textbf{channel address} which is formed by taking the hash of the participant addresses along with a nonce, $k$, that is chosen by the participants in order to distinguish their channels from one another.
-We assume that the hashing algorithm is cryptographically secure, so that it impossible for two different sets of participants to create a channel with the same address.
-We also assume that the signature scheme and hashing algorithm together make it impossible to create a channel address that is the same as a participant address:
-we call this the `no collision' assumption.
-In practice, we accept that these statements will not be absolute but instead will hold with high probability.
-
-A state channel ultimately determines the quantity of a given asset that each participant should receive.
-The format that the asset quantity takes is an important consideration for a state channel.
-Blockchains typically have a max integer size, $M$, meaning that a state channel on a single asset
-has asset quantites in $\mathbb{Z}_M$, so that quantities above $M$ overflow.
-Similarly the quantities for a state channel on two assets takes values in $\mathbb{Z}_M \times \mathbb{Z}_M$.
-There are many other possibilities here, including having state channels governing an arbitrary set of assets.
-In this paper, we will simplify the explanation by only considering state channels on a single
-asset, taking quantity values in $\mathbb{Z}^+$, thereby explicitly ignoring integer overflow issues.
-We will refer to this asset as `coins'.
-
-\subsection{Depositing, Holding and Withdrawing}
-
-In order to store value, a state channel network must be backed by assets held on-chain.
-In our explanation, we assume that these funds are held and managed by a single smart contract,
-which we will refer to as the \textbf{adjudicator}.
-In practice, the adjudicator functionality could be split across multiple smart contracts.
-
-We say that $\rchi$ \textbf{holds} $x$, in the case where there is a quantity of $x$ coins
-locked on-chain against $\rchi$'s address.
-We write this statement $\adj{\holds{\rchi}{x}{}}$,
-where the double brackets $\adj{\;}$ indicate that the statement refers to state on the chain.
-Note that the only information stored on-chain is the channel address and the quantity of the asset held for it;
-all other information resides in the off-chain states held by the participants and is only visible on-chain in the case of a dispute.
-
-The \textbf{deposit} operation, $D_\rchi(x)$, is an on-chain operation used to assign $x$ coins to channel $\chi$.
-There are no restrictions on who can deposit coins into a channel, but the
-transaction must always include a transfer of $x$ coins into the adjudicator.
-\begin{align}
-D_\rchi(x) \adj{\holds{\rchi}{y}{}} = \adj{\holds{\rchi}{(x + y)}{}}
-\end{align}
-
-In order to distribute the coins it holds, a state channel, $\rchi$, must have one or more mechanisms for
-finalizing its outcome, $\Omega$, on-chain.
-This finalization must be done in a way that ensures that at most one outcome can be finalized for each channel.
-In ForceMove, outcomes are finalized either via an unanswered challenge or by the presentation
-of a \textit{conclusion proof} - a special set of states signed by participants indicating
-that the channel has concluded, thus allowing them to avoid the challenge timeout when withdrawing their funds.
-We write $\adj{\holds{\rchi}{}{\Omega}}$ to represent the situation where the outcome $\Omega$ for channel $\rchi$ has been finalized on-chain.
-
-Once an outcome is finalized on-chain, it can be used to transfer coins between addresses,
-through the application of one or more on-chain operations. For example:
-\begin{align}\label{eq:on-chain-operations}
-  \transfer{\rchi}{A}{x} \adj{\holds{\rchi}{(a + b)}{\Omega}} = \adj{\holds{\rchi}{a}{\Omega'
-}, \holds{A}{b}{}}
-\end{align}
-We will explain this example in further detail in the sections on Turbo and Nitro.
-In equation (\ref{eq:on-chain-operations}), $A$ could be either a channel address or a participant address.
-
-The \textbf{withdrawal} operation can be used to withdraw coins held at address $A$ by any
-party with the knowledge of the corresponding private key. 
-Note that the signature requirement coupled with the no-collision assumption means
-it is not possible to withdraw from a channel address.
-If $x \leq x'$ then
-\begin{align}
-W_A(x) \adj{\holds{A}{x'}{}} = \adj{\holds{A}{(x'-x)}{}}
-\end{align}
-In practice the withdrawal should also specify the blockchain address where the funds should be sent.
-A potential method signature is \texttt{withdraw(fromAddr, toAddr, amount, signature)}, 
-where \texttt{signature} is $A$'s signature of the other parameters
-\footnote{In practice, we add the \texttt{senderAddress} to the parameters to sign,
-in order to prevent replay attacks by other parties.}.
-
-In practice, the adjudicator api could allow multiple operations to be executed in a single blockchain transaction.
-For example, in the ForceMove SimpleAdjudicator funds are withdrawn in a way such that  
-the intermediate state, where funds are held against a participant address, is never persisted on-chain.
-
-\subsection{The Value of a State}\label{section:value-of-a-state}
-
-The utility of a state channel comes from the ability to transfer the value
-between participants without the need for an on-chain operation.
-In order to reason about state channels, we therefore need to understand how this transfer
-of value works.
-
-The word `state' is very overloaded in the world of state channels.
-In what follows we will need to distinguish between the state of an individual channel and
-the entire state of all channels plus the adjudicator.
-We will call the latter the \textbf{network state} and denote it with the symbol $\Sigma$.
-
-We define the \textbf{value}, $\nu_A(\Sigma)$, of a network state $\Sigma$ for participant $A$,
-to be the largest $x$ such that $A$ has an unbeatable strategy to extract
-\footnote{By \textit{extract} we mean to withdraw $x$ more coins than were deposited in the execution of the strategy.}
-$x$ coins from the adjudicator.
-The unbeatable strategy can involve signing (or refusing to sign) states off-chain, as well as
-applying one or more on-chain operations.
-The strategy might have to adapt based on the actions of other players but regardless of
-the actions they take, it should still be possible for $A$ to extract $x$ coins.
-
-When evaluating whether a strategy is unbeatable, we make the following assumptions about blockchain transactions:
-\begin{enumerate}
-  \item \textbf{Transactions are unimpeded}: given that the current time is $t$ and $\epsilon > 0$, then it is possible for any party to apply any operation, $O$, on-chain before time $t + \epsilon$.
-  \item \textbf{Transactions \textit{can} be front-run}: given two parties, $p_1$ and $p_2$, and two operations, $O_1$ and $O_2$, there is no way for $p_1$ to ensure that they can apply $O_1$ to the chain before $p_2$ applies $O_2$.
-  \item \textbf{Transactions are free}: we ignore the cost of gas fees when calculating the value of a state.
-\end{enumerate}
-The first assumption sidesteps issues of censorship, chain congestion and timing considerations around the creation of blocks.
-In practice, this assumption should hold if $\epsilon$ is sufficiently large, which can be accomplished by picking sensible channel timeouts.
-The second assumption rules out any strategies that rely on executing a given transaction on-chain before someone else executes a different one.
-
-Throughout this paper we will present sequences of states that interpolate between a start state and a target state, whilst preserving value for all participants.
-We will make the argument that, as the value is constant\footnote{
-The one exception is any transition involving a deposit, where we assume that a participant depositing
-$x$ coins into the network, will proceed if the value of the resulting state for them increases by $x$.
-}, participants will be willing to transition between these states.
-We call these transitions \textbf{safe transitions}.
-
-If we were considering transactions fees here, we would need to argue this principle more
-carefully: with transaction fees, some of the transitions we see as value preserving here
-would actually involve moving to a state of slightly lower value. 
-We assume that the utility gained in being able to open and close channels off-chain overcomes
-this issue in practice.
-In general, modelling the effect of gas fees on state channel networks is an interesting and important area of research but falls outside the scope of this paper.
-
-\subsection{Finalizable and Enabled Outcomes}
-
-In this paper, we are not generally concerned with the operation of state channels.
-However, in reasoning about channels that fund other channels, we do need to be able to talk about the states of these channels.
-It turns out that it is enough to characterise states in terms of the outcomes they allow the participants to register, which allows us to remain agnostic to the precise operation of the channels.
-In this section we develop the tools for characterising states in this way.
-
-We say an outcome, $\Omega$, is \textbf{finalizable} for participant $A$, if $A$ has an unbeatable
-strategy for finalizing this outcome in the adjudicator.
-We use the notation $\finalizable{\rchi}{\Omega}{A}$, to represent a state of a channel, $\rchi$,
-where the outcome, $\Omega$, is finalizable by $A$.
-\begin{align}
-  \finalizable{\rchi}{\Omega}{A} \xrightarrow{\text{A's unbeatable strategy}} \adj{\holds{\rchi}{}{\Omega}}
-\end{align}
-
-It follows from the definition that exactly one of the following statements is true about
-a channel $\rchi$ at any point in time:
-\begin{enumerate}
-  \item Participant $p$ is the unique participant with one or more finalizable outcome(s), $\Omega_1, \dots, \Omega_m$.
-        We write this $\finalizable{\rchi}{\Omega_1, \dots, \Omega_m}{p}$.
-  \item There are at least two participants, $P = \{p_1, \dots, p_m \}$, who share the same
-        finalizable outcome, $\Omega$. We write this $\finalizable{\rchi}{\Omega}{p_1, \dots, p_m}$.
-  \item There are no participants with any finalizable outcomes.
-\end{enumerate}
-The definition of finalizability excludes the case where two different finalizable outcomes are held
-by different participants, as in this case at least one participant's strategy would be beatable
-by the other participant's strategy.
-None of the protocols we present make use of the final situation, where no participant has a finalizable outcome, and we believe this state should generally be avoided.
-
-In the special case where the outcome of a channel is finalizable by all its participants, we say that the outcome is \textbf{universally finalizable}.
-This happens at two points of every ForceMove channel's lifecycle:
-\begin{enumerate}
-  \item After the first $n$ states have been broadcast. In this state, we say the channel is at the \textbf{funding point}.
-  \item When a single conclusion proof is known to each participant. In this state, we say the channel is in the \textbf{concluded state}.
-\end{enumerate}
-It is an important property of ForceMove that all channels have one universally finalizable
-state at the beginning of their lifecycle and one at the end
-\footnote{If a channel does not end with a conclusion proof, it ends with an expired on-chain challenge,
-in which case the outcome is already finalized on-chain.}.
-
-If a participant has no finalizable outcomes, their analysis of the network needs to be performed
-in terms of their \textbf{enabled outcomes}.
-The enabled outcomes for a participant, $p$, is defined as the set of outcomes that $p$ has
-no strategy to prevent from being finalized.
-We write the set of enabled outcomes for $p$ as $\finalizable{\rchi}{\Omega_1 \dots \Omega_m}{p}$.
-
-For any participant, $p$, in a channel, $\rchi$, exactly one of the following statements is
-true at a given point in time:
-\begin{enumerate}
-  \item $p$ has at least one finalizable outcome.
-  \item $p$ has at least two enabled outcomes.
-\end{enumerate}
-Note that if a participant has only enabled a single outcome, that outcome must be finalizable for them.
-
-\subsection{The Consensus Game}
-
-Another important example of universally finalizable states comes from the \textbf{consensus game}.
-The consensus game is a ForceMove \textit{application}, which means it specifies a certain
-set of transitions rules that can be used to define the allowed state transitions for a ForceMove
-channel.
-We give a complete definition of the consensus game in the appendix.
-
-The rules of the consensus game ensure that it reaches a universally finalizable outcome at least once every $n$ turns, for a channel with $n$ participants.
-At a very high level, the consensus game provides a mechanism for moving from one universally
-finalizable outcome, $\Omega_1$, to another, $\Omega_2$. 
-In order for this to happen, one participant proposes the new outcome, $\Omega_2$, and then
-every other participant must sign off on it. 
-If any participant disagrees, they can cancel the transition.
-
-The consensus game has some desirable properties in terms of enabling value preserving transitions between network states, which are useful when proving the correctness of state channel network constructions.
-Because of this, consensus game channels will feature heavily in Turbo and Nitro protocols.
 
 \section{Turbo Protocol}
 

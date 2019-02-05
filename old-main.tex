@@ -1,255 +1,1006 @@
 \documentclass{article}
+\input{preamble}
 
-\usepackage{amsmath}
-\usepackage{amsthm}
-\usepackage{amssymb}
-\usepackage{color}
-\usepackage{tikz}
-\usetikzlibrary{shapes,arrows.meta,backgrounds}
-\usepackage{etoolbox}
-\usepackage{url} % for urls in bibliography
-\usepackage[parfill]{parskip} % no paragraph indents, leave blank line
-\usepackage{graphicx}
-\usepackage{subcaption}
+\usepackage{xparse}
+\input{channel-diagrams}
+\usetikzlibrary{patterns, decorations.pathreplacing}
 
-% Need this to keep the space before theorems when using parfill parskip
-% https://tex.stackexchange.com/questions/25346/wrong-spacing-before-theorem-environment-amsthm
-\begingroup
-    \makeatletter
-    \@for\theoremstyle:=definition,remark,plain\do{%
-        \expandafter\g@addto@macro\csname th@\theoremstyle\endcsname{%
-            \addtolength\thm@preskip\parskip
-            }%
-        }
-\endgroup
+
+% \usepackage{draftwatermark}
+% \SetWatermarkTex2t{DRAFT}
+% \SetWatermarkScale{5}
 
 \title{Nitro Protocol}
 \author{Tom Close}
 
-\usepackage{mathtools}
-\usepackage{bm}
-\usepackage{stmaryrd} % for llbracket and rrbracket
-
-\theoremstyle{definition}
-\newtheorem{exmp}{Example}[section]
-\newtheorem{defn}{Definition}[section]
-
-\newcommand{\adj}[1]{\llbracket #1 \rrbracket} 
-\newcommand{\enf}[1]{[#1]} 
-
 \begin{document}
 
 \maketitle
+\begin{abstract}
+  State channels are an important technique for scaling blockchains, allowing a fixed set of participants to trustlessly execute a series of state transitions off-chain, in order to determine how a set of assets should be distributed between them.
+  In this paper we present constructions that allow state channels to fund one another, significantly reducing the number of on-chain deposits required.
+  Unlike in previous constructions, channels funded by parent channels operate identically to channels funded on-chain, making it easier to reason about the applications that run within them.
+  We develop the logic to prove the correctness of our constructions.
+\end{abstract}
 
-\section{Introduction}
+\section{Motivation}
 
-A blockchain is a device that enables a group of adversarial parties to come to consensus over the contents of a shared ledger, without the presence of a trusted central authority. 
-Whether using a proof-of-work or a proof-of-stake algorithm, this process has a cost both in terms of time and in terms of money.
-For the Ethereum blockchain, this cost results in an effective limit of around 15 transactions per second being processed on the network.
-When compared with the visa network, which can process on the order of 50,000 transactions per second, this limit supports the view that blockchains, in their current form, do not scale.
+State channels are an important technique for scaling blockchains.
+In a state channel, a fixed set of participants execute a series of state transitions off-chain, in order to determine how a set of assets should be distributed between them.
+By allowing participants to execute these transitions off-chain, the state channel removes load from the blockchain, allowing it to support the same level of activity with fewer transactions.
 
-State channels offer a solution to the blockchain scaling problem.
-A state channel can be thought of as a set of updatable agreements between a fixed set of participants determining how a given set of assets should be split between them.
-The agreements are updated off-chain through the exchange of cryptographically signed messages between the participants according to some set of previously-agreed update rules. 
-The assets in question are held in escrow on the blockchain, in such a way
-that they can only be released according to the latest agreement from the state channel.
-If the off-chain cooperative behaviour breaks down, for example if one party refuses to sign updates either by choice or due to unavailability, any of the parties can reclaim their share of the assets by presenting the latest agreement to the chain.
-An exit game is required to give other parties the opportunity to present a later state, but all parties have the guarantee that they can reclaim their share of the funds within some finite time.
+Unlike many other scaling techniques, state channels provide a way to run arbitrary state update protocols, instead of just providing a method for realizing transfers off-chain.
 
-In addition to the increased throughput, state channels bring instant finality to transactions: the moment a channel update is received the participant knows that the assets transferred are now assigned to them.
-They cannot access the assets immediately but they have the power to prevent any other party claiming those assets in the future.
-The only requirement is that participants need to be live enough to engage in the exit game if an opponent attempts to exit an earlier state.
-In practice, the requirement here is to check the chain periodically - at time intervals that are less than, but on the same order of magnitude as, the challenge duration in the exit game.
+Beyond scaling, state channels bring instant finality to blockchain transactions:
+value can be considered to be transferred at the moment when a state channel update is received.
+The holder of a fully signed state does not need to wait for the transaction to be mined, safe in the knowledge
+that they have the right to claim the assets on-chain at a future point of time of their choosing.
 
-As the channel updates are created and exchanged off-chain, the channel-update throughput is limited only by the speed of constructing, signing and broadcasting the update.
-Given that channel updates only needed to be communicated between participants and the system is therefore highly parallelizable, it is difficult to put a bound on the total transaction throughput of a system of state channels.
-In practice the system is only limited by the on-chain operations required to move assets when opening and closing channels.
+In their naive form, each state channel needs to have a corresponding \textit{state deposit} - a set of assets held in escrow on-chain, to be distributed according to the outcome of the channel.
+Each time a state channel is opened, at least one party needs to perform an on-chain transaction to transfer assets into the state deposit, and each time it is closed at least one participant must perform an on-chain transaction to claim their share.
+This limits the effectiveness of state channels as a scaling solution, making it only suitable for the case where a large number of transactions are executed between a single group of participants.
+We refer to these naive channels as \textbf{direct channels}, as they are supported directly by funds held on the blockchain.
 
-In this paper, we allow channels to be opened and closed off-chain. We enable the construction of efficient state channel networks.[TODO]
+\subsection{Ledger Channels and Virtual Channels}
+
+- graph of direct channels with multiple lines between nodes
+
+- graph of ledger channels with single lines between nodes
+
+- graph of virtual channels with hub + spoke
+
+- image of virtual channels, talking about the agreements
 
 \section{Existing work}
 
-Lightning and raiden
-- payment channel networks
-- directional
+There are many examples of state channels and off-chain scaling projects. In this section we limit ourselves to a review of published work on the subject of off-chain payment channel and state channel networks.
 
-Celer
-- directional but with multiple paths
-- general conditions
+The Lightning network, which went live in March 2018, allows for off-chain payments on the Bitcoin network.
+The payments make use of hashed timelocked contracts (HTLCs), which can be thought of as payments that are conditional on the revelation of a hash pre-image before a given point in time.
+This construction allows payments to be routed through an arbitrary number of intermediaries but is strictly limited to payments.
+The Raiden network provides the same functionality for the Ethereum blockchain and launched on the mainnet in December 2018.
 
-Perun
-- virtual payment channels (different from HTLCs)
-- but using a validity time
-- and then state channel networks
-[Connext - have removed the time limit with a trade-off of trusting the hub - TODO: check this]
+Celer Network proposes a state channel construction that extends HTLCs to allow payments that are conditional on the outcome of an arbitrary calculation.
+The outcome of the calculation can specify the amount of funds that move, as well as whether the payments should go through at all.
+The paper gives a high-level justification of how the construction yields state channels capable of running arbitrary state machine transitions.
 
-Counterfactual
-- thinks about counterfactual instantiation
-- also app instance on top, which we collaborated on
-- possible to do meta-channels, but the details are not given in the paper and are still being finalized
+Perun proposed a different flavour of state channel construction, viewing state channels as a direct interaction between two parties instead of a series of conditional payments.
+This makes it very clear that state channel updates themselves need only be shared between the participants in the channel, and do not need to be routed through a network.
+They precisely specify a virtual channel construction, allowing two-party channels to be supported through intermediaries, and prove its correctness using the UC framework.
+The proof relies on the fact that their virtual channels have a pre-determined validity time, after which the channel must be settled.
 
+Counterfactual gives a state channel construction using the technique of counterfactual instantiation, a form of logic that reasons about constructions that could be deployed to the chain if required.
+The channels they describe are $n$-party and they give a high-level overview of how to construct `meta-channels' that allow channels to be supported through intermediaries.
+While the paper itself does not specify the details of how to construct meta-channels, many of these details can be found in their publicly released source code.
 
-Our contribution:
-- like perun without the time limit
+\subsection{Our contribution}
 
+This paper specifies in detail how to build virtual channels on top of the ForceMove state channel framework.
+Along with the construction we provide some high-level proofs to justify that the construction is correct (TODO: need to add this to the appendix).
 
-\section{Recap of ForceMove}
+Unlike Perun's detailed construction, our state channel networks place no restrictions on the operation of virtual channels:
+we remove the channel validity time, instead allowing intermediaries to `off-load' their channels as protection against arbitrarily long locking of their deposit.
+The off-load procedure converts a virtual channel to a regular on-chain channel, without interrupting the operation within that channel.
 
+The protocol described here readily extends to virtual channels between $n$-parties, although we do not give this construction in the paper.
 
-A ForceMove \textbf{state channel}, $\chi$, is defined by an ordered set of \textbf{participants}, $P = [p_0, ..., p_{n-1}]$ and a \textbf{channel nonce}, $k$, which is chosen by the participants.
-The \textbf{channel address} is calculated by taking the last 20 bytes of the \texttt{keccak256}
-hash of $(P, k)$.
-We assume that channel addresses are unique, ignoring the possibility of finding an address
-collision for channels with different sets of participants. 
-We also assume that the space of channel addresses is disjoint from the space of all possible addresses generated from the public/private key algorithm, ignoring
-the possibility of finding a collision here too.
+We will now proceed with a more technical exposition of our protocol, which achieves the functionality outlined above.
 
+\section{Our State Channel Model}
 
+- introduce our model for networks of channels
+- both turbo and nitro work on this
 
+- build up the foundations
 
+- basic balances / toy system / informal description
+- proving things
 
-Channel properties, the address of an on-chain \textbf{game library}, $L$,
-challenge duration
+\subsection{A System of Balances}
 
+Start with a simple system of balances and show how to build it into a system of state channels
 
-\input{figures/game-overview}
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/balance-notation}}
+  \caption{Cool, huh?}
+\end{figure}
 
-\subsection{On-chain operations}
+- balances + addresses
+- [diagram: adjudicator, including circle/square diagram]
 
-todo: intro
-We will talk about the adjudicator as though it is a single contract but don't intend to take a position on how it should be constructed by doing so; it is likely that in practice the adjudicator functionality will be provided by a set of interacting contracts.
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/deposit-withdrawal}}
+  \caption{Cool, huh?}
+\end{figure}
 
-We will refer to the on-chain contract as the \textbf{adjudicator}, which we will write $\adj{S}$, where $S$ represents the contract's internal state. The state consists of three collections: the allocations, the outcomes and the challenges, each of which is keyed by a channel address. 
+- coins
+- deposit + withdraw 
 
-The \textbf{allocations} collection is an \texttt{(address -> uint256)} mapping that records the total funds allocated to a given channel. We write $\adj{\alpha_\chi(x)}$ to represent an adjudicator where $x$ is allocated to channel $\chi$.
+- so far this is pointless
 
-The \textbf{outcomes} collection assigns channels to one of two different modes: channels are either undecided or decided. We use the symbol $\cdot$ to represent undecided channels, so that $\adj{\beta_\chi(\cdot)}$ represents an adjudicator where the outcome of channel $\chi$ is undecided. For channels with outcomes that are decided, the outcomes collection maps the channel address to an ordered set of \texttt{(address, uint256)} pairs - exactly the same format as the channel balances. We write $\adj{\beta_\chi(X: x, Y: y)}$ for an adjudicator where the outcome for channel $\chi$ is decided and sends $x$ to address $X$ and $y$ to address $Y$.
+\subsection{Channel Operation}
 
-The \textbf{challenges} collection records whether there is an active challenge on a given channel. We write $\adj{\kappa_\chi(\tau, \sigma)}$ for the case where there's an active challenge on channel $\chi$ challenging with state $\sigma$ and expiring at time $\tau$. We write $\adj{\kappa_\chi(\cdot)}$ in the case where there is no open challenge and $\adj{\kappa_\chi(\times)}$ in the case where a challenge has expired (and thus no further challenges are possible). An efficient real-world implementation would most likely store the challenges as part of the outcomes collection, but we have chosen to treat them as separate concepts for the purpose of this paper.
+- state channel participants and addresses
+- operation + finalization
 
-Note that while using the above notation in the rest of the paper, we will suppress the unimportant parts of the state, with the understanding that these parts of the state remain unchanged. It is also understood that zero entries can be ignored in outcomes, so that $\beta(a_1: 0, a_2:x_2,...) \equiv \beta(a_2:x_2, ...)$.
+\begin{figure}[h]\centering
+  \input{figures/channel-operation}
 
-We now move on to describing the operations supported by the adjudicator. The first operation we look at is the \textbf{deposit}:
-\begin{align*}
-D_\chi(x) \adj{\alpha_\chi(y)} \rightarrow \adj{\alpha_\chi(x + y)}
-\end{align*}
-The deposit can be called by anyone and results in an increase in the allocation for the given channel.
+  \caption{Channel Operation}\label{fig:modes}
+\end{figure}
 
-There is also a \textbf{withdrawal} operation that can be used by anyone with the private key for address $A$ to withraw funds allocated to $A$ by an outcome:
-\begin{multline*}
-W_A(x) \adj{\alpha_\chi(x_\alpha)\beta_\chi(A: x_\beta, ...)} \rightarrow \\
-\begin{cases}
-  \adj{\alpha_\chi(x_\alpha - x)\beta_\chi(A: x_\beta - x, ...)} &
-  \text{if } x \leq x_\alpha, x_\beta  \\
-  \adj{\alpha_\chi(x_\alpha)\beta_\chi(A: x_\beta, ...)} &
-  \text{otherwise}
-\end{cases}
-\end{multline*}
-In order to call the withdraw, the caller needs to sign the withdraw operation using the private key of the address the withdrawal is from. Thus it is not possible to call the withdraw operation for an address that corresponds to a state channel, as these addresses were generated from a hash of the channel's properties and not from a public/private key pair.
+\subsection{Redistribution}
 
-The next operation is the \textbf{force-move} which is used to register a challenge for a channel $\chi$ if no challenge (active or expired) currently exists:
-\begin{align*}
-FM(\tau, \bm{\sigma}_i^{i+n-1}) \adj{\kappa_\chi(x)} \rightarrow 
-\begin{cases}
-  \adj{\kappa_\chi(\tau + \eta, \sigma^{i+n-1})} &
-  \text{if } x = \cdot \wedge t(\bm{\sigma}_i^{i+n-1}) \\
-  \adj{\kappa_\chi(x)} &
-  \text{otherwise}
-\end{cases}
-\end{align*}
-where we write $\bm{\sigma}_i^{i+n-1}$ to represent the sequence of states $\sigma^i \dots \sigma^{i+n-1}$ and $t(\bm{\sigma}_i^{i+n-1}) = t(\sigma^{i}, \sigma^{i+1}) \wedge \dots \wedge t(\sigma^{i+n-2}, \sigma^{i+n-1})$.
+- 
 
-The intent of a force-move is to get the next participant to provide their next move to the adjudicator. To do this they can call the \textbf{respond} method, providing their next state:
-\begin{align*}
-R(\tau', \sigma^{i+1})\adj{\kappa(\tau, \sigma^i)} \rightarrow
-\begin{cases}
-  \adj{\kappa_\chi(\cdot)} & \text{if } \tau' < \tau \wedge t(\sigma^i, \sigma^{i+1}) \\
-  \adj{\kappa(\tau, \sigma^i)} &
-  \text{otherwise}
-\end{cases}
-\end{align*}
-Once the challenge is cancelled it is removed from the adjudicator and the channel operation can continue off-chain. The force-move paper \cite{} outlines a couple of alternative ways (\textbf{refute} and \textbf{respond-with-alternative-move}) to respond to a force-move. While these are important for the ForceMove protocol, we will not need them in this paper, so will not go over them here.
+- outcomes (in the abstract) - outcome is what gets put on chain
+- outcomes used for redistribution
 
-If the opponent does not respond to the challenge before the challenge expiry time, $\tau$, then a \textbf{timeout} occurs:
-\begin{align*}
-\Theta(\tau + \epsilon) \adj{\kappa(\tau, \sigma_\chi(\beta_\chi, \delta))} \rightarrow \adj{\beta_\chi \kappa_\chi(\times)}
-\end{align*}
-Unlike the other operations on this list, the timeout operation is not triggered by a
-blockchain transaction. Instead the operation happens automatically when the block time
-exceeds the expiry time stored in the challenge. In practice, there will not be any change 
-to the state stored in the contract when the operation occurs - just a change to the
-interpretation of that state. 
-
-The final operation is the \textbf{conclude} operation, which enables the immediate creation of a channel outcome from a conclusion proof, $\bm{\sigma}^*(\beta)$ including in the case where there is an active challenge:
-\begin{align*}
-C(\tau, \bm{\sigma}^*(\beta)) \adj{\kappa_\chi(x)} \rightarrow 
-\begin{cases}
-  \adj{\kappa_\chi(\times)} & \text{if } x = \times \\
-  \adj{\beta_\chi(\beta) \kappa_\chi(\times)} &
-  \text{otherwise}
-\end{cases}
-\end{align*}
-The conclude operation enables instant withdrawals in the case the channel is concluded collaboratively off-chain.
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/redistribution}}
+  \caption{Cool, huh?}
+\end{figure}
 
 \section{Reasoning about State Channels}
 
-Develop the reasoning and logic for the rest of the paper.
-We introduce these concepts using the ForceMove framework but they are the central concepts of all state channel logic and can be applied to all state channel systems.
+- paper aims to put in place a framework for reasoning about the correctness of state channel constructions
+- reasoning about what I hold off-chain and what if means to me
 
-State channels enable value to be transferred off-chain.
-How does this work when the chain is the record of value?
-Consider value to be transferred off-chain, when the right to obtain
-that value on-chain is transferred.
-To understand a state channel it's therefore key to understand the capabilities our current set of states and private information affords us.
+- how to extract value
+- states ---> outcomes ---> money
+- reducing channel diagrams --> value
 
-This involves not only reasoning about the states and private information they hold and their knowledge about what other players hold. In doing this
-we don't track 
-- assume that any state you have received is public
-- assume that any state that is sent is public
+- outcome diagrams
+- fundamental rule of state channels - if two states are worth the same, I will transition between them
+- the "simple rule of state channels" - we ignore other factors
+- value
+- funded ?
+- offloaded
 
-In ForceMove, the only way a channel can affect the on-chain funds is via
-the channel balances, $\beta$, being placed in the adjudicator. We will
-refer to these final balances as the \textbf{outcome} of the channel and
-will refer to their placement in the adjudicator as \textbf{finalizing} the outcome. As we saw in the previous section, there are two ways to register an outcome with the adjudicator: (i) by calling the force-move operation which no-one responds to before the expiry time or (ii) by calling the conclude operation with a conclusion proof.
+- safe
+- this is the guarantee that if a participant stops at any point other participants don't lose out
 
-We will simplify the analysis with the following assumptions:
+- allows rewriting
+- [diagram] example: closing off-chain
+
+- two questions (finalization + redistribution)
+  - what can I definitely finalize?
+  - what can I definitely redistribute to myself?
+
+- protocol design: how can I move between states in single moves that keep the value the same
+- .. when we don't allow atomic changes across channels
+
+- presenting a construction / protocol
+- in particular when presenting a protocol we must demonstrate a series single state updates, demonstrate that the value is preserved
+- in particular the way we do this:
+  - demostrate a construction funds a channel
+  - demonstrate we can build it from another state
+    - give a series of waypoint states - universally finalizable outcomes
+    - of a special type of channel - consensus channels, running a particilar protocol
+    - use the specifics of this channel to say we can move between them in a safe manner
+
+
+\subsection{Finalizable outcomes}
+
+- definition: statement
+- definition: channel state
+- definition: adjudicator state
+- definition: system state
+
+- the rules of strategies
+
+subsection consensus game
+[diagram] - pictorial representation of consensus game
+
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/consensus-game}}
+  \caption{Cool, huh?}
+\end{figure}
+
+
+\subsection{Operating vs. Funding State Channels}
+
+At the heart of our approach lies the decision to make the funding of a state channel independent from its operation.
+
+We view a state channel as a device for allowing a fixed set of participants to determine how a set of shared assets should be apportioned between them.
+We refer to the set of instructions that determine how the funds should be apportioned as the  \textbf{outcome} the state channel.
+We define the \textbf{operation} of a state channel to be the process by which the channel reaches an outcome. 
+The \textbf{funding} of a state channel is the method of ensuring that the assets exist and that they will ultimately be distributed according to the channel's outcome.
+
+The operation specification also defines the rules surrounding on-chain challenges and the various ways to respond to them.
+The ForceMove protocol is an example of a protocol that specifies the operation of a state channel.
+In this paper, we will not specify the operation of state channels, but will use ForceMove as an example where required.
+
+Specifying how state channels are funded involves specifying how funds are held in escrow on the chain, how they can be deposited and how they can be claimed according to the outcome of a state channel.
+As we will see in this paper, it can also involve specifying the rules for how the outcomes of multiple channels interact, which enables channels to be funded and defunded without on-chain operations.
+In the ForceMove paper, a \textit{SimpleAdjudicator} was specified, which only allows for direct channels between two participants.
+
+Decoupling the funding of a channel from its operation has several advantages.
+Provided that the channel is funded, its operation is completely independent from the other channels in the network.
+The source of funding for a channel can even change from off-chain to on-chain, all without interrupting the operation of that channel.
+Overall, by forcing channels to operate independently and to only be coupled through funding relationships, it becomes far easier to reason about the behaviour of any applications running within a state channel.
+
+
+\subsection{Addresses and Coins}
+
+A state channel is a protocol followed by a set of \textbf{participants}, each defined by a unique cryptographic address.
+The private keys corresponding to these addresses are used to sign updates to the channel.
+We assume that the signature scheme is unforgeable, so that only the owner of the address has the capability to sign states as that participant.
+
+Each channel has a \textbf{channel address} which is formed by taking the hash of the participant addresses along with a nonce, $k$, that is chosen by the participants in order to distinguish their channels from one another.
+We assume that the hashing algorithm is cryptographically secure, so that it impossible for two different sets of participants to create a channel with the same address.
+We also assume that the signature scheme and hashing algorithm together make it impossible to create a channel address that is the same as a participant address:
+we call this the `no collision' assumption.
+In practice, we accept that these statements will not be absolute but instead will hold with high probability.
+
+A state channel ultimately determines the quantity of a given asset that each participant should receive.
+The format that the asset quantity takes is an important consideration for a state channel.
+Blockchains typically have a max integer size, $M$, meaning that a state channel on a single asset
+has asset quantites in $\mathbb{Z}_M$, so that quantities above $M$ overflow.
+Similarly the quantities for a state channel on two assets takes values in $\mathbb{Z}_M \times \mathbb{Z}_M$.
+There are many other possibilities here, including having state channels governing an arbitrary set of assets.
+In this paper, we will simplify the explanation by only considering state channels on a single
+asset, taking quantity values in $\mathbb{Z}^+$, thereby explicitly ignoring integer overflow issues.
+We will refer to this asset as `coins'.
+
+\subsection{Depositing, Holding and Withdrawing}
+
+In order to store value, a state channel network must be backed by assets held on-chain.
+In our explanation, we assume that these funds are held and managed by a single smart contract,
+which we will refer to as the \textbf{adjudicator}.
+In practice, the adjudicator functionality could be split across multiple smart contracts.
+
+We say that $\rchi$ \textbf{holds} $x$, in the case where there is a quantity of $x$ coins
+locked on-chain against $\rchi$'s address.
+We write this statement $\adj{\holds{\rchi}{x}{}}$,
+where the double brackets $\adj{\;}$ indicate that the statement refers to state on the chain.
+Note that the only information stored on-chain is the channel address and the quantity of the asset held for it;
+all other information resides in the off-chain states held by the participants and is only visible on-chain in the case of a dispute.
+
+The \textbf{deposit} operation, $D_\rchi(x)$, is an on-chain operation used to assign $x$ coins to channel $\chi$.
+There are no restrictions on who can deposit coins into a channel, but the
+transaction must always include a transfer of $x$ coins into the adjudicator.
+\begin{align}
+D_\rchi(x) \adj{\holds{\rchi}{y}{}} = \adj{\holds{\rchi}{(x + y)}{}}
+\end{align}
+
+In order to distribute the coins it holds, a state channel, $\rchi$, must have one or more mechanisms for
+finalizing its outcome, $\Omega$, on-chain.
+This finalization must be done in a way that ensures that at most one outcome can be finalized for each channel.
+In ForceMove, outcomes are finalized either via an unanswered challenge or by the presentation
+of a \textit{conclusion proof} - a special set of states signed by participants indicating
+that the channel has concluded, thus allowing them to avoid the challenge timeout when withdrawing their funds.
+We write $\adj{\holds{\rchi}{}{\Omega}}$ to represent the situation where the outcome $\Omega$ for channel $\rchi$ has been finalized on-chain.
+
+Once an outcome is finalized on-chain, it can be used to transfer coins between addresses,
+through the application of one or more on-chain operations. For example:
+\begin{align}\label{eq:on-chain-operations}
+  \transfer{\rchi}{A}{x} \adj{\holds{\rchi}{(a + b)}{\Omega}} = \adj{\holds{\rchi}{a}{\Omega'
+}, \holds{A}{b}{}}
+\end{align}
+We will explain this example in further detail in the sections on Turbo and Nitro.
+In equation (\ref{eq:on-chain-operations}), $A$ could be either a channel address or a participant address.
+
+The \textbf{withdrawal} operation can be used to withdraw coins held at address $A$ by any
+party with the knowledge of the corresponding private key. 
+Note that the signature requirement coupled with the no-collision assumption means
+it is not possible to withdraw from a channel address.
+If $x \leq x'$ then
+\begin{align}
+W_A(x) \adj{\holds{A}{x'}{}} = \adj{\holds{A}{(x'-x)}{}}
+\end{align}
+In practice the withdrawal should also specify the blockchain address where the funds should be sent.
+A potential method signature is \texttt{withdraw(fromAddr, toAddr, amount, signature)}, 
+where \texttt{signature} is $A$'s signature of the other parameters
+\footnote{In practice, we add the \texttt{senderAddress} to the parameters to sign,
+in order to prevent replay attacks by other parties.}.
+
+In practice, the adjudicator api could allow multiple operations to be executed in a single blockchain transaction.
+For example, in the ForceMove SimpleAdjudicator funds are withdrawn in a way such that  
+the intermediate state, where funds are held against a participant address, is never persisted on-chain.
+
+\subsection{The Value of a State}\label{section:value-of-a-state}
+
+The utility of a state channel comes from the ability to transfer the value
+between participants without the need for an on-chain operation.
+In order to reason about state channels, we therefore need to understand how this transfer
+of value works.
+
+The word `state' is very overloaded in the world of state channels.
+In what follows we will need to distinguish between the state of an individual channel and
+the entire state of all channels plus the adjudicator.
+We will call the latter the \textbf{network state} and denote it with the symbol $\Sigma$.
+
+We define the \textbf{value}, $\nu_A(\Sigma)$, of a network state $\Sigma$ for participant $A$,
+to be the largest $x$ such that $A$ has an unbeatable strategy to extract
+\footnote{By \textit{extract} we mean to withdraw $x$ more coins than were deposited in the execution of the strategy.}
+$x$ coins from the adjudicator.
+The unbeatable strategy can involve signing (or refusing to sign) states off-chain, as well as
+applying one or more on-chain operations.
+The strategy might have to adapt based on the actions of other players but regardless of
+the actions they take, it should still be possible for $A$ to extract $x$ coins.
+
+When evaluating whether a strategy is unbeatable, we make the following assumptions about blockchain transactions:
+\begin{enumerate}
+  \item \textbf{Transactions are unimpeded}: given that the current time is $t$ and $\epsilon > 0$, then it is possible for any party to apply any operation, $O$, on-chain before time $t + \epsilon$.
+  \item \textbf{Transactions \textit{can} be front-run}: given two parties, $p_1$ and $p_2$, and two operations, $O_1$ and $O_2$, there is no way for $p_1$ to ensure that they can apply $O_1$ to the chain before $p_2$ applies $O_2$.
+  \item \textbf{Transactions are free}: we ignore the cost of gas fees when calculating the value of a state.
+\end{enumerate}
+The first assumption sidesteps issues of censorship, chain congestion and timing considerations around the creation of blocks.
+In practice, this assumption should hold if $\epsilon$ is sufficiently large, which can be accomplished by picking sensible channel timeouts.
+The second assumption rules out any strategies that rely on executing a given transaction on-chain before someone else executes a different one.
+
+Throughout this paper we will present sequences of states that interpolate between a start state and a target state, whilst preserving value for all participants.
+We will make the argument that, as the value is constant\footnote{
+The one exception is any transition involving a deposit, where we assume that a participant depositing
+$x$ coins into the network, will proceed if the value of the resulting state for them increases by $x$.
+}, participants will be willing to transition between these states.
+We call these transitions \textbf{safe transitions}.
+
+If we were considering transactions fees here, we would need to argue this principle more
+carefully: with transaction fees, some of the transitions we see as value preserving here
+would actually involve moving to a state of slightly lower value. 
+We assume that the utility gained in being able to open and close channels off-chain overcomes
+this issue in practice.
+In general, modelling the effect of gas fees on state channel networks is an interesting and important area of research but falls outside the scope of this paper.
+
+\subsection{Finalizable and Enabled Outcomes}
+
+In this paper, we are not generally concerned with the operation of state channels.
+However, in reasoning about channels that fund other channels, we do need to be able to talk about the states of these channels.
+It turns out that it is enough to characterise states in terms of the outcomes they allow the participants to register, which allows us to remain agnostic to the precise operation of the channels.
+In this section we develop the tools for characterising states in this way.
+
+We say an outcome, $\Omega$, is \textbf{finalizable} for participant $A$, if $A$ has an unbeatable
+strategy for finalizing this outcome in the adjudicator.
+We use the notation $\finalizable{\rchi}{\Omega}{A}$, to represent a state of a channel, $\rchi$,
+where the outcome, $\Omega$, is finalizable by $A$.
+\begin{align}
+  \finalizable{\rchi}{\Omega}{A} \xrightarrow{\text{A's unbeatable strategy}} \adj{\holds{\rchi}{}{\Omega}}
+\end{align}
+
+It follows from the definition that exactly one of the following statements is true about
+a channel $\rchi$ at any point in time:
+\begin{enumerate}
+  \item Participant $p$ is the unique participant with one or more finalizable outcome(s), $\Omega_1, \dots, \Omega_m$.
+        We write this $\finalizable{\rchi}{\Omega_1, \dots, \Omega_m}{p}$.
+  \item There are at least two participants, $P = \{p_1, \dots, p_m \}$, who share the same
+        finalizable outcome, $\Omega$. We write this $\finalizable{\rchi}{\Omega}{p_1, \dots, p_m}$.
+  \item There are no participants with any finalizable outcomes.
+\end{enumerate}
+The definition of finalizability excludes the case where two different finalizable outcomes are held
+by different participants, as in this case at least one participant's strategy would be beatable
+by the other participant's strategy.
+None of the protocols we present make use of the final situation, where no participant has a finalizable outcome, and we believe this state should generally be avoided.
+
+In the special case where the outcome of a channel is finalizable by all its participants, we say that the outcome is \textbf{universally finalizable}.
+This happens at two points of every ForceMove channel's lifecycle:
+\begin{enumerate}
+  \item After the first $n$ states have been broadcast. In this state, we say the channel is at the \textbf{funding point}.
+  \item When a single conclusion proof is known to each participant. In this state, we say the channel is in the \textbf{concluded state}.
+\end{enumerate}
+It is an important property of ForceMove that all channels have one universally finalizable
+state at the beginning of their lifecycle and one at the end
+\footnote{If a channel does not end with a conclusion proof, it ends with an expired on-chain challenge,
+in which case the outcome is already finalized on-chain.}.
+
+If a participant has no finalizable outcomes, their analysis of the network needs to be performed
+in terms of their \textbf{enabled outcomes}.
+The enabled outcomes for a participant, $p$, is defined as the set of outcomes that $p$ has
+no strategy to prevent from being finalized.
+We write the set of enabled outcomes for $p$ as $\finalizable{\rchi}{\Omega_1 \dots \Omega_m}{p}$.
+
+For any participant, $p$, in a channel, $\rchi$, exactly one of the following statements is
+true at a given point in time:
+\begin{enumerate}
+  \item $p$ has at least one finalizable outcome.
+  \item $p$ has at least two enabled outcomes.
+\end{enumerate}
+Note that if a participant has only enabled a single outcome, that outcome must be finalizable for them.
+
+\subsection{The Consensus Game}
+
+Another important example of universally finalizable states comes from the \textbf{consensus game}.
+The consensus game is a ForceMove \textit{application}, which means it specifies a certain
+set of transitions rules that can be used to define the allowed state transitions for a ForceMove
+channel.
+We give a complete definition of the consensus game in the appendix.
+
+The rules of the consensus game ensure that it reaches a universally finalizable outcome at least once every $n$ turns, for a channel with $n$ participants.
+At a very high level, the consensus game provides a mechanism for moving from one universally
+finalizable outcome, $\Omega_1$, to another, $\Omega_2$. 
+In order for this to happen, one participant proposes the new outcome, $\Omega_2$, and then
+every other participant must sign off on it. 
+If any participant disagrees, they can cancel the transition.
+
+The consensus game has some desirable properties in terms of enabling value preserving transitions between network states, which are useful when proving the correctness of state channel network constructions.
+Because of this, consensus game channels will feature heavily in Turbo and Nitro protocols.
+
+\section{Turbo Protocol}
+
+The outcome of a Turbo channel is always an \textbf{allocation}.
+An allocation is a list of pairs of addresses and totals, $\alloc{a_1{:}v_1, \dots, a_m{:}v_m}$, where each total, $v_i$, represents that quantity of coins due to each address, $a_i$.
+If the outcome of channel $A$ includes the pair $B{:}x$, we say that `$A$ \textbf{owes} $x$ to $B$'.
+We assume that each address only appears once in the allocation and require that implementations enforce this by ignoring any additional entries for a given address after the first.
+
+The allocation is in priority order, so that if the channel does not hold enough funds to pay all the coins that are due, then the addresses at the beginning of the allocation will receive funds first.
+We say that `$A$ \textbf{can afford} $x$ for $B$', if $B$ would receive at least $x$ coins, were the coins currently held by $A$ to be paid out in priority order.
+
+Turbo introduces the \textbf{transfer} operation, $\transfer{A}{B}{x}$, to trigger the on-chain transfer of funds according to an allocation.
+If $A$ can afford $x$ for $B$, then $\transfer{A}{B}{x}$:
+\begin{enumerate}
+  \item Reduces the funds held in channel $A$ by $x$. 
+  \item Increases the funds held by $B$ by $x$.
+  \item Reduces the amount owed to $B$ in the outcome of $A$ by $x$.
+\end{enumerate}
+If $A$ cannot afford $x$ for $B$, then $\transfer{A}{B}{x}$ fails, leaving the on-chain state unchanged.
+
+\begin{example}
+  In the following example, we have a channel, $L$, which holds $10$ coins and has an outcome, $\alloc{A: 3, B: 2, \rchi: 5}$, which has been finalized on-chain.
+  As $L$ can afford $5$ for $\rchi$ the following transfer operation is successful:
+  \begin{align}
+    \transfer{L}{\rchi}{5}\adj{\holds{L}{10}{\alloc{A: 3, B: 2, \rchi: 5}}} = \adj{\holds{L}{5}{\alloc{A:3, B: 2}}, \holds{\rchi}{5}{}}
+  \end{align}
+\end{example}
+
+We give a python implementation of the Turbo adjudicator in the appendix.
+
+\subsection{Ledger Channels}
+
+A \textbf{ledger} channel is a channel which uses its own funding to fund other channels sharing the same set of participants.
+By doing this, a ledger channel allows these \textbf{sub-channels} to be opened, funded and closed without any on-chain operations.
+
+To see how this works, consider the following setup where a ledger channel, $L$, allocates the funds it holds to participants $A$ and $B$ and channel $\rchi$:
+\begin{align}
+  \adj{\holds{L}{10}{}}, \finalizable{L}{\alloc{A: 2, B: 3, \rchi: 5}}{A, B}
+\end{align}
+We have chosen the simplest example here, where $L$ is funded by the coins it holds on-chain, but it is completely possible to have ledger channels themselves funded by other ledger channels or (later) by virtual channels.
+
+We claim that the ledger channel $L$ funds the channel $\rchi$ in the above setup.
+This is because either participant has the power to convert the situation above into a situation where $\rchi$ is funded on-chain:
+\begin{align}
+  \transfer{L}{\rchi}{5}\adj{\holds{L}{10}{\alloc{A: 2, B: 3, \rchi: 5}}} = \adj{\holds{L}{10}{\alloc{A: 2, B: 3}, \holds{\rchi}{5}{}}}
+\end{align}
+After this operation, we say that the channel $\rchi$ has been \textbf{offloaded}.
+Note that we do not need to wait for $\rchi$ to complete before offloading it.
+The offload converts $\rchi$ from an off-chain sub-channel to an on-chain direct channel, without interrupting its operation in any way.
+
+The offload should be seen as an action of last-resort.
+It is important that offloading is allowed so that either player can realize the value in channel $\rchi$ if required, but it has the downside of forcing all sub-channels supported by $L$ to be closed on-chain.
+It is in the interest of both participants to open and close sub-channels collaboratively.
+We next show how this can be accomplished safely.
+
+Under the Turbo protocol, all ledger channels are regular ForceMove channels running the Consensus Game.
+
+\subsubsection{Opening a sub-channel}
+
+The utility of a ledger channel derives from the ability to open and close sub-channels without on-chain operations.
+Here we show how to open a sub-channel.
+\begin{enumerate}
+  \item Start in a state where $A$ and $B$ have a funded ledger channel, $L$, open:
+  \begin{align}
+    \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{A: a, B: b}}{A, B}
+  \end{align}
+  \item $A$ and $B$ prepare their sub-channel $\rchi$ and progress it to the funding point. With $a' \leq a$ and $b' \leq b$:
+  \begin{align}
+    \finalizable{\rchi}{\alloc{A:a', B:b'}}{A,B}
+  \end{align}
+  \item Update the ledger channel to fund the sub-channel:
+  \begin{align}
+    \finalizable{L}{\alloc{A:a-a', B: b - b', \rchi: a' + b'}}{A,B}
+  \end{align}
+\end{enumerate}
+
+\subsubsection{Closing a sub-channel}
+
+When the interaction in a sub-channel, $\rchi$, has finished we need a safe way to update the ledger channels to incorporate the outcome.
+This allows the sub-channel to be defunded and closed off-chain.
+\begin{enumerate}
+  \item We start in the state where $\rchi$ is funded via the ledger channel, $L$. With $x = a + b + c$:
+  \begin{align}
+    \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{A: a, B: b, \rchi: c}}{A, B}
+  \end{align}
+  \item The next step is for $A$ and $B$ to concluded channel $\rchi$, leaving the channel in the conclude state. Assuming $a' + b' = c$:
+  \begin{align}
+    \finalizable{\rchi}{\alloc{A:a', B:b'}}{A,B}
+  \end{align}
+  \item The participants then update the ledger channel to include the result of channel $\rchi$.
+  \begin{align}
+    \finalizable{L}{\alloc{A: a+ a', B: b + b'}}{A, B}
+  \end{align}
+  \item Now the sub-channel $\rchi$ has been defunded, it can be safely discarded.
+\end{enumerate}
+
+\subsubsection{Topping up a ledger channel}
+
+Here we show how a participant can increase their funds held in a ledger channel by depositing into it.
+They can do this without disturbing any sub-channels supported by the ledger channel.
+\begin{enumerate}
+  \item In this process $A$ wants to deposit an additional $a'$ coins into the the ledger channel $L$. We start in the state where $L$ contains balances for $A$ and $B$, as well as funding a sub-channel, $\rchi$. With $x = a + b + c$:
+  \begin{align}
+    \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{A: a, B: b, \rchi: c}}{A, B}
+  \end{align}
+  \item To prepare for the deposit the participants update the state to move $A$'s entry to the end, simultaneously increasing $A$'s total. This is a safe operation due to the precedence rules: as the channel is currently underfunded $A$ would still only receive $a$ if the outcome went to chain.
+  \begin{align}
+    \finalizable{L}{\alloc{B:b, \rchi: c, A: a + a'}}{A,B}
+  \end{align}
+  \item It is now safe for $A$ to deposit into the channel on-chain:
+  \begin{align}
+    D_L(a')\adj{\holds{L}{x}{}} = \adj{\holds{L}{x + a'}{}}
+  \end{align}
+  \item Finally, if required, the participants can reorder the state again:
+  \begin{align}
+    \finalizable{L}{\alloc{ A: a + a', B: b, \rchi: c}}{A,B}
+  \end{align}
+\end{enumerate}
+
+
+\subsubsection{Partial checkout from a ledger channel}
+
+
+A partial checkout is the opposite of a top up: 
+one participant has excess funds in the ledger channel that they wish to withdraw on-chain.
+The participants want to do this without disturbing any sub-channels supported by the ledger channels.
+\begin{enumerate}
+  \item We start with a ledger channel, $L$, that $A$ wants to withdraw $a'$ coins from:
+  \begin{align}
+    \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{A: a + a', B: b, \rchi: c}}{A, B}
+  \end{align}
+  \item The participants start by preparing a new ledger channel, $L'$, whose state reflects the situation they want to be in after $A$ has withdrawn their coins. This is safe to do as this channel is currently unfunded.
+  \begin{align}
+    \finalizable{L'}{\alloc{A: a, B:b, \rchi: c}}{A,B}
+  \end{align}
+  \item They then update $L$ to fund $L'$ alongside the coins that $A$ wants to withdraw. They conclude the channel in this state:
+  \begin{align}
+    \finalizable{L}{\alloc{L': a + b + c, A: a'}}{A,B}
+  \end{align}
+  \item They then finalize the outcome of $L$ on-chain. This can be done without waiting the timeout, assuming they both signed the conclusion proof in the previous step:
+  \begin{align}
+    \adj{\holds{L}{x}{\alloc{L': a + b + c, A: a'}}}
+  \end{align}
+  \item $A$ can then call the transfer operation to get their coins under their control. 
+  \begin{multline}
+    \transfer{L}{A}{a'}\adj{\holds{L}{x}{\alloc{L: a + b + c, A: a'}}} = \\ \adj{\holds{L}{x - a'}{\alloc{L': a + b + c}}, \; \holds{A}{a}{}}
+  \end{multline}
+  \item At any point in the future the remaining coins can be transferred to $L'$:
+  \begin{multline}
+    \transfer{L}{L'}{a + b + c}\adj{\holds{L}{x}{\alloc{L: a + b + c}}, \; \holds{A}{a'}{}} =  \\ \adj{\holds{L'}{a + b + c}{}, \; \holds{A}{a'}{}}
+  \end{multline}
+\end{enumerate}
+Note that $A$ was able to withdraw their funds instantly, without having to wait for the channel timeout.
+
+
+\section{Nitro Protocol}
+
+Nitro protocol is an extension to Turbo protocol.
+In Nitro protocol, the outcome of a channel can be either an allocation or a \textbf{guarantee}.
+A guarantee outcome specifies the address of a target allocation channel; the protocol specifies how this guarantee may be used to pay debt on its behalf.
+When paying debt, a guarantee can be used to alter the payout priority of the allocation outcome of its target address. 
+
+\begin{tikzpicture}
+  \node[semicircle, draw] (upper) at (0,0) {};
+  \node[semicircle, draw, rotate=180] (lower) at (0,-1) {};
+
+  \draw[-] (upper.220) to (lower.320);
+  \draw[-] (upper.270) to (lower.270);
+  \draw[-] (upper.320) to (lower.220);
+
+  \node[semicircle, draw] (upper1) at (1,0) {};
+  \node[semicircle, draw, rotate=180] (lower1) at (1,-1) {};
+
+  \draw[-] (upper1.220) to[out=270, in=90] (lower1.270);
+  \draw[-] (upper1.270) to[out=270, in=90] (lower1.220);
+  \draw[-] (upper1.320) to[out=270, in=90] (lower1.320);
+
+  \node[semicircle, draw, rotate=30] (upper2a) at (2,0) {};
+  \node[semicircle, draw, rotate=-30] (upper2b) at (3,0) {};
+  \node[semicircle, draw, rotate=180] (lower2) at (2.5,-1) {};
+
+  \draw[-] (upper2a.220) to[out=300, in=90] (lower2.320);
+  \draw[-] (upper2a.270) to[out=300, in=90] (lower2.220);
+  \draw[-] (upper2a.320) to[out=300, in=90] (lower2.270);
+
+  \draw[-] (upper2b.220) to[out=240, in=90] (lower2.270);
+  \draw[-] (upper2b.270) to[out=240, in=90] (lower2.220);
+  \draw[-] (upper2b.320) to[out=240, in=90] (lower2.320);
+\end{tikzpicture}
+
+
+We will use the notation $\guar{L}{A_1, A_2, \dots, A_m}$ for a guarantee with target $L$, which prioritizes payouts to $A_1$ above $A_2$, $A_2$ above $A_3$, and so on.
+Any addresses which occur in the outcome of $L$ but not in the guarantee are prioritized after $A_m$, in the order they occur in the outcome.
+We say a guarantor channel, $G$, which targets an allocation channel, $L$, `can afford $x$ for $A$', if $A$ would receive at least $x$ coins, were the coins currently held in $A$ to be paid out according to $G$'s reprioritization of $L$'s allocation.
+
+Nitro adds the \textbf{claim} operation, $\claim{G}{A}{x}$, to the existing transfer, deposit and withdraw operations.
+If $G$ acts as guarantor for $L$ and can afford $x$ for $A$, then $\claim{G}{A}{x}$ has the following three effects:
 \begin{itemize}
-\item \textbf{Availability}: Given $\epsilon > 0$ and time $t$ it is always possible for any party to perform an on-chain operation in the interval $(t, t+\epsilon)$.
-\item \textbf{Responsiveness}(?): All on-chain operations are immediately visible to all parties.
-\item \textbf{Zero Gas}: On-chain operations are free.
+  \item Reduces the funds held in channel $G$ by $x$.
+  \item Increases the funds held in channel $A$ by $x$.
+  \item Reduces the amount owed to $A$ in the outcome of $L$ by $x$.
 \end{itemize}
-In practice, we approximate the availability and responsiveness assumptions by ensuring that $\epsilon$ is sufficiently large, so that the assumption holds in practice. We do this by choosing the the channel timeout and requirements around how frequently participants should need to check the chain. The Zero Gas assumption means that we don't take the cost of operations into account when analysing the value of states. This is a good approximation when the gas costs are small compared with the value of the states - other cases require a more detailed analysis. This should be the subject of future research but falls outside the scope of this paper.
-
-\subsection{Finalizable Outcomes}
-
-finalizability of an outcome, $\beta$ is \textbf{finalizable} by $p$:
-* it is possible for $p$ to finalize $\beta$ in the adjudicator $\adj{\beta_\chi(\beta)}$ and no-one else can stop them. We write this $\enf{\beta}_p$.
-
-Example: $p$ is the next player to move
-
-It is possible for an outcome to be finalizable for multiple players at the same time:
-
-Example: a single conclusion proof exists
-
-Example: after the post fund setup
-
-Note that it is also possible for more than one outcome to be finalizable by a player. We will see an example of this later. It follows from the definition of finalizability that it is impossible to simultaneously have one player with more than one finalizable outcome and more than one player at least one finalizable outcomes. 
-
-It's also possible to get into a state where no outcomes are finalizable by anyone. This is usual undesirable and a sign that something somewhere has gone wrong. An example of this is the case where two different conclusion proofs exist.
+Otherwise, the claim operation has no effect.
 
 
-\subsection{Enabled Outcomes}
+\begin{tikzpicture}[x=8cm, y=2cm]
+  \node[draw=black, rounded corners=0.5cm] (adj0) at (0, 0) {
+    \begin{tabular}{c|c|c}
+      \multicolumn{3}{c}{\textbf{Adjudicator}} \\
+      Address & Balance & Outcome \\
+      \hline
+      $G$ & 3 & $\guar{L}{\text{Alice}}$\\
+      $L$ &  & Bob: 2, Alice: 3 \\
+    \end{tabular}
+  };
 
-It is often the case that a given player, $p$, will have no finalizable outcomes at a given point in time. In this case we instead look at the set of \textbf{enabled} outcomes for $p$, which we write $\{\beta_1, ... \beta_i\}_p$. The enabled outcomes are the set of all outcomes of the channel that are possible up until $p$ signs their next state. They are the outcomes that were enabled by $p$'s last signature.
+  \node[draw=black, rounded corners=0.5cm] (adj0) at (1, 0) {
+    \begin{tabular}{c|c|c}
+      \multicolumn{3}{c}{\textbf{Adjudicator}} \\
+      Address & Balance & Outcome \\
+      \hline
+      $G$ &  & $\guar{L}{\text{Alice}}$\\
+      $L$ &  & Bob: 2 \\
+      Alice & 3 \\
+    \end{tabular}
+  };
 
-All the possible ways the channel can end before they take their next turn - that they can't control(?).
+  \node (not0) at (0, -1) { $\adj{\holds{G}{3}{\guar{L}{\text{Alice}}}, \;\holds{L}{}{\alloc{\text{Bob}:2, \text{Alice}:3}}}$ };
+  \node (not1) at (1, -1) { $\adj{\holds{G}{}{\guar{L}{\text{Alice}}}, \;\holds{L}{}{\alloc{\text{Bob}:2}}, \;\holds{\text{Alice}}{3}{}}$ };
 
-The set of enabled outcomes has the property that $p$ can cause one of them to be registered with the adjudicator (e.g. through repeated force-moving) but cannot choose which one.
+  \node (diag0) at (0, -2) {
+    \begin{tikzpicture}[y=1cm, x=2cm]
+      \node[sqadj] (a0) at (0, 0) {};
+      \node[circB, label=below:Bob] (p0) at (0, -1) {};
+      \draw[->] (a0) edge node[midway, left] { $4$ } (p0);
 
-Sometimes a player might have incomplete knowledge, so they are not able to calculate the possible states. In this case the enabled outcomes should include all possible states as far as the player can tell. An example of this occurs in commit-reveal schemes: say two players are playing a guessing game where player A commits to a value, player B makes a guess and then player A reveals whether they were right. At the point where B has just made their guess, the outcome is determined but B does not yet know what it is. In this case, the enabled outcomes for B should include the outcome where B was correct and the outcome where B was incorrect.
+      \node[sqadj] (a0) at (1, 0) {};
+      \node[circAB, label=right:L] (p0) at (1, -1) {};
+      \node[circB, label=below:Bob] (p1) at (0.58, -2) {};
+      \node[circA, label=below:Alice] (p2) at (1.42, -2) {};
 
-If a player has finalizable outcomes, they do not have any enabled outcomes.
-If a player has only one enabled outcome then, by the definitions, it is an finalizable outcome: $\{\beta \}_p \equiv \enf{\beta}_p$. 
+
+      \draw[->] (a0) edge node[midway, left] { $5$ } (p0);
+      \draw[->] (p0) edge node[midway, left] { $2$ } (p1);
+      \draw[->] (p0) edge node[midway, left] { $3$ } (p2);
+
+    \end{tikzpicture}
+  };
+
+  \node (diag1) at (1, -2) {
+    \begin{tikzpicture}[y=1cm, x=2cm]
+      \node[sqadj] (a0) at (0, 0) {};
+      \node[circB, label=below:Bob] (p0) at (0, -1) {};
+      \draw[->] (a0) edge node[midway, left] { $4$ } (p0);
+
+      \node[sqadj] (a1) at (1, 0) {};
+      \node[circAB, label=right:L] (pab) at (1, -1) {};
+      \node[circB, label=below:Bob] (pabb) at (1, -2) {};
+      \draw[->] (a1) edge node[midway, left] { $5$ } (pab);
+      \draw[->] (pab) edge node[midway, left] { $2$ } (pabb);
+
+      \node[sqadj] (a2) at (2, 0) {};
+      \node[circA, label=below:Alice] (pa) at (2, -1) {};
+      \draw[->] (a2) edge node[midway, left] { $3$ } (pa);
+
+    \end{tikzpicture}
+  };
+\end{tikzpicture}
+
+
+
+\begin{example}
+  In the following example, we have a guarantor channel, $G$, which holds $5$ coins and guarantees $L$'s allocation, with $B$ as highest priority.
+  \begin{multline}
+    \claim{G}{B}{5}\adj{\holds{G}{5}{\guar{L}}{B}, \holds{L}{}{\alloc{A: 5, B: 5}}} = \\ \adj{\holds{G}{}{\guar{L}{B}}, \holds{L}{}{\alloc{A: 5}}, \holds{B}{5}{}}
+  \end{multline}
+  Note that after the claim has gone through, $L$'s debt to $B$ has decreased.
+\end{example}
+
+We give a python implementation of an adjudicator implementing the Nitro protocol in the appendix.
+
+\subsection{Virtual Channels}
+
+A virtual channel is a channel between two participants who do not have a shared on-chain deposit, supported through an intermediary.
+We will now give the construction for the simplest possible virtual channel, between $A$ and $B$ through a shared intermediary, $I$.
+Our starting point for this channel is a pair of ledger channels, $L$ and $L'$, with participants $\{A,I\}$ and $\{B,I\}$ respectively.
+\begin{align}
+  \adj{\holds{L}{x}{}, \holds{L'}{x}{}}, \; \finalizable{L}{\alloc{A:a, I:b}}{A, I}, \; \finalizable{L'}{\alloc{B: b, I: a}}{B, I} \label{eq:virtual-channel-start-state}
+\end{align}
+where $x = a + b$.
+The participants want to use the existing deposits and ledger channels to fund a virtual channel, $\rchi$, with $x$ coins.
+
+In order to do this the participants will need three additional channels: a joint allocation channel, $J$, with participants $\{A, B, I\}$ and two guarantor channels $G$ and $G'$ which target $J$. The setup is shown in figure \ref{fig:virtual-channel-construction}.
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/virtual-channels-construction}
+  \caption{Virtual channel construction}
+  \label{fig:virtual-channel-construction}
+\end{figure}
+
+We will cover the steps for safely setting up this construction in section \ref{section:open-close-virtual-channel}. 
+In the next section, we will explain why this construction can be considered to fund the channel $\rchi$.
+
+\subsection{Offloading Virtual Channels}
+
+Similarly to the method for ledger channel construction, we will show that the virtual channel construction funds $\rchi$ by demonstrating how any one of the participants can offload the channel $\rchi$, thereby converting it to an on-chain channel that holds its own funds.
+
+We will first consider the case where $A$ wishes to offload $\rchi$. $A$ proceeds as follows:
+\begin{enumerate}
+  \item $A$ starts by finalizing all their finalizable outcomes on-chain:
+  \begin{align}
+    \adj{\holds{L}{x}{\alloc{G:x}}, \; \holds{L'}{x}{}, \holds{G}{}{\guar{J}{\rchi, A, I}}, \; \holds{J}{}{\alloc{\rchi: x, I: x}}}
+  \end{align}
+  Although $A$ has the power to finalize $L$, $G$ and $J$, they are not able to finalize $L'$.
+  Thankfully, this does not prevent them from offloading $\rchi$.
+  \item $A$ then calls $\transfer{L}{G}{x}$ to move the funds from $L$ to $G$:
+  \begin{align}
+    \adj{\holds{L'}{x}{}, \holds{G}{x}{\guar{J}{\rchi, A, I}}, \; \holds{J}{}{\alloc{\rchi: x, I: x}}}
+  \end{align}
+  \item Finally $A$ calls $\claim{G}{A}{\rchi}$ to move the funds from $G$ to $\rchi$.
+  \begin{align}
+    \adj{\holds{L'}{x}{}, \holds{G}{}{\guar{J}{\rchi, A, I}}, \; \holds{J}{}{\alloc{I: x}}, \; \holds{\rchi}{x}{}}
+  \end{align}
+\end{enumerate}
+As $G$ has $\rchi$ as top priority, the operation is successful.
+
+By symmetry, the previous case also covers the case where $B$ wants to offload.
+The final case to consider is the one where $I$ wants to offload the channel and reclaim their funds.
+This is important to ensure that $A$ and $B$ cannot lock $I$'s funds indefinitely in the channel.
+\begin{enumerate}
+  \item $I$ starts by finalizing all their finalizable outcomes on-chain:
+  \begin{multline}
+    \adj{\holds{L}{x}{\alloc{G:x}}, \; \holds{L'}{x}{\alloc{G':x}}, \holds{G}{}{\guar{J}{\rchi, A, I}}, \; \\\holds{G'}{}{\guar{J}{\rchi, B, I}}, \; \holds{J}{}{\alloc{\rchi: x, I: x}}}
+  \end{multline}
+  \item $I$ then transfers funds from the ledger channels to the virtual channels by calling $\transfer{L}{G}{x}$ and $\transfer{L'}{G'}{x}$:
+  \begin{align}
+    \adj{\holds{G}{x}{\guar{J}{\rchi, A, I}}, \; \holds{G'}{x}{\guar{J}{\rchi, B, I}}, \; \holds{J}{}{\alloc{\rchi: x, I: x}}}
+  \end{align}
+  \item Then $I$ claims on one of the guarantees, e.g. $\claim{G}{\rchi}{x}$ to offload $\rchi$:
+  \begin{align}
+    \adj{\holds{G}{}{\guar{J}{\rchi, A, I}}, \; \holds{G'}{x}{\guar{J}{\rchi, B, I}}, \; \holds{J}{}{\alloc{I: x}}, \; \holds{\rchi}{x}{}}
+  \end{align}
+  \item After which, $I$ can recover their funds by claiming on the other guarantee, $\claim{G'}{I}{x}$:
+  \begin{align}
+    \adj{\holds{G}{}{\guar{J}{\rchi, A, I}}, \; \holds{G'}{}{\guar{J}{\rchi, B, I}}, \;  \holds{\rchi}{x}{}, \; \holds{I}{x}{}}
+  \end{align}
+\end{enumerate}
+Note that $I$ has to claim on both guarantees, offloading $\rchi$ before being able to reclaim their funds.
+The virtual channel became a direct channel and the intermediary was able to recover their collateral.
+
+\subsection{Opening and Closing Virtual Channels}\label{section:open-close-virtual-channel}
+
+In this section we present a sequence of network states written in terms of universally finalizable outcomes, where each state differs from the previous state only in one channel.
+We claim that this sequence of states can be used to derive a safe procedure for opening a virtual channel, where the value of the network remains unchanged throughout for all participants involved.
+We justify this claim in the appendix.
+
+The procedure for opening a virtual channel is as follows:
+\begin{enumerate}
+  \item Start in the state given in equation (\ref{eq:virtual-channel-start-state}):
+  \begin{align}
+    & \adj{\holds{L}{x}{}, \holds{L'}{x}{}}\\
+    & \finalizable{L}{\alloc{A:a, I:b}}{A, I} \\
+    & \finalizable{L'}{\alloc{B: b, I: a}}{B, I}
+  \end{align}
+  \item $A$ and $B$ bring their channel $\rchi$ to the funding point:
+  \begin{align}
+    \finalizable{\rchi}{\alloc{A:a, B:b}}{A,B}
+  \end{align}
+  \item In any order, $A$, $B$ and $I$ setup the virtual channel construction:
+  \begin{align}
+    & \finalizable{J}{\alloc{A:a, B:b, I: x}}{A, B, I} \\
+    & \finalizable{G}{\guar{J}{\rchi, A, I}}{A, I} \\
+    & \finalizable{G'}{\guar{J}{\rchi, B, I}}{B, I}
+  \end{align}
+  \item In either order switch the ledger channels over to fund the guarantees:
+  \begin{align}
+    & \finalizable{L}{\alloc{G: x}}{A,I} \\
+    & \finalizable{L'}{\alloc{G': x}}{B,I}
+  \end{align}
+  \item Switch $J$ over to fund $\rchi$:
+  \begin{align}
+    \finalizable{J}{\alloc{\rchi: x, I: x}}{A, B, I}
+  \end{align}
+\end{enumerate}
+We give a visual representation of this procedure in figure \ref{fig:virtual-channel-opening}.
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/virtual-channels}
+  \caption{Opening a virtual channel}
+  \label{fig:virtual-channel-opening}
+\end{figure}
+
+\begin{tikzpicture}[x=4cm, y=0.7cm]
+  \node at (0, 0) {
+    \begin{tikzpicture}[x=.8cm]
+      \node[sqadj] (a0) at (-1,0) {};
+      \node[sqadj] (a1) at (1,0) {};
+      \node[circAI] (b0) at (-1,-1) {};
+      \node[circBI] (b1) at (1,-1) {};
+      \node[guarAI] (g0) at (-1,-2) {};
+      \node[guarBI] (g1) at (1,-2) {};
+      \node[circABI] (j) at (0,-3) {};
+      \node[circAB] (c) at (0,-4) {};
+
+      \begin{scope}[-]
+        \tikzstyle{every node}=[draw,below]
+        \draw[solid] (a0) to (b0);
+        \draw[solid] (a1) to (b1);
+        \draw[solid] (g0) to (j);
+        \draw[solid] (g1) to (j);
+      \end{scope}
+    \end{tikzpicture}
+  };
+
+  \node at (1, 0) {
+    \begin{tikzpicture}[x=0.8cm]
+      \node[sqadj] (a0) at (-1,0) {};
+      \node[sqadj] (a1) at (1,0) {};
+      \node[circAI] (b0) at (-1,-1) {};
+      \node[circBI] (b1) at (1,-1) {};
+      \node[guarAI] (g0) at (-1,-2) {};
+      \node[guarBI] (g1) at (1,-2) {};
+      \node[circABI] (j) at (0,-3) {};
+      \node[circAB] (c) at (0,-4) {};
+
+      \begin{scope}[-]
+        \tikzstyle{every node}=[draw,below]
+        \draw[solid] (a0) to (b0);
+        \draw[solid] (a1) to (b1);
+        \draw[solid] (b0) to (g0);
+        \draw[solid] (g0) to (j);
+        \draw[solid] (g1) to (j);
+      \end{scope}
+    \end{tikzpicture}
+  };
+
+  \node at (2, 0) {
+    \begin{tikzpicture}[x=0.8cm]
+      \node[sqadj] (a0) at (-1,0) {};
+      \node[sqadj] (a1) at (1,0) {};
+      \node[circAI] (b0) at (-1,-1) {};
+      \node[circBI] (b1) at (1,-1) {};
+      \node[guarAI] (g0) at (-1,-2) {};
+      \node[guarBI] (g1) at (1,-2) {};
+      \node[circABI] (j) at (0,-3) {};
+      \node[circAB] (c) at (0,-4) {};
+
+      \begin{scope}[-]
+        \tikzstyle{every node}=[draw,below]
+        \draw[solid] (a0) to (b0);
+        \draw[solid] (a1) to (b1);
+        \draw[solid] (b0) to (g0);
+        \draw[solid] (b1) to (g1);
+        \draw[solid] (g0) to (j);
+        \draw[solid] (g1) to (j);
+      \end{scope}
+    \end{tikzpicture}
+  };
+
+  \node at (3, 0) {
+    \begin{tikzpicture}[x=0.8cm]
+      \node[sqadj] (a0) at (-1,0) {};
+      \node[sqadj] (a1) at (1,0) {};
+      \node[circAI] (b0) at (-1,-1) {};
+      \node[circBI] (b1) at (1,-1) {};
+      \node[guarAI] (g0) at (-1,-2) {};
+      \node[guarBI] (g1) at (1,-2) {};
+      \node[circABI] (j) at (0,-3) {};
+      \node[circAB] (c) at (0,-4) {};
+
+      \begin{scope}[-]
+        \tikzstyle{every node}=[draw,below]
+        \draw[solid] (a0) to (b0);
+        \draw[solid] (a1) to (b1);
+        \draw[solid] (b0) to (g0);
+        \draw[solid] (b1) to (g1);
+        \draw[solid] (g0) to (j);
+        \draw[solid] (g1) to (j);
+        \draw[solid] (j) to (c);
+      \end{scope}
+    \end{tikzpicture}
+  };
+\end{tikzpicture}
+
+The same sequence of states, when taken in reverse, can be used to close a virtual channel:
+\begin{enumerate}
+  \item Participants $A$ and $B$ finalize $\rchi$ by signing a conclusion proof:
+  \begin{align}
+    \finalizable{\rchi}{\alloc{A:a', B:b'}}{A,B}
+  \end{align}
+  \item $A$ and $B$ sign an update to $J$ to take account of the outcome of $\rchi$. $I$ will accept this update, provided that their allocation of $x$ coins remains the same:
+  \begin{align}
+    \finalizable{J}{\alloc{A: a', B:b', I: x}}{A, B, I}
+  \end{align}
+  \item In either order switch the ledger channels to absorb the outcome of $J$, defunding the guarantor channels in the process:
+  \begin{align}
+    & \finalizable{L}{\alloc{A: a', I: b'}}{A,I} \\
+    & \finalizable{L'}{\alloc{B: b', I: a'}}{B,I}
+  \end{align}
+  \item The channels $\rchi$, $J$, $G$ and $G'$ are now all defunded, so can be discarded
+\end{enumerate}
+
+It is also possible to do top-ups and partial checkouts from a virtual channel.
+
+\section{Acknowledgements}
+
+- Andrew Stewart
+- George Knee
+- James Prestwich
+- Chris Buckland
+- Magmo team
+
+\newpage
+
+\section{Appendix}
+
+THIS APPENDIX IS STILL A WIP.
+
+\subsection{Overview of ForceMove}
+
+The ForceMove protocol describes the message format and the supporting on-chain behaviour
+to enable generalized, $n$-party state channels on any blockchain that supports Turing-complete, general-purpose computation.
+Here we give a brief overview of the protocol to the level required to understand
+the rest of the paper. For a more comprehensive explanation please refer to \cite{}.
+
+\begin{table}[h]
+  \begin{tabular}{|l|l|l|p{5cm}|}
+    \hline
+    \texttt{participants} & \texttt{address[]} & $P$ & The addresses used to sign updates to the channel. \\ \hline
+    \texttt{nonce} & \texttt{unit256} & $k$ & Chosen to make the channel's address unique. \\ \hline
+    \texttt{gameLibrary} & \texttt{address} & $L$ & The address of the gameLibrary, which defines the transition rules for this channel \\ \hline
+    \texttt{challengeDuration} & \texttt{unit256} & $\eta$ & \\ \hline
+    \texttt{turnNum} & \texttt{unit256} & $i$ & Increments as new states are produced. \\ \hline
+    \texttt{balances} & \texttt{(address, uint256)[]} & $\beta$ & Current \textit{outcome} of the channel. \\ \hline
+    \texttt{isFinal} & \texttt{bool} & $f$ & \\ \hline
+    \texttt{data} & \texttt{bytes} & $\delta$ & \\ \hline
+    \texttt{v} & \texttt{uint8} & &  ECDSA signature of the above arguments by the moving participant. \\ \cline{1-2}
+    \texttt{r} & \texttt{bytes32} & & \\ \cline{1-2}
+    \texttt{s} & \texttt{bytes32} & & \\ \hline
+  \end{tabular}
+  \caption{ForceMove state format}
+  \label{table:force-move-state}
+\end{table}
+
+A ForceMove \textbf{state}, $\sigma_\chi^i(\beta, f, \delta)$, is specified by \textbf{turn number}, $i$,
+a set of \textbf{balances}, $\beta$, a boolean flag \textbf{finalized}, $f \in \{T, F\}$, and
+a chunk of unstructured \textbf{game data}, $\delta$, that will be interpreted by the game library. The
+balances can be thought of as an ordered set of $(\texttt{address}, \texttt{uint256})$ pairs,
+which specify how any funds allocated to the channel should be distributed if the channel 
+were to finalize in the current state.
+
+In order for a state, $\sigma_\chi^i$, to be valid it must be signed by participant, $p_j$,
+where $j = i \% n$ is the remainder mod $n$. This requirement specifies that participants
+in the channel must take turns when signing states.
+
+The game library is responsible for defining a set of states and allowed transitions that
+in turn define the `application' that will run inside the state channel. It does this by
+defining a single boolean function, $t_L(i, \beta, \delta, \beta', \delta') \rightarrow \{ T, F\}$.
+This function is used to derive an overall boolean transition function, $t$, specifying whether
+a transition between two states is permitted under the rules of the protocol:
+\begin{align*}
+  t(\sigma_\chi^i(\beta, f, \delta), \sigma_{\chi'}^j(\beta', f', \delta') ) \Leftrightarrow &
+    \chi = \chi'
+    \wedge j = i + 1
+    \wedge \\
+    & [ (\neg f \wedge \neg f' \wedge j \leq 2n \wedge \beta = \beta' \wedge \delta = \delta') \vee \\
+    & (\neg f \wedge \neg f' \wedge j > 2n \wedge t_L(n, \beta, \delta, \beta', \delta')) \vee \\
+    & (f' \wedge \beta = \beta' \wedge \delta' = 0) ]
+\end{align*}
+
+In all transitions the channel properties must remain unchanged and the turn number must increment.
+There are then three different modes of operation. The first mode applies in the first $2n$
+states (assuming none of these are finalized) and in this mode the balances and game data
+must remain unchanged. As we will see later, these states exist so that the channel can be
+funded safely. We refer to the first $n$ states as the \textbf{pre-fund setup} states and
+the subsequent $n$ as the \textbf{post-fund setup} states. The second mode applies to the
+`normal' operation of the channel, when the game library is used to determine the allowed
+transitions. The final mode concerns the finalization of the channel: at any point the current
+participant can choose to exit the channel and lock in the balances in the current state.
+Once this happens the only allowed transitions are to additional finalized states. Because
+of this, we have no further use for the game data, $\delta$, so can remove this from the state.
+Once a sequence of $n$ finalized states have been produced the channel is considered closed. We
+call this sequence of $n$ finalized states a \textbf{conclusion proof}, which we will write $\bm{\sigma}^*$.
+
 
 
 \subsection{The Consensus Game}
@@ -265,6 +1016,18 @@ Like all ForceMove applications, the transition rules for the Consensus Game are
 \end{align*}
 For a given $\beta$, the consensus counter will increase from $0\dots (n-1)$ as the participants sign off on the new balances. Once all participants have signed, consensus has been reached and the channel's balances are updated.
 
+
+\subsection{Proofs of Correctness}
+
+- what do we need to prove?
+- we gave the algorithms in terms of universally finalizable states.
+- we now need to find the intermediate states to move betweenthem
+
+- if we two universally finalizable states, $\sigma$, $\sigma'$
+- in a consensus game channel with $n$ participants
+- that are value preserving for all participants
+- then it is possible to find a set of $n$ state updates that preserve value for all participants and which move from $\sigma$ and $\sigma'$
+
   \begin{align*}
     \sigma^{i}(\beta, (0, \beta)) & \approx [\beta]_P \\
     \sigma^{i+1}(\beta, (0, \beta')) & \approx \{\beta'\}_{p_0}[\beta]_{p_1, ..., p_{n-1}} \\
@@ -274,181 +1037,13 @@ For a given $\beta$, the consensus counter will increase from $0\dots (n-1)$ as 
     \sigma^{i+n}(\beta', (0, \beta')) & \approx [\beta']_{P} \\
   \end{align*}
 
-Safe update theorem
 
-This allows us to change one channel at a time
+\subsection{Virtual Channels on Turbo}
+\subsection{Payouts to Non-Participants}
+\subsection{Possible Extensions}
 
+\subsection{On-chain Operations Code}
 
-\section{Turbo Protocol}
-
-Turbo protocol is a small extension to ForceMove that allows multiple ForceMove state
-channels between a the same set of participants to be supported by a single on-chain
-state deposit.
-
-* parallelized
-* open and close off-chain
-* generalisation of addresses
-
-In Turbo the ForceMove withdrawal operation, $W_A(x)$, is replaced with two operations: a
-\textbf{transfer} operation, $T_{A,B}(x)$, and a modified withdrawal operation, $W'_B(x)$.
-The original ForceMove withdrawal can be recovered as $W_A(x) = W'_B(x)T_{A,B}(x)$.
-
-The modified withdrawal operation, $W'_A(x)$, allows withdrawal directly from the funds
-held for address, $A$. The operation requires knowledge of the private key of $A$ and is
-therefore not possible for addresses that correspond to state channels. The operation has
-the following effect on the on-chain state:
-\begin{align*}
-W'_A(x) \adj{\alpha_A(x')} \rightarrow \adj{\alpha_A(x'-x)}
-\end{align*}
-
-The transfer operation, $T_{A,B}(x)$, is an instruction to transfer funds currently allocated
-to address $A$ to address $B$, according to the outcome of channel $A$:
-\begin{multline*}
-T_{AB}(x) \adj{\alpha_A(x_\alpha)\beta_A(B:x_\beta, \dots)} \rightarrow \\
-  \begin{cases}
-      \adj{\alpha_A(x_\alpha - x)\alpha_B(x)\beta_A(B:x_\beta - x, \dots)} & 
-      \text{if } x \leq x_\alpha, x_\beta \\
-      \adj{\alpha_A(x_\alpha)\beta_A(B:x_\beta, \dots)} &
-      \text{otherwise}
-  \end{cases}
-\end{multline*}
-
-\subsection{Ledger channels}
-
-Rules of the consensus game
-
-\subsection{Opening a sub-channel}
-
-Want to open the channel, $\chi$, where $A$ and $B$ have initial balances $a' \leq a$ and $b' \leq b$ respectively. Both players start by signing a pre-fund setup for $\chi$ leaving us in the state:
-
-Note that we also have $S_3 \sim \omega_A(a)\omega_B(b)$. In order to transition to this state with the collaboration game, we have to transition through 
-
-We start with a ledger channel 
-\begin{align*}
-S_1 &= \adj{\alpha_L(a+b)} &&\enf{\beta_L(A: a, B: b)}_{A, B} & \\
-S_2 &= \adj{\alpha_L(a+b)} &&\enf{\beta_L(A: a, B: b)}_{A, B}&\enf{\beta_\chi(A: a', B: b')}_{A, B} \\
-S_3 &= \adj{\alpha_L(a+b)} &&\enf{\beta_L(A: a-a', B: b-b', \chi: a' + b')}_{A, B}&\enf{\beta_\chi(A: a', B: b')}_{A, B}
-\end{align*}
-
-\subsection{Closing a sub-channel off-chain}
-
-\begin{align*}
-S_1 &= \adj{\alpha_L(x)} &&\enf{\beta_L(A: a, B: b, \chi: a' + b')}_{A, B}&\enf{\beta_\chi(A: a', B: b')}_{A, B}\\
-S_2 &= \adj{\alpha_L(x)} &&\enf{\beta_L(A: a + a', B: b + b')}_{A, B}&\enf{\beta_\chi(A: a', B: b')}_{A, B} \\
-S_3 &= \adj{\alpha_L(x)} &&\enf{\beta_L(A: a + a', B: b + b')}_{A, B} & 
-\end{align*}
-where $x = a + a' + b + b'$.
-
-\subsection{Topping up a ledger channel}
-
-\begin{align*}
-S_1 &= \adj{\alpha_L(a + b)} &&\enf{\beta(A: a, B: b)}_{A, B} \\
-S_2 &= \adj{\alpha_L(a + b)} &&\enf{\beta(B: b, A: a + a')}_{A, B} \\
-S_3 &= D_L(a')\adj{\alpha_L(a + b)} &&\enf{\beta(B: b, A: a + a')}_{A, B} \\
-S_4 &= \adj{\alpha_L(a + b + a')} &&\enf{\beta(B: b, A: a + a')}_{A, B}
-\end{align*}
-
-\subsection{Partial checkout from a ledger channel}
-
-\begin{align*}
-S_1 &= \adj{\alpha_L(x)} &&\enf{\beta_L(B: b, A: a, \chi: c)}_{A, B} & \\
-S_2 &= \adj{\alpha_L(x)} &&\enf{\beta_L(B: b, A: a, \chi: c)}_{A, B} & \enf{\beta_{L'}(B: b, A: a - a', \chi: c)}_{A, B}\\
-S_3 &= \adj{\alpha_L(x)} &&\enf{\beta_L(L': x-a', A: a)}_{A, B} & \enf{\beta_{L'}(B: b, A: a - a', \chi: c)}_{A, B}\\
-S_4 &= \adj{\alpha_L(x)\beta_L(L': x-a, A: a)} && & \enf{\beta_{L'}(B: b, A: a - a', \chi: c)}_{A, B}\\
-S_5 &= \adj{\alpha_L'(x-a)\alpha_A(a)} && & \enf{\beta_{L'}(B: b, A: a - a', \chi: c)}_{A, B}\\
-\end{align*}
-
-
-\section{Nitro Protocol}
-
-Nitro protocol is an extension to Turbo protocol that enables a group of parties to open a state channel without having a mutual on-chain deposit,
-provided they do all have an on-chain deposit with a shared third party.
-
-In order to enable virtual channels, we need to add a new type of channel - the \textbf{guarantor channel} - to the framework. We will distinguish these from regular channels by referring to regular channels as \textbf{balance channels} from now on.
-
-Guarantor channels differ from balance channels in that both the channel and the outcome stores one extra property - \textbf{gurantorFor} - which stores the address of the channel that they guarantee. Their outcomes are also interpreted differently. The outcome of a guarantor channel, $A$, which guarantees channel $B$ is written $\gamma_{A, B}(C_1: x_1, C_2: x_2, \dots)$. This outcome means that $A$ will cover $B$'s debt to $C_1$ up-to an amount $x_1$, then $B$'s debt to $C_2$ up-to an amount $x_2$ and so on.
-
-We introduce another on-chain operation $G_{A, C}(x)$ which involves claiming an amount $x$ from $A$'s guarantee for $C$. The operation is defined as follows:
-\begin{multline*}
-G_{AC}(x) \adj{\alpha_A(x_\alpha)\gamma_{A,B}(C:x_\gamma, \dots)\beta_B(\dots, C:x_\beta, \dots)} \rightarrow \\
-  \begin{cases}
-      \adj{\alpha_A(x_\alpha - x)\alpha_C(x)\gamma_{A,B}(C:x_\beta -x, \dots)\beta_B(\dots, C:x_\beta - x, \dots)} \\
-      \hspace{7cm} \text{if } x \leq x_\alpha, x_\beta, x_\gamma \\
-      \adj{\alpha_A(x_\alpha)\gamma_{A,B}(C:x_\gamma, \dots)\beta_B(\dots, C:x_\beta, \dots)} \\
-      \hspace{7cm} \text{otherwise}
-  \end{cases}
-\end{multline*}
-TODO: rewrite this and explain.
-
-\input{figures/nitro-state}
-
-\subsection{Virtual Channels}
-
-Virtual channels is this: 
-Why? Equivalent for A, B and C
-
-\input{figures/virtual-channels}
-
-There is a configuration where we can support virtual channels.
-They can be opened and closed off-chain.
-
-Want to fund a channel $\chi$ between A and B, for which we have state $\enf{\beta_\chi(A: x, B:y)}_{A,B}$. We have channels $L$ and $L'$ with participants $\{A, C\}$ and $\{B, C\}$ respectively. We assume these channels start in states $\enf{\beta_L(A:x, C:)}$
-
-\begin{align*}
-  \adj{\alpha_L(x)\alpha_{L'}(x)} \quad \enf{\beta_L(A: a, C: b)}_{A,C} \quad \enf{\beta_{L'}(B:b, C:a)}_{B, C}
-\end{align*}
-
-The offload
-\begin{align*}
-  & \adj{\alpha_L(x)\beta_L(G: x)\gamma_{G,J}(\chi: x, C: x)\beta_J(\chi: x, C: x)\beta_\chi(A: a, B: b)}\\ 
-  & \begin{aligned}
-   \xrightarrow{T_{L,G}(x)} & \adj{\alpha_G(x)\gamma_{G, J}(\chi: x, C: x)\beta_J(\chi: x, C: x)\beta_\chi(A: a, B: b)} \\
-   \xrightarrow{G_{G, J, \chi}(a)} & \adj{\alpha_\chi(x)\beta_\chi(A: a, B: b)\gamma_{G, J}(C: x)\beta_J(C: x)} \\
-   \xrightarrow{T_{\chi, A}(a)} & \adj{\alpha_A(a)\alpha_\chi(b)\beta_\chi(B: b)\gamma_{G, J}(C: x)\beta_J(C: x)} \\
-   \approx & \alpha_A(a)
-  \end{aligned}
-\end{align*}
-
-\subsection{Opening a virtual channel}
-We let
-\begin{align*}
-l_0 &= \enf{\beta_L(A:a, C: b)}_{A, C} &
-l_1 &= \enf{\beta_L(G: x)}_{A, C} \\
-l'_0 &= \enf{\beta_{L'}(B:b, C: a)}_{B, C} &
-l'_1 &= \enf{\beta_{L'}(G': x)}_{B, C} \\
-j_0 &= \enf{\beta_{J}(A: a, B:b, C: x)}_{A, B, C} &
-j_1 &= \enf{\beta_{J}(\chi: x, C: x)}_{A, B, C} \\
-g &= \enf{\gamma_{G, J}(A: x, B:x, C: x)}_{A, C} &
-g' &= \enf{\gamma_{G, J'}(A: x, B:x, C: x)}_{A, C} \\
-v &= \enf{\beta_\chi(A: a, B: b)}_{A, B} &
-\adj{S} &= \adj{\alpha_L(x)\alpha_{L'}(x)}
-\end{align*}
-
-and proceed as follows
-\begin{align*}
-S_1 &= \adj{S} && l_0 && l'_0 \\
-S_2 &= \adj{S} && l_0 && l'_0 && g && g' && j_0 \\
-S_3 &= \adj{S} && l_1 && l'_0 && g && g' && j_0 \\
-S_4 &= \adj{S} && l_1 && l'_1 && g && g' && j_0 \\
-S_5 &= \adj{S} && l_1 && l'_1 && g && g' && j_0 && v\\
-S_6 &= \adj{S} && l_1 && l'_1 && g && g' && j_1 && v\\
-\end{align*}
-
-
-
-
-
-\subsection{Closing a virtual channel}
-
-\begin{align*}
-S_1 &= \enf{\beta_J(\chi: x, C: x)}_{A, B, C} && \enf{\beta_\chi(A:a, B: b)}_{A, B} & V \\
-S_2 &= \enf{\beta_J(A: a, B: b, C: x)}_{A, B, C} && \enf{\beta_\chi(A:a, B: b)}_{A, B} & V \\
-S_3 &= \enf{\beta_J(A: a, B: b, C: x)}_{A, B, C} && & V \\
-\end{align*}
-
-\subsection{Virtual Channel Partial Withdrawal and Top-up}
-
-We leave these as an exercise for the reader :). 
 
 
 \end{document}
