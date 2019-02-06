@@ -4,6 +4,7 @@
 \usepackage{xparse}
 \input{channel-diagrams}
 \usetikzlibrary{patterns, decorations.pathreplacing}
+\usepackage[format=plain, labelfont={bf,it}, textfont=it]{caption}
 
 
 % \usepackage{draftwatermark}
@@ -55,8 +56,8 @@ We refer to these naive channels as \textbf{direct channels}, as they are suppor
 
 There are many examples of state channels and off-chain scaling projects. In this section we limit ourselves to a review of published work on the subject of off-chain payment channel and state channel networks.
 
-The Lightning network, which went live in March 2018, allows for off-chain payments on the Bitcoin network.
-The payments make use of hashed timelocked contracts (HTLCs), which can be thought of as payments that are conditional on the revelation of a hash pre-image before a given point in time.
+The Lightning network, which went live in March 2018, provides off-chain payments for the Bitcoin blockchain.
+The payments make use of hashed timelocked contracts (HTLCs), which can be thought of as payments that are conditional on a hash pre-image being revealed before a given point in time.
 This construction allows payments to be routed through an arbitrary number of intermediaries but is strictly limited to payments.
 The Raiden network provides the same functionality for the Ethereum blockchain and launched on the mainnet in December 2018.
 
@@ -86,15 +87,11 @@ The protocol described here readily extends to virtual channels between $n$-part
 
 We will now proceed with a more technical exposition of our protocol, which achieves the functionality outlined above.
 
-\section{Our State Channel Model}
+\section{Modelling State Channel Networks}
 
-In this section we will present a model for state channel networks, which will serve as a foundation
+In this section we will present a simple model for state channel networks, which will serve as a foundation
 for the protocols introduced later in the paper.
-It will also form the basis for the section \ref{sec:reasoning}, where we present the logic
-to reason about state channels.
-
-- opinionated
-- capture all the features
+The model is opinionated, making choices about how state channel networks should behave, but also captures the essential features seen in other approaches.
 
 \subsection{A System of Balances}
 
@@ -157,53 +154,98 @@ Anyone can deposit into an address of either type\footnote{But there is nothing 
 participant addresses - and only by a party who knows the private key.
 The total coins held by the smart contract should always equal the sum of the balances.
 
-\subsection{Channel Outcomes}
+\subsection{State Channel Outcomes}
 
-
+In our model, we think of a state channel as a off-chain protocol followed by a set of participants,
+enabling them to reach an \textbf{outcome} that can be used to change the balances on the chain.
+In general, the outcome can be an arbitrary data structure, the format and interpretation of which
+is specified by the state channel network protocol being used.
+For example, the \textit{allocation} is a simple type of outcome used by both Turbo and Nitro
+protocols.
+The data in an allocation represents a list of addresses paired with totals,
+specifying how the channel's balance should be distributed.
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/outcome-notation}}
   \caption{
-    Three different ways of representing the situation where Bob has $5$ coins
-    stored against his address in the adjudicator and Alice has $2$.
+    Representation of (allocation) outcomes in the three different diagram formats.
+    We show the three possible cases: a channel, $L$, with both a balance and an outcome;
+    a channel, $L'$, with a balance but no outcome; 
+    and a channel, $L''$, with an outcome but no balance.
+    In colouring the channels, we have assumed the participants in each channel are $A$ and $B$.
   }\label{fig:outcome-notation}
 \end{figure} 
 
-- the purpose of the state channel is to get to an 'outcome'
-- in this section, we will use the simplest possible outcome - allocations
+We separate the process of updating the balances according to the channel outcome into two stages:
+finalization and redistribution.
+\textbf{Finalization} is the process of getting the outcome of the state channel into the
+adjudicator on chain, where it will be stored against the channel address.
+\textbf{Redistribution} is the process of updating the balances in the adjudicator, according
+to the outcome.
 
-- how do we create an outcome and get it on-chain
-- operation + finalization
+How an outcome is finalized is a question of the rules of operation of a state channel.
+The rules of operation are somewhat orthogonal to the network protocols that are the focus of this paper.
+The ForceMove protocol is an example of a set of state channel operation rules.
+The protocols presented here are known to work with ForceMove channels but could also likely
+be made to work with other operation rules.
 
 \begin{figure}[h]\centering
   \input{figures/channel-operation}
 
-  \caption{Channel Operation}\label{fig:modes}
+  \caption{
+    ForceMove Channel Operation.
+    The parts of the adjudicator responsible for storing challenges are omitted from the diagram.
+  }\label{fig:modes}
 \end{figure}
 
-- operation + finalization
+In ForceMove, there are two ways for an outcome to be finalized.
+The first corresponds to a non-collaborative closing of the channel:
+one participant launches an on-chain challenge by providing a sequence of signed statements to the force-move operation;
+this starts a timeout period;
+if no other participant responds during timeout period, then the challenge times out and the outcome
+corresponding to the challenge state is finalized.
+The second corresponds to a collaborative closing of the channel:
+all the participants sign a special conclude state, which contains the channel outcome to
+produce an object called a conclusion proof; 
+any participant can then register this outcome on-chain to create a finalized outcome.
+By closing the channel collaboratively the participants avoid having to wait for the challenge period.
 
+For the purpose of the model, a crucial property is that the rules of operation only allow one outcome to be finalized for each channel.
+As we will see in section \ref{sec:reasoning}, it is also important that the rules of operation make it possible to know which outcome(s) a participant can finalize from a given state.
 
 \subsection{Redistribution}
 
-- you can only withdraw from a participant address
-- you can only get an outcome for a channel address
-
-- outcomes (in the abstract) - outcome is what gets put on chain
-- outcomes used for redistribution
+The second part of extracting the funds from a state channel is the redistribution step.
+Redistribution involves calling a sequence of on-chain \textbf{operations} to manipulate
+the balances and finalized outcomes.
+The allowed operations are defined by the network protocol used.
+Figure \ref{fig:redistribution} shows an example of the transfer operation from Turbo protocol.
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/redistribution}}
-  \caption{Cool, huh?}
+  \caption{
+    A example of a redistribution operation from Turbo protocol.
+    Here the transfer operation is used to move $3$ coins out of channel $L$ to Alice.
+  }\label{fig:redistribution}
 \end{figure}
+
+The operations change the state of the adjudicator: typically both balances and outcomes.
+There is no restriction on who can trigger the operations.
+In this paper, we present all operations separately and assume they are called separately.
+In practice, we expect that implementations would provide some utility methods that combine
+common sequences of operations, to improve gas efficiency.
+
+To recap, we now have a system where participants can deposit into state channel addresses on-chain.
+By running a state channel, participants can reach an outcome and ensure this outcome is finalized on-chain.
+Once the outcome is finalized, the funds held in the channel can be redistributed to other participants and channels by calling on-chain operations.
+Participants can then withdraw any funds that have been redistributed to their address.
+
+In the next section, we will use this model to discuss how to reason about state channels.
 
 \section{Reasoning about State Channels}\label{sec:reasoning}
 
 - paper aims to put in place a framework for reasoning about the correctness of state channel constructions
 - reasoning about what I hold off-chain and what if means to me
-
-The model is opinionated, in that it makes certain choices about the working details of state channel
-networks that will not be true in general.
 
 
 - how to extract value
@@ -379,6 +421,10 @@ They can do this without disturbing any sub-channels supported by the ledger cha
 
 \subsubsection{Partial checkout from a ledger channel}
 
+\begin{figure}[h]\centering
+  % \makebox[\textwidth][c]{\input{figures/partial-withdrawal}}
+  \caption{Cool, huh?}
+\end{figure}
 
 A partial checkout is the opposite of a top up: 
 one participant has excess funds in the ledger channel that they wish to withdraw on-chain.

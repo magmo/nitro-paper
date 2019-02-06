@@ -1,6 +1,6 @@
 
 \begin{tikzpicture}[x=8cm, y=2cm]
-  \node[draw=black, rounded corners=0.5cm] (adj0) at (0, 0) {
+  \node[draw=black, rounded corners=0.5cm, outer sep=0.2cm] (adj0) at (0, 0) {
     \begin{tabular}{c|c|c}
       \multicolumn{3}{c}{\textbf{Adjudicator}} \\
       Address & Balance & Outcome \\
@@ -11,16 +11,18 @@
     \end{tabular}
   };
 
-  \node[draw=black, rounded corners=0.5cm] (adj0) at (1, 0) {
+  \node[draw=black, rounded corners=0.5cm, outer sep=0.2cm] (adj1) at (1, 0) {
     \begin{tabular}{c|c|c}
       \multicolumn{3}{c}{\textbf{Adjudicator}} \\
       Address & Balance & Outcome \\
       \hline
-      L & 5 & Bob: 2 \\
+      L & 2 & Bob: 2 \\
       Bob & 4 \\
       Alice & 3 \\
     \end{tabular}
   };
+
+  \draw[->] (adj0) edge node[midway, above] { $\transfer{L}{\text{Alice}}{3}$} (adj1);
 
   \node (not0) at (0, -1) { $\adj{\holds{L}{5}{\alloc{\text{Bob}: 2, \text{Alice}: 3}}, \;\holds{\text{Bob}}{4}{}}$ };
   \node (not0) at (1, -1) { $\adj{\holds{L}{5}{\alloc{\text{Bob}: 2}}, \;\holds{\text{Bob}}{4}{}, \; \holds{\text{Alice}}{3}{}}$ };
