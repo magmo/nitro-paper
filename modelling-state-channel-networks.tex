@@ -1,9 +1,9 @@
 
 \section{Modelling State Channel Networks}
 
-In this section we will present a simple model for state channel networks.
-The model is intended to be easy to understand and reason about, while still capturing the essential features of state channel networks.
-It will form the basis for the protocols introduced later in the paper, along with the tools for proving the correctness of their constructions.
+In this section will present a simple model to form the foundation of a state channel network.
+The model is intended to be easy to understand and reason about, while still capturing the essential features.
+It will form the basis for the protocols introduced later in the paper, as well as for the tools used to prove the correctness of those protocols.
 
 \subsection{A System of Balances}
 
@@ -15,12 +15,11 @@ We will further simplify matters by specifying that quantities of coins will hav
 size, taking values in $\mathbb{Z}^+$.
 This allows us to avoid dealing with integer overflows when presenting operations.
 These simplifications do not cause any limitations in practice and all the work
-here can be applied to state channel networks that manage an arbitrary number of 
-real-world assets.
+here can be applied to state channel networks that manage an arbitrary number of asset types.
 
 In order to store value, a state channel network must be backed by assets held on-chain.
 In our explanation, we assume that these funds are held and managed by a single\footnote{
-In practice, the adjudicator functionality could be split across multiple smart contracts.
+  We assume this for simplicity only - in practice the functionality could be split across multiple contracts.
 } smart contract,
 which we will refer to as the \textbf{adjudicator}.
 
@@ -28,13 +27,16 @@ The first purpose of the adjudicator is to store the balance of coins held for a
 Addresses can correspond either to participants in the network or to state channels.
 A \textbf{participant address} is a regular blockchain address, generated in the standard way from the signature scheme.
 A \textbf{channel address} is formed by taking the hash of the participant addresses along with a nonce, $k$, that is chosen by the participants in order to distinguish their channels from one another.
-Given an arbitrary address, $A$, we assume that the properties of the signature scheme and hashing algorithm make it neither possible to find a private key for $A$ nor to find a channel whose address is $A$.
+Given an address, $A$, we assume that the properties of the signature scheme and hashing algorithm make it impossible to find a private key for $A$ or to construct a channel whose address is $A$, if they are not previously known.
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/balance-notation}}
   \caption{
     Three different ways of representing the situation where Bob has $5$ coins
     stored against his address in the adjudicator and Alice has $2$.
+    The on-chain view shows a pictorial representation of the state in the adjudicator.
+    Channel notation is useful for writing the state in equations and will later be extended to cover off-chain state as well.
+    In the outcome diagram, the white squares represent adjudicator balances and the solid circles are coloured to represent the different participants.
   }\label{fig:balance-notation}
 \end{figure}
 
@@ -57,7 +59,11 @@ in order to prevent replay attacks by other parties.}.
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/deposit-withdrawal}}
-  \caption{Deposits and withdrawals.}\label{fig:deposit-withdrawal}
+  \caption{
+    Deposits and withdrawals.
+    The deposit can be called by any blockchain user, provided that it is accompanied with a transfer of the same number of coins into the adjudicator.
+    For the withdrawal to be successful, the withdrawal parameters must be signed with Bob's private key.
+  }\label{fig:deposit-withdrawal}
 \end{figure}
 
 To recap, we now have a simple smart contract that can store a balance against an address, which either represents a participant or a channel.
@@ -68,14 +74,10 @@ The total coins held by the smart contract should always equal the sum of the ba
 
 \subsection{State Channel Outcomes}
 
-In our model, we think of a state channel as a off-chain protocol followed by a set of participants,
-enabling them to reach an \textbf{outcome} that can be used to change the balances on the chain.
-In general, the outcome can be an arbitrary data structure, the format and interpretation of which
-is specified by the state channel network protocol being used.
-For example, the \textit{allocation} is a simple type of outcome used by both Turbo and Nitro
-protocols.
-The data in an allocation represents a list of addresses paired with totals,
-specifying how the channel's balance should be distributed.
+In our model, a state channel is an off-chain protocol followed by a set of participants,
+enabling them to reach an \textbf{outcome} that can be used to update the balances on the chain.
+The format and interpretation of the outcome is specified by the state channel network protocol being used.
+An example of a type of outcome is the \textit{allocation}, which is used in both Turbo and Nitro protocol, and which consists of a list of recipient addresses and totals that specify how the channel's balance should be distributed.
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/outcome-notation}}
@@ -84,29 +86,26 @@ specifying how the channel's balance should be distributed.
     We show the three possible cases: a channel, $L$, with both a balance and an outcome;
     a channel, $L'$, with a balance but no outcome; 
     and a channel, $L''$, with an outcome but no balance.
-    In colouring the channels, we have assumed the participants in each channel are $A$ and $B$.
+    We represent the channels with split circles, coloured to represent the participants of the channel, which we have taken to be $A$ and $B$.
   }\label{fig:outcome-notation}
 \end{figure} 
 
-We separate the process of updating the balances according to the channel outcome into two stages:
-finalization and redistribution.
-\textbf{Finalization} is the process of getting the outcome of the state channel into the
-adjudicator on chain, where it will be stored against the channel address.
-\textbf{Redistribution} is the process of updating the balances in the adjudicator, according
-to the outcome.
+Central to the approach of the model is to split the updating of the balances into two steps:
+\begin{enumerate}
+\item \textbf{Finalization}: getting to a point where the outcome of the channel is stored on the blockchain.
+\item \textbf{Redistribution}: updating the balances in the adjudicator according to that outcome.
+\end{enumerate}
 
-How an outcome is finalized is a question of the rules of operation of a state channel.
-The rules of operation are somewhat orthogonal to the network protocols that are the focus of this paper.
-The ForceMove protocol is an example of a set of state channel operation rules.
-The protocols presented here are known to work with ForceMove channels but could also likely
-be made to work with other operation rules.
+The bulk of this paper is focussed on the redistribution step, which we will discuss further in section \ref{sec:redistribution}.
+
+Understanding how an outcome is finalized inevitably involves understanding the rules of operation of the state channel: from exchanging states to launching and responding to challenges.
+The ForceMove protocol completely specifies these rules of operation, in a way that is compatible with the work in this paper.
 
 \begin{figure}[h]\centering
   \input{figures/channel-operation}
 
   \caption{
-    ForceMove Channel Operation.
-    The parts of the adjudicator responsible for storing challenges are omitted from the diagram.
+    ForceMove Channel Operation. There are two ways for an outcome to become finalized: (i) through a challenge that times out before anyone responds, and (ii) through the registration of a conclusion proof.
   }\label{fig:modes}
 \end{figure}
 
@@ -122,10 +121,10 @@ produce an object called a conclusion proof;
 any participant can then register this outcome on-chain to create a finalized outcome.
 By closing the channel collaboratively the participants avoid having to wait for the challenge period.
 
-For the purpose of the model, a crucial property is that the rules of operation only allow one outcome to be finalized for each channel.
+For the purpose of the model, it is crucial that the rules of operation only allow one outcome to be finalized for each channel.
 As we will see in section \ref{sec:reasoning}, it is also important that the rules of operation make it possible to know which outcome(s) a participant can finalize from a given state.
 
-\subsection{Redistribution}
+\subsection{Redistribution}\label{sec:redistribution}
 
 The second part of extracting the funds from a state channel is the redistribution step.
 Redistribution involves calling a sequence of on-chain \textbf{operations} to manipulate
@@ -138,6 +137,7 @@ Figure \ref{fig:redistribution} shows an example of the transfer operation from 
   \caption{
     A example of a redistribution operation from Turbo protocol.
     Here the transfer operation is used to move $3$ coins out of channel $L$ to Alice.
+    Note: the parts of the adjudicator responsible for storing challenges are omitted from the diagram.
   }\label{fig:redistribution}
 \end{figure}
 
@@ -153,3 +153,4 @@ Once the outcome is finalized, the funds held in the channel can be redistribute
 Participants can then withdraw any funds that have been redistributed to their address.
 
 In the next section, we will use this model to develop some tools for constructing state channel networks and proving their safety.
+In particular, we will develop the logic by which we can use the fact that a given outcome could be finalized if necessary, to avoid putting that outcome on-chain at all.
