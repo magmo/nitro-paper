@@ -1,0 +1,27 @@
+\section{Motivation}
+
+State channels are an important technique for scaling blockchains.
+In a state channel, a fixed set of participants execute a series of state transitions off-chain, in order to determine how a set of assets should be distributed between them.
+By allowing participants to execute these transitions off-chain, the state channel removes load from the blockchain, allowing it to support the same level of activity with fewer transactions.
+
+Unlike many other scaling techniques, state channels provide a way to run arbitrary state update protocols, instead of just providing a method for realizing transfers off-chain.
+
+Beyond scaling, state channels bring instant finality to blockchain transactions:
+value can be considered to be transferred at the moment when a state channel update is received.
+The holder of a fully signed state does not need to wait for the transaction to be mined, safe in the knowledge
+that they have the right to claim the assets on-chain at a future point of time of their choosing.
+
+In their naive form, each state channel needs to have a corresponding \textit{state deposit} - a set of assets held in escrow on-chain, to be distributed according to the outcome of the channel.
+Each time a state channel is opened, at least one party needs to perform an on-chain transaction to transfer assets into the state deposit, and each time it is closed at least one participant must perform an on-chain transaction to claim their share.
+This limits the effectiveness of state channels as a scaling solution, making it only suitable for the case where a large number of transactions are executed between a single group of participants.
+We refer to these naive channels as \textbf{direct channels}, as they are supported directly by funds held on the blockchain.
+
+\subsection{Ledger Channels and Virtual Channels}
+
+- graph of direct channels with multiple lines between nodes
+
+- graph of ledger channels with single lines between nodes
+
+- graph of virtual channels with hub + spoke
+
+- image of virtual channels, talking about the agreements

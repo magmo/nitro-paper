@@ -1,0 +1,156 @@
+\section{Turbo Protocol}
+
+The outcome of a Turbo channel is always an \textbf{allocation}.
+An allocation is a list of pairs of addresses and totals, $\alloc{a_1{:}v_1, \dots, a_m{:}v_m}$, where each total, $v_i$, represents that quantity of coins due to each address, $a_i$.
+If the outcome of channel $A$ includes the pair $B{:}x$, we say that `$A$ \textbf{owes} $x$ to $B$'.
+We assume that each address only appears once in the allocation and require that implementations enforce this by ignoring any additional entries for a given address after the first.
+
+The allocation is in priority order, so that if the channel does not hold enough funds to pay all the coins that are due, then the addresses at the beginning of the allocation will receive funds first.
+We say that `$A$ \textbf{can afford} $x$ for $B$', if $B$ would receive at least $x$ coins, were the coins currently held by $A$ to be paid out in priority order.
+
+Turbo introduces the \textbf{transfer} operation, $\transfer{A}{B}{x}$, to trigger the on-chain transfer of funds according to an allocation.
+If $A$ can afford $x$ for $B$, then $\transfer{A}{B}{x}$:
+\begin{enumerate}
+  \item Reduces the funds held in channel $A$ by $x$. 
+  \item Increases the funds held by $B$ by $x$.
+  \item Reduces the amount owed to $B$ in the outcome of $A$ by $x$.
+\end{enumerate}
+If $A$ cannot afford $x$ for $B$, then $\transfer{A}{B}{x}$ fails, leaving the on-chain state unchanged.
+
+\begin{example}
+  In the following example, we have a channel, $L$, which holds $10$ coins and has an outcome, $\alloc{A: 3, B: 2, \rchi: 5}$, which has been finalized on-chain.
+  As $L$ can afford $5$ for $\rchi$ the following transfer operation is successful:
+  \begin{align}
+    \transfer{L}{\rchi}{5}\adj{\holds{L}{10}{\alloc{A: 3, B: 2, \rchi: 5}}} = \adj{\holds{L}{5}{\alloc{A:3, B: 2}}, \holds{\rchi}{5}{}}
+  \end{align}
+\end{example}
+
+We give a python implementation of the Turbo adjudicator in the appendix.
+
+\subsection{Ledger Channels}
+
+A \textbf{ledger} channel is a channel which uses its own funding to fund other channels sharing the same set of participants.
+By doing this, a ledger channel allows these \textbf{sub-channels} to be opened, funded and closed without any on-chain operations.
+
+To see how this works, consider the following setup where a ledger channel, $L$, allocates the funds it holds to participants $A$ and $B$ and channel $\rchi$:
+\begin{align}
+  \adj{\holds{L}{10}{}}, \finalizable{L}{\alloc{A: 2, B: 3, \rchi: 5}}{A, B}
+\end{align}
+We have chosen the simplest example here, where $L$ is funded by the coins it holds on-chain, but it is completely possible to have ledger channels themselves funded by other ledger channels or (later) by virtual channels.
+
+We claim that the ledger channel $L$ funds the channel $\rchi$ in the above setup.
+This is because either participant has the power to convert the situation above into a situation where $\rchi$ is funded on-chain:
+\begin{align}
+  \transfer{L}{\rchi}{5}\adj{\holds{L}{10}{\alloc{A: 2, B: 3, \rchi: 5}}} = \adj{\holds{L}{10}{\alloc{A: 2, B: 3}, \holds{\rchi}{5}{}}}
+\end{align}
+After this operation, we say that the channel $\rchi$ has been \textbf{offloaded}.
+Note that we do not need to wait for $\rchi$ to complete before offloading it.
+The offload converts $\rchi$ from an off-chain sub-channel to an on-chain direct channel, without interrupting its operation in any way.
+
+The offload should be seen as an action of last-resort.
+It is important that offloading is allowed so that either player can realize the value in channel $\rchi$ if required, but it has the downside of forcing all sub-channels supported by $L$ to be closed on-chain.
+It is in the interest of both participants to open and close sub-channels collaboratively.
+We next show how this can be accomplished safely.
+
+Under the Turbo protocol, all ledger channels are regular ForceMove channels running the Consensus Game.
+
+\subsubsection{Opening a sub-channel}
+
+The utility of a ledger channel derives from the ability to open and close sub-channels without on-chain operations.
+Here we show how to open a sub-channel.
+\begin{enumerate}
+  \item Start in a state where $A$ and $B$ have a funded ledger channel, $L$, open:
+  \begin{align}
+    \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{A: a, B: b}}{A, B}
+  \end{align}
+  \item $A$ and $B$ prepare their sub-channel $\rchi$ and progress it to the funding point. With $a' \leq a$ and $b' \leq b$:
+  \begin{align}
+    \finalizable{\rchi}{\alloc{A:a', B:b'}}{A,B}
+  \end{align}
+  \item Update the ledger channel to fund the sub-channel:
+  \begin{align}
+    \finalizable{L}{\alloc{A:a-a', B: b - b', \rchi: a' + b'}}{A,B}
+  \end{align}
+\end{enumerate}
+
+\subsubsection{Closing a sub-channel}
+
+When the interaction in a sub-channel, $\rchi$, has finished we need a safe way to update the ledger channels to incorporate the outcome.
+This allows the sub-channel to be defunded and closed off-chain.
+\begin{enumerate}
+  \item We start in the state where $\rchi$ is funded via the ledger channel, $L$. With $x = a + b + c$:
+  \begin{align}
+    \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{A: a, B: b, \rchi: c}}{A, B}
+  \end{align}
+  \item The next step is for $A$ and $B$ to concluded channel $\rchi$, leaving the channel in the conclude state. Assuming $a' + b' = c$:
+  \begin{align}
+    \finalizable{\rchi}{\alloc{A:a', B:b'}}{A,B}
+  \end{align}
+  \item The participants then update the ledger channel to include the result of channel $\rchi$.
+  \begin{align}
+    \finalizable{L}{\alloc{A: a+ a', B: b + b'}}{A, B}
+  \end{align}
+  \item Now the sub-channel $\rchi$ has been defunded, it can be safely discarded.
+\end{enumerate}
+
+\subsubsection{Topping up a ledger channel}
+
+Here we show how a participant can increase their funds held in a ledger channel by depositing into it.
+They can do this without disturbing any sub-channels supported by the ledger channel.
+\begin{enumerate}
+  \item In this process $A$ wants to deposit an additional $a'$ coins into the the ledger channel $L$. We start in the state where $L$ contains balances for $A$ and $B$, as well as funding a sub-channel, $\rchi$. With $x = a + b + c$:
+  \begin{align}
+    \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{A: a, B: b, \rchi: c}}{A, B}
+  \end{align}
+  \item To prepare for the deposit the participants update the state to move $A$'s entry to the end, simultaneously increasing $A$'s total. This is a safe operation due to the precedence rules: as the channel is currently underfunded $A$ would still only receive $a$ if the outcome went to chain.
+  \begin{align}
+    \finalizable{L}{\alloc{B:b, \rchi: c, A: a + a'}}{A,B}
+  \end{align}
+  \item It is now safe for $A$ to deposit into the channel on-chain:
+  \begin{align}
+    D_L(a')\adj{\holds{L}{x}{}} = \adj{\holds{L}{x + a'}{}}
+  \end{align}
+  \item Finally, if required, the participants can reorder the state again:
+  \begin{align}
+    \finalizable{L}{\alloc{ A: a + a', B: b, \rchi: c}}{A,B}
+  \end{align}
+\end{enumerate}
+
+
+\subsubsection{Partial checkout from a ledger channel}
+
+\begin{figure}[h]\centering
+  % \makebox[\textwidth][c]{\input{figures/partial-withdrawal}}
+  \caption{Cool, huh?}
+\end{figure}
+
+A partial checkout is the opposite of a top up: 
+one participant has excess funds in the ledger channel that they wish to withdraw on-chain.
+The participants want to do this without disturbing any sub-channels supported by the ledger channels.
+\begin{enumerate}
+  \item We start with a ledger channel, $L$, that $A$ wants to withdraw $a'$ coins from:
+  \begin{align}
+    \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{A: a + a', B: b, \rchi: c}}{A, B}
+  \end{align}
+  \item The participants start by preparing a new ledger channel, $L'$, whose state reflects the situation they want to be in after $A$ has withdrawn their coins. This is safe to do as this channel is currently unfunded.
+  \begin{align}
+    \finalizable{L'}{\alloc{A: a, B:b, \rchi: c}}{A,B}
+  \end{align}
+  \item They then update $L$ to fund $L'$ alongside the coins that $A$ wants to withdraw. They conclude the channel in this state:
+  \begin{align}
+    \finalizable{L}{\alloc{L': a + b + c, A: a'}}{A,B}
+  \end{align}
+  \item They then finalize the outcome of $L$ on-chain. This can be done without waiting the timeout, assuming they both signed the conclusion proof in the previous step:
+  \begin{align}
+    \adj{\holds{L}{x}{\alloc{L': a + b + c, A: a'}}}
+  \end{align}
+  \item $A$ can then call the transfer operation to get their coins under their control. 
+  \begin{multline}
+    \transfer{L}{A}{a'}\adj{\holds{L}{x}{\alloc{L: a + b + c, A: a'}}} = \\ \adj{\holds{L}{x - a'}{\alloc{L': a + b + c}}, \; \holds{A}{a}{}}
+  \end{multline}
+  \item At any point in the future the remaining coins can be transferred to $L'$:
+  \begin{multline}
+    \transfer{L}{L'}{a + b + c}\adj{\holds{L}{x}{\alloc{L: a + b + c}}, \; \holds{A}{a'}{}} =  \\ \adj{\holds{L'}{a + b + c}{}, \; \holds{A}{a'}{}}
+  \end{multline}
+\end{enumerate}
+Note that $A$ was able to withdraw their funds instantly, without having to wait for the channel timeout.
