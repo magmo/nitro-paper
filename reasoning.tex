@@ -1,66 +1,114 @@
 \section{Proofs of Construction}\label{sec:reasoning}
 
+- risks of locking funds
+- complicated: sets of agreements, what do they mean?
+- structure - call these constructions(?)
 
-- what does safety mean?
-- putting money into joint control. can I get some of it back if cooperation breaks down.
+\subsection{Channel Funding and Value}
+
+- if the channel reached a certain outcome, what would that mean to me?
+
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/meaning-of-funding}}
+  \caption{
+  }\label{fig:meaning-of-funding}
+\end{figure}
+- direct funding
+- [diagram]
+
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/direct-funding}}
+  \caption{
+  }\label{fig:direct-funding}
+\end{figure}
+
+- not outcomes states
+- system states
+
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/system-state-direct-funding}}
+  \caption{
+  }\label{fig:system-state-direct-funding}
+\end{figure}
+
+- definition of funding
+- definition of value
+
+\subsection{Constructing}
+
+- 1. show that a given network funds a channel
+- 2. show you can build it step-by-step
+
+second point is important
+- single channel updates
+- keep that channels are independent - which allows us to reason about finalizability on a per channel basis
+
+simple rule that you can transition between them if you have equal values
+
+\subsection{Unbeatable Strategies}
+
+- unbeatable strategy for obtaining a balance on-chain
+- two parts: finalization and redistribution
+
+- finalization is per channel - channels independent
+- outcome isn't always determined
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/multiple-outcomes-possible}}
+  \caption{Cool, huh?}
+\end{figure}
 
 
+- more in finalizable outcomes
 
+- redistribution is hard
+- need to consider all different possibilities
+- develop tools for the protocol to argue about this
+- will be done in the turbo / nitro section
 
+- rules
 
+\subsection{Finalizable Outcomes}
 
+- definition in terms of unbeatable strategy
 
+- example: next mover
 
-- paper aims to put in place a framework for reasoning about the correctness of state channel constructions
-- reasoning about what I hold off-chain and what if means to me
+- different possibilities
+  - finalized
 
-- how to extract value
-- states ---> outcomes ---> money
-- reducing channel diagrams --> value
+- universal finalizability
+- two examples
+- diagram: FM states
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/force-move-state-progression}}
+  \caption{Cool, huh?}
+\end{figure}
 
-- outcome diagrams
-- fundamental rule of state channels - if two states are worth the same, I will transition between them
-- the "simple rule of state channels" - we ignore other factors
-- value
-- funded ?
-- offloaded
+- enabled outcomes
 
-- safe
-- this is the guarantee that if a participant stops at any point other participants don't lose out
+\subsection{Consensus Game}
 
-- allows rewriting
-- [diagram] example: closing off-chain
-
-- two questions (finalization + redistribution)
-  - what can I definitely finalize?
-  - what can I definitely redistribute to myself?
-
-- protocol design: how can I move between states in single moves that keep the value the same
-- .. when we don't allow atomic changes across channels
-
-- presenting a construction / protocol
-- in particular when presenting a protocol we must demonstrate a series single state updates, demonstrate that the value is preserved
-- in particular the way we do this:
-  - demostrate a construction funds a channel
-  - demonstrate we can build it from another state
-    - give a series of waypoint states - universally finalizable outcomes
-    - of a special type of channel - consensus channels, running a particilar protocol
-    - use the specifics of this channel to say we can move between them in a safe manner
-
-
-\subsection{Finalizable outcomes}
-
-- definition: statement
-- definition: channel state
-- definition: adjudicator state
-- definition: system state
-
-- the rules of strategies
-
-subsection consensus game
-[diagram] - pictorial representation of consensus game
-
+- consensus game if FM application
+- deals in outcome. accepted outcome, propose a new one
+- has the property that the only two possible outcomes are A and B
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/consensus-game}}
   \caption{Cool, huh?}
 \end{figure}
+
+\subsection{Outcomes First}
+
+- in practice it is hard to write states
+- instead we will write outcomes and reason about when you can transition between them
+
+- use special type of channel - consensus game channel
+
+
+- if I have two network outcomes that differ in the outcome of a single CG channel
+- then I can find a sequence of single-update network states that interpolate between them
+
+- write down a sequence of outcomes
+- update one channel at a time
+- and have the same value to all participants
+
+- the start and conclude states are also finalizable

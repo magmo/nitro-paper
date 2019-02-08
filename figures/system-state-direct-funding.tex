@@ -1,0 +1,34 @@
+\begin{tikzpicture}[node distance=2cm]
+  \node[cloud, draw,cloud puffs=10,cloud puff arc=120, aspect=2, inner ysep=1em, align=center] (systemstate) {$\Sigma$};
+
+  \node[right=of systemstate] (diag0) {
+    \begin{tikzpicture}[y=1cm, x=2cm]
+      \node[sqadj] (a0) at (1, 0) {};
+      \node[circAB, label=right:$L$] (p0) at (1, -1) {};
+      \node[circA, label=below:$A$] (p1) at (0.58, -2) {};
+      \node[circB, label=below:$B$] (p2) at (1.42, -2) {};
+
+      \draw[->] (a0) edge node[midway, left] { $7$ } (p0);
+      \draw[->] (p0) edge node[midway, left] { $3$ } (p1);
+      \draw[->] (p0) edge node[midway, right] { $4$ } (p2);
+
+    \end{tikzpicture}
+  };
+
+  \node[right=of diag0] (diag1) {
+    \begin{tikzpicture}[y=1cm, x=1.5cm]
+      \node[sqadj] (a0) at (0, 0) {};
+      \node[circA, label=below:$A$] (p0) at (0, -1) {};
+      \draw[->] (a0) edge node[midway, left] { $3$ } (p0);
+
+      \node[sqadj] (a1) at (1, 0) {};
+      \node[circAB, label=right:L] (pab) at (1, -1) {};
+      \node[circB, label=below:Bob] (pabb) at (1, -2) {};
+      \draw[->] (a1) edge node[midway, left] { $4$ } (pab);
+      \draw[->] (pab) edge node[midway, left] { $4$ } (pabb);
+    \end{tikzpicture}
+  };
+
+  \draw[shorten <=0.5cm, shorten >=0.3cm, -{Latex[length=2mm]}] (systemstate) to (diag0);
+  \draw[shorten <=0.5cm, shorten >=0.3cm, -{Latex[length=2mm]}] (diag0) to (diag1);
+\end{tikzpicture}
