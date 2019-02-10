@@ -1,29 +1,53 @@
 \section{Proofs of Construction}\label{sec:reasoning}
 
+- logic of state channels. I hold this, which means I can claim that
+- involves reasoning about what statements you hold, what statements others hold, what they are capable of
+
 - risks of locking funds
 - complicated: sets of agreements, what do they mean?
-- structure - call these constructions(?)
 
 \subsection{Channel Funding and Value}
 
-- if the channel reached a certain outcome, what would that mean to me?
+- suppose I have a state channel that reaches an outcome
+- what does that mean for me
+- in particular how much more can I withdraw from the system due to that outcome
+- understanding this is key
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/meaning-of-funding}}
   \caption{
   }\label{fig:meaning-of-funding}
 \end{figure}
-- direct funding
-- [diagram]
 
+- there's one case where the answer to these questions is very straightforward
+- the case where the channel itself has coins in the adjudicator
+- in this case we say the channel is \textbf{directly funded}
+- for allocation outcomes, we can further distinguish between partial and fully funded
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/direct-funding}}
   \caption{
   }\label{fig:direct-funding}
 \end{figure}
 
-- not outcomes states
-- system states
+- but the whole point is to move beyond direct funding
+- let's look at another case when it's ok
+- suppose that $L$ is not directly funded but $L'$ is
+- suppose also that the outcome of $L'$ gives all its coins to $L$
+- in this case we've moved in to the situation where $L$ is now directly funded
+- we say that $L$ has been \textbf{offloaded}
+- from that point onwards we know that outcome of $L$ will be honoured
+
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/indirect-funding}}
+  \caption{
+  }\label{fig:indirect-funding}
+\end{figure}
+
+- so far we've been looking at outcomes
+- but in a state channel we don't have outcomes
+- we can see the state of the adjudicator: direct fundings, finalized outcomes
+- we have some private information: private keys, secrets for the channel algorithm (e.g. our ship positions in a game of battleships)
+- we have the statements we've received and the statements we've sent
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/system-state-direct-funding}}
@@ -33,6 +57,7 @@
 
 - definition of funding
 - definition of value
+
 
 \subsection{Constructing}
 
@@ -112,3 +137,8 @@ simple rule that you can transition between them if you have equal values
 - and have the same value to all participants
 
 - the start and conclude states are also finalizable
+
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/outcomes-setup-conclude}}
+  \caption{Cool, huh?}
+\end{figure}

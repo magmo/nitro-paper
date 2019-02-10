@@ -1,12 +1,25 @@
 \section{Turbo Protocol}
 
-The outcome of a Turbo channel is always an \textbf{allocation}.
-An allocation is a list of pairs of addresses and totals, $\alloc{a_1{:}v_1, \dots, a_m{:}v_m}$, where each total, $v_i$, represents that quantity of coins due to each address, $a_i$.
-If the outcome of channel $A$ includes the pair $B{:}x$, we say that `$A$ \textbf{owes} $x$ to $B$'.
+- turbo protocol has one type of outcome the allocation and one on-chain operation - the transfer
+- already familiar with these, as they formed the basis of a lot of the examples in sections .. and ..
+- make this precise and talk about redestributing 
+
+\subsection{Allocations and Transfer}
+
+An \textbf{allocation} is a list of pairs of addresses and totals, $\alloc{a_1{:}v_1, \dots, a_m{:}v_m}$, where each total, $v_i$, represents that quantity of coins due to each address, $a_i$.
 We assume that each address only appears once in the allocation and require that implementations enforce this by ignoring any additional entries for a given address after the first.
 
 The allocation is in priority order, so that if the channel does not hold enough funds to pay all the coins that are due, then the addresses at the beginning of the allocation will receive funds first.
 We say that `$A$ \textbf{can afford} $x$ for $B$', if $B$ would receive at least $x$ coins, were the coins currently held by $A$ to be paid out in priority order.
+
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/transfer-insufficient-funds}}
+  \caption{
+    Allocations pay out in priority order.
+    In the diagram, $B$ is drawn to the left of $A$ to show that $B$ has higher priority in the outcome of $L$.
+    In this example, $L$ can afford $4$ coins for $B$, but can only afford $1$ coin for $A$.
+  }\label{fig:transfer-insufficient-funds}
+\end{figure}
 
 Turbo introduces the \textbf{transfer} operation, $\transfer{A}{B}{x}$, to trigger the on-chain transfer of funds according to an allocation.
 If $A$ can afford $x$ for $B$, then $\transfer{A}{B}{x}$:
@@ -17,26 +30,52 @@ If $A$ can afford $x$ for $B$, then $\transfer{A}{B}{x}$:
 \end{enumerate}
 If $A$ cannot afford $x$ for $B$, then $\transfer{A}{B}{x}$ fails, leaving the on-chain state unchanged.
 
-\begin{example}
-  In the following example, we have a channel, $L$, which holds $10$ coins and has an outcome, $\alloc{A: 3, B: 2, \rchi: 5}$, which has been finalized on-chain.
-  As $L$ can afford $5$ for $\rchi$ the following transfer operation is successful:
-  \begin{align}
-    \transfer{L}{\rchi}{5}\adj{\holds{L}{10}{\alloc{A: 3, B: 2, \rchi: 5}}} = \adj{\holds{L}{5}{\alloc{A:3, B: 2}}, \holds{\rchi}{5}{}}
-  \end{align}
-\end{example}
+\subsection{Unbeatable Redistribution}
 
-We give a python implementation of the Turbo adjudicator in the appendix.
+- section in theory 
+- if you have a strategy, involving just transfers, it is unbeatable
+- roughly speaking adding money can't hurt
+
+- algorithm for calculating the value for each node in an outcome graph
+
+- we will assume the graph of outcomes is a dag
+- any participant can ensure this is the case
+
+
+- number the edge of the dag
+- topological ordering
+- work through each node in order paying out in order
+- amount in node at the end of its turn is its value/funding
+
+
+- depositing extra can't hurt
+- withdrawing can only be done by participants, and in this case it's part of the value
+- the order of transfers out of a channel doesn't change anything
+
+- impossible to do better without depositing
+- so any strategy you have must give this
+- and the whole outcome is unbeatable
+
+
 
 \subsection{Ledger Channels}
 
-A \textbf{ledger} channel is a channel which uses its own funding to fund other channels sharing the same set of participants.
-By doing this, a ledger channel allows these \textbf{sub-channels} to be opened, funded and closed without any on-chain operations.
+A \textbf{ledger} channel is a channel
+whose sole purpose is to provide funding to other channels
+call these sub-channels
+Ledger channels run the consensus game
+
+Already shown this, but we'll give a quick recap of ledger channels funding another channel offchain
 
 To see how this works, consider the following setup where a ledger channel, $L$, allocates the funds it holds to participants $A$ and $B$ and channel $\rchi$:
 \begin{align}
   \adj{\holds{L}{10}{}}, \finalizable{L}{\alloc{A: 2, B: 3, \rchi: 5}}{A, B}
 \end{align}
 We have chosen the simplest example here, where $L$ is funded by the coins it holds on-chain, but it is completely possible to have ledger channels themselves funded by other ledger channels or (later) by virtual channels.
+
+- here $L$ funds $\rchi$
+- easy to see how to offload $\rchi$
+
 
 We claim that the ledger channel $L$ funds the channel $\rchi$ in the above setup.
 This is because either participant has the power to convert the situation above into a situation where $\rchi$ is funded on-chain:
@@ -52,9 +91,19 @@ It is important that offloading is allowed so that either player can realize the
 It is in the interest of both participants to open and close sub-channels collaboratively.
 We next show how this can be accomplished safely.
 
-Under the Turbo protocol, all ledger channels are regular ForceMove channels running the Consensus Game.
+\subsection{Example Constructions}
+
+- only examples
+- demonstrate the principles
+- easy to extend to the general case
 
 \subsubsection{Opening a sub-channel}
+
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/opening-sub-channel}}
+  \caption{
+  }\label{fig:opening-sub-channel}
+\end{figure}
 
 The utility of a ledger channel derives from the ability to open and close sub-channels without on-chain operations.
 Here we show how to open a sub-channel.
@@ -74,6 +123,12 @@ Here we show how to open a sub-channel.
 \end{enumerate}
 
 \subsubsection{Closing a sub-channel}
+
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/closing-sub-channel}}
+  \caption{
+  }\label{fig:closing-sub-channel}
+\end{figure}
 
 When the interaction in a sub-channel, $\rchi$, has finished we need a safe way to update the ledger channels to incorporate the outcome.
 This allows the sub-channel to be defunded and closed off-chain.
@@ -119,14 +174,16 @@ They can do this without disturbing any sub-channels supported by the ledger cha
 
 \subsubsection{Partial checkout from a ledger channel}
 
-\begin{figure}[h]\centering
-  % \makebox[\textwidth][c]{\input{figures/partial-withdrawal}}
-  \caption{Cool, huh?}
-\end{figure}
 
 A partial checkout is the opposite of a top up: 
 one participant has excess funds in the ledger channel that they wish to withdraw on-chain.
 The participants want to do this without disturbing any sub-channels supported by the ledger channels.
+
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/partial-withdrawal}}
+  \caption{Cool, huh?}
+\end{figure}
+
 \begin{enumerate}
   \item We start with a ledger channel, $L$, that $A$ wants to withdraw $a'$ coins from:
   \begin{align}
