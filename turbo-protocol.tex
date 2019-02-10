@@ -97,7 +97,7 @@ We next show how this can be accomplished safely.
 - demonstrate the principles
 - easy to extend to the general case
 
-\subsubsection{Opening a sub-channel}
+\subsubsection{Opening a Sub-channel}
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/opening-sub-channel}}
@@ -122,7 +122,7 @@ Here we show how to open a sub-channel.
   \end{align}
 \end{enumerate}
 
-\subsubsection{Closing a sub-channel}
+\subsubsection{Closing a Sub-channel}
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/closing-sub-channel}}
@@ -148,7 +148,13 @@ This allows the sub-channel to be defunded and closed off-chain.
   \item Now the sub-channel $\rchi$ has been defunded, it can be safely discarded.
 \end{enumerate}
 
-\subsubsection{Topping up a ledger channel}
+\subsubsection{Topping Up a Ledger Channel}
+
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/ledger-top-up}}
+  \caption{
+  }\label{fig:ledger-top-up}
+\end{figure}
 
 Here we show how a participant can increase their funds held in a ledger channel by depositing into it.
 They can do this without disturbing any sub-channels supported by the ledger channel.
@@ -171,9 +177,7 @@ They can do this without disturbing any sub-channels supported by the ledger cha
   \end{align}
 \end{enumerate}
 
-
-\subsubsection{Partial checkout from a ledger channel}
-
+\subsubsection{Partial Withdrawal from a Ledger Channel}
 
 A partial checkout is the opposite of a top up: 
 one participant has excess funds in the ledger channel that they wish to withdraw on-chain.
