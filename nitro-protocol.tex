@@ -5,7 +5,7 @@ In Nitro protocol, the outcome of a channel can be either an allocation or a \te
 A guarantee outcome specifies the address of a target allocation channel; the protocol specifies how this guarantee may be used to pay debt on its behalf.
 When paying debt, a guarantee can be used to alter the payout priority of the allocation outcome of its target address. 
 
-\begin{tikzpicture}
+\begin{tikzpicture}[y=1.05cm]
   \node[semicircle, draw] (upper) at (0,0) {};
   \node[semicircle, draw, rotate=180] (lower) at (0,-1) {};
 
@@ -24,13 +24,46 @@ When paying debt, a guarantee can be used to alter the payout priority of the al
   \node[semicircle, draw, rotate=-30] (upper2b) at (3,0) {};
   \node[semicircle, draw, rotate=180] (lower2) at (2.5,-1) {};
 
-  \draw[-] (upper2a.220) to[out=300, in=90] (lower2.320);
-  \draw[-] (upper2a.270) to[out=300, in=90] (lower2.220);
-  \draw[-] (upper2a.320) to[out=300, in=90] (lower2.270);
+  \node[rotate=30, anchor=north, minimum height=0.4cm] (r1) at (upper2a.south) {};
+  \node[rotate=-30, anchor=north, minimum height=0.4cm] (r2) at (upper2b.south) {};
 
-  \draw[-] (upper2b.220) to[out=240, in=90] (lower2.270);
-  \draw[-] (upper2b.270) to[out=240, in=90] (lower2.220);
-  \draw[-] (upper2b.320) to[out=240, in=90] (lower2.320);
+  \draw[-] (r1.north west) to[out=300, in=120] (r1.south west);
+  \draw[-] (r1.north) to[out=300, in=120] (r1.south east);
+  \draw[-] (r1.north east) to[out=300, in=120] (r1.south);
+  \draw[-] (r1.south west) to[out=300, in=90] (lower2.320);
+  \draw[-] (r1.south) to[out=300, in=90] (lower2.270);
+  \draw[-] (r1.south east) to[out=300, in=90] (lower2.220);
+
+  \draw[-] (r2.north west) to[out=240, in=60] (r2.south);
+  \draw[-] (r2.north) to[out=240, in=60] (r2.south east);
+  \draw[-] (r2.north east) to[out=240, in=60] (r2.south west);
+  \draw[-] (r2.south west) to[out=240, in=90] (lower2.320);
+  \draw[-] (r2.south) to[out=240, in=90] (lower2.270);
+  \draw[-] (r2.south east) to[out=240, in=90] (lower2.220);
+
+  \pgfmathsetmacro{\angle}{60};
+  \pgfmathsetmacro{\inradius}{3};
+  \pgfmathsetmacro{\separation}{1};
+
+  \coordinate (incenter) at (5, 0);
+  \path (incenter) -- +({\angle}:\inradius mm) coordinate (rightp2);
+  \path (incenter) -- +({180-\angle}:\inradius mm) coordinate (leftp2);
+  \path (incenter) -- +(270:\inradius mm) coordinate (basep2);
+
+  \path (rightp2) -- + ({90+\angle}:\separation mm) coordinate (rightp1);
+  \path (rightp2) -- + ({90+\angle}:-\separation mm) coordinate (rightp3);
+
+  \path (leftp2) -- + ({90-\angle}:\separation mm) coordinate (leftp3);
+  \path (leftp2) -- + ({90-\angle}:-\separation mm) coordinate (leftp1);
+
+  \path (basep2) -- +(0:\separation mm) coordinate (basep3);
+  \path (basep2) -- +(0:-\separation mm) coordinate (basep1);
+
+  \draw[-] (rightp1) to[out={180+\angle}, in=90] (basep1);
+  \draw[-] (rightp2) to[out={180+\angle}, in=90] (basep2);
+  \draw[-] (rightp3) to[out={180+\angle}, in=90] (basep3);
+
+
 \end{tikzpicture}
 
 

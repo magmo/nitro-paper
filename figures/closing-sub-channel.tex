@@ -51,6 +51,6 @@
   \begin{scope}[shorten <=1cm, shorten >=1.4cm, -{Latex[length=2mm]}]
     \node (level) at (0, 0.8) {};
     \draw (s0 |- level) to (s1 |- level);
-    \draw (s1 |- level) to (s2 |- level);
+    \draw[shorten >=1cm] (s1 |- level) to (s2 |- level);
   \end{scope}
 \end{tikzpicture}
