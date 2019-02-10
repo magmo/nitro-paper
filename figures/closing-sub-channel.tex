@@ -6,6 +6,7 @@
       \node[circA, label=below:$A$] (A) at (-1, -2) {};
       \node[circB, label=below:$B$] (B) at (0, -2) {};
       \node[circAB, label=below:$\rchi$] (chi) at (1, -2) {};
+      \node[circle, draw=none, label=below:\strut] at (0, -3) {}; %ghost node for alignment%
       \draw[->] (adj) edge node[midway, left] { $10$ } (L);
       \draw[->] (L) edge node[midway, left] { $3$ } (A);
       \draw[->] (L) edge node[midway, right] { $1$ } (B);
@@ -13,7 +14,7 @@
     \end{tikzpicture}
   };
 
-  \node[right=of s0.north east, anchor=north west] (s1) {
+  \node[right=of s0] (s1) {
     \begin{tikzpicture}[y=1cm, x=1cm]
       \node[sqadj] (adj) at (0, 0) {};
       \node[circAB, label=right:$L$] (L) at (0, -1) {};
@@ -34,12 +35,13 @@
     \end{tikzpicture}
   };
 
-  \node[right=of s1.north east, anchor=north west] (s2) {
+  \node[right=of s1] (s2) {
     \begin{tikzpicture}[y=1cm, x=1.2cm]
       \node[sqadj] (adj) at (0, 0) {};
       \node[circAB, label=right:$L$] (L) at (0, -1) {};
       \node[circA, label=below:$A$] (A) at (-0.5, -2) {};
       \node[circB, label=below:$B$] (B) at (0.5, -2) {};
+      \node[circle, draw=none, label=below:\strut] at (0, -3) {}; %ghost node for alignment%
       \draw[->] (adj) edge node[midway, left] { $10$ } (L);
       \draw[->] (L) edge node[midway, left] { $8$ } (A);
       \draw[->] (L) edge node[midway, right] { $2$ } (B);
