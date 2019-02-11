@@ -1,0 +1,81 @@
+\begin{tikzpicture}[x=4cm, y=2cm]
+  \node (s0) at (0, 0) {
+    \begin{tikzpicture}[x=.8cm, y=1cm]
+      \node[sqadj] (a0) at (-1,0) {};
+      \node[sqadj] (a1) at (1,0) {};
+      \pic (G) at (0, -1.5) {guarantee3bad};
+      \node[circI, label=below:$I$] (i) at (-1, -3) {};
+      \node[circB, label=below:$B$] (b2) at (1,-3) {};
+      \node[circA, label=below:$A$] (a2) at (0,-3) {};
+
+      \begin{scope}[->]
+        \draw (a0) edge node[midway, left] { 5 } (G-G0);
+        \draw (a1) edge node[midway, right] { 5 } (G-G1);
+        \draw (G-J) edge node[midway, left] { 5 } (i);
+        \draw (G-J) edge node[near end, left] { 5 } (a2);
+        \draw (G-J) edge node[midway, right] { 5 } (b2);
+      \end{scope}
+      \begin{scope}[node distance=0.07cm]
+      \node[left=of G-G0] { $G_1$ };
+      \node[right=of G-G1] { $G_2$ };
+      \node[right=0.5cm of G-J] { $J$ };
+      \end{scope}
+    \end{tikzpicture}
+  };
+
+  \node (s1) at (1.2, 0) {
+    \begin{tikzpicture}[x=.8cm, y=1cm]
+      \node[sqadj] (a0) at (-2,0) {};
+      \node[circI, label=below:$I$] (i) at (-2, -1) {};
+
+      \node[sqadj] (a1) at (1,0) {};
+      \pic (G) at (0, -1.5) {guarantee3bad};
+      \node[circEmpty] (e) at (-1, -3) {};
+      \node[circB, label=below:$B$] (b2) at (1,-3) {};
+      \node[circA, label=below:$A$] (a2) at (0,-3) {};
+
+      \begin{scope}[->]
+        \draw (a0) edge node[midway, left] { 5 } (i);
+        \draw (a1) edge node[midway, right] { 5 } (G-G1);
+        \draw[dotted] (G-J) edge node[midway, right] {  } (e);
+        \draw (G-J) edge node[near end, left] { 5 } (a2);
+        \draw (G-J) edge node[midway, right] { 5 } (b2);
+      \end{scope}
+      \begin{scope}[node distance=0.07cm]
+      \node[above=of G-G0] { $G_1$ };
+      \node[right=of G-G1] { $G_2$ };
+      \node[right=0.5cm of G-J] { $J$ };
+      \end{scope}
+    \end{tikzpicture}
+  };
+  \node (s2) at (2.5, 0) {
+    \begin{tikzpicture}[x=.8cm, y=1cm]
+      \node[sqadj] (adj0) at (-3,0) {};
+      \node[circI, label=below:$I$] (i) at (-3, -1) {};
+      \node[sqadj] (adj2) at (-2,0) {};
+      \node[circB, label=below:$B$] (b) at (-2,-1) {};
+      \node[circEmpty] (e) at (-1, -3) {};
+      \node[circEmpty] (e2) at (1,-3) {};
+
+      \pic (G) at (0, -1.5) {guarantee3bad};
+      \node[circA, label=below:$A$] (a2) at (0, -3) {};
+
+      \begin{scope}[->]
+        \draw (adj0) edge node[midway, left] { 5 } (i);
+        \draw (adj2) edge node[midway, right] { 5 } (b);
+        \draw (G-J) edge node[near end, left] { 5 } (a2);
+        \draw[dotted] (G-J) edge node[near end, left] {  } (e);
+        \draw[dotted] (G-J) edge node[near end, left] {  } (e2);
+      \end{scope}
+      \begin{scope}[node distance=0.07cm]
+      \node[above=of G-G0] { $G_1$ };
+      \node[above=of G-G1] { $G_2$ };
+      \node[right=0.5cm of G-J] { $J$ };
+      \end{scope}
+    \end{tikzpicture}
+  };
+  \begin{scope}[-{Latex[length=2mm]}]
+    \draw (s0.east) to (s1.west);
+    \draw (s1.east) to (s2.west);
+  \end{scope}
+\end{tikzpicture}
