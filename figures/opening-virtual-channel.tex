@@ -1,5 +1,5 @@
 \begin{tikzpicture}[x=4cm, y=0.7cm]
-  \node at (0, 0) {
+  \node (s0) at (0, 0) {
     \begin{tikzpicture}[x=.8cm]
       \node[sqadj] (a0) at (-1,0) {};
       \node[sqadj] (a1) at (1,0) {};
@@ -20,7 +20,7 @@
     \end{tikzpicture}
   };
 
-  \node at (1, 0) {
+  \node (s1) at (1, 0) {
     \begin{tikzpicture}[x=.8cm]
       \node[sqadj] (a0) at (-1,0) {};
       \node[sqadj] (a1) at (1,0) {};
@@ -42,7 +42,7 @@
     \end{tikzpicture}
   };
 
-  \node at (2, 0) {
+  \node (s2) at (2, 0) {
     \begin{tikzpicture}[x=.8cm]
       \node[sqadj] (a0) at (-1,0) {};
       \node[sqadj] (a1) at (1,0) {};
@@ -65,7 +65,7 @@
     \end{tikzpicture}
   };
 
-  \node at (3, 0) {
+  \node (s3) at (3, 0) {
     \begin{tikzpicture}[x=.8cm]
       \node[sqadj] (a0) at (-1,0) {};
       \node[sqadj] (a1) at (1,0) {};
@@ -85,4 +85,11 @@
       \end{scope}
     \end{tikzpicture}
   };
+
+  \coordinate (level) at (s0.center) {};
+  \begin{scope}[-{Latex[length=2mm]}]
+    \draw (s0.east |- level) to (s1.west |- level);
+    \draw (s1.east |- level) to (s2.west |- level);
+    \draw (s2.east |- level) to (s3.west |- level);
+  \end{scope}
 \end{tikzpicture}

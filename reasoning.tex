@@ -1,17 +1,22 @@
 \section{Proofs of Construction}\label{sec:reasoning}
 
-- logic of state channels. I hold this, which means I can claim that
-- involves reasoning about what statements you hold, what statements others hold, what they are capable of
+- approach to proving the correctness of our state channel network protocol
 
-- risks of locking funds
-- complicated: sets of agreements, what do they mean?
+- the nature of state channels tends to make the logic complex
+- value is moved between participants by exchanging statements about the distribution of assets held on-chain
+- inevitably you end up reasoning about the statements you hold and their interpretation by the chain, and the possible actions of the other participants in the channel
+
+- inherent danger, funds are locked on-chain
+- participants act maliciously and stop cooperating at any point in the protocol
+- safe at all times
 
 \subsection{Channel Funding and Value}
 
-- suppose I have a state channel that reaches an outcome
-- what does that mean for me
-- in particular how much more can I withdraw from the system due to that outcome
-- understanding this is key
+We will start by considering the interpretation of the outcome of a state channel.
+Suppose $A$ is a participant in a state channel, $L$, that reaches an (allocation) outcome, $\omega$, that allocates $x$ coins to $A$.
+What does that mean for $A$?
+In particular, how much more can $A$ withdraw from the system due to that outcome?
+Understanding this is key to analysing state channel networks.
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/meaning-of-funding}}
@@ -19,23 +24,23 @@
   }\label{fig:meaning-of-funding}
 \end{figure}
 
-- there's one case where the answer to these questions is very straightforward
-- the case where the channel itself has coins in the adjudicator
-- in this case we say the channel is \textbf{directly funded}
-- for allocation outcomes, we can further distinguish between partial and fully funded
+There is one case where the answer to these questions is very straightforward:
+where the channel $L$ itself has enough coins in the adjudicator to cover the entire allocation.
+In this case, we say the channel is \textbf{directly funded}.
+If this happens, $A$ will receive all $x$ coins allocated to them in $\omega$.
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/direct-funding}}
   \caption{
   }\label{fig:direct-funding}
 \end{figure}
 
-- but the whole point is to move beyond direct funding
-- let's look at another case when it's ok
-- suppose that $L$ is not directly funded but $L'$ is
-- suppose also that the outcome of $L'$ gives all its coins to $L$
-- in this case we've moved in to the situation where $L$ is now directly funded
-- we say that $L$ has been \textbf{offloaded}
-- from that point onwards we know that outcome of $L$ will be honoured
+This is a good start, but the whole point of state channel \textit{networks} is to move beyond the case where every channel needs to be directly funded.
+Suppose instead that $L$ is not directly funded but there is another channel, $L'$, that is.
+Further suppose that $L'$ has reached an outcome where all its coins are allocated to $L$.
+Using this outcome, we know we can redistribute the coins in the adjudicator to $L$, recreating the situation above, where $L$ was directly funded.
+In this situation we can also say that $A$ will receive the $x$ coins from the outcome of $L$.
+Note that we did not actually need to perform the redistribution on-chain to reach this conclusion - we just needed to be able to reason that the outcome enabled us to.
+
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/indirect-funding}}

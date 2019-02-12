@@ -67,6 +67,10 @@ We give a python implementation of an adjudicator implementing the Nitro protoco
   \label{fig:claim-redistribution-problem}
 \end{figure}
 
+- suffices to get lower bound 
+- follow the same algorithm as before but with guarantees treated as units
+- calculate the minimum that comes out to each downstream address
+
 \subsection{Virtual Channels}
 
 A virtual channel is a channel between two participants who do not have a shared on-chain deposit, supported through an intermediary.
@@ -139,6 +143,12 @@ The virtual channel became a direct channel and the intermediary was able to rec
 
 \subsection{Opening and Closing Virtual Channels}\label{section:open-close-virtual-channel}
 
+\begin{figure}[ht] \centering
+  \makebox[\textwidth][c]{\input{figures/opening-virtual-channel}}
+  \caption{Opening a virtual channel}
+  \label{fig:virtual-channel-opening}
+\end{figure}
+
 In this section we present a sequence of network states written in terms of universally finalizable outcomes, where each state differs from the previous state only in one channel.
 We claim that this sequence of states can be used to derive a safe procedure for opening a virtual channel, where the value of the network remains unchanged throughout for all participants involved.
 We justify this claim in the appendix.
@@ -180,12 +190,6 @@ We give a visual representation of this procedure in figure \ref{fig:virtual-cha
   \label{fig:virtual-channel-opening}
 \end{figure}
 
-\begin{figure}[ht]
-  \centering
-  \input{figures/opening-virtual-channel}
-  \caption{Opening a virtual channel}
-  \label{fig:virtual-channel-opening}
-\end{figure}
 
 \begin{figure}[ht]\centering
   \makebox[\textwidth][c]{\input{figures/closing-virtual-channel}}
