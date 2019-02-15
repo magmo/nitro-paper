@@ -230,16 +230,11 @@ When the final state is broadcast, every participant has the finalizable outcome
 In practice, it is hard to write networks states down concisely.
 Instead, we will write our constructions in terms of outcomes and use the properties of the consensus game to reason that (a) network states exist that lead to this outcome and (b) we can find a sequence of network states to transition from one outcome to another.
 
-In particular
+In particular, we will present sequences of sets of outcomes, where each set differs only in the outcome of a single consensus game channel.
+Each of the outcomes will have the same value to all participants.
+We then know that, using the properties of the consensus game, we can transition between these two states with a consensus gaem transition, without enabling any additional outcomes.
 
-- if I have two network outcomes that differ in the outcome of a single CG channel
-- then I can find a sequence of single-update network states that interpolate between them
-
-- write down a sequence of outcomes
-- update one channel at a time
-- and have the same value to all participants
-
-- the start and conclude states are also finalizable
+To show that we can build a construction, it is therefore sufficient to present the sequence of sets of equal-value outcomes, where each set differs only in the outcome of a single consensus game channel. This is the approach we will take in the rest of the paper.
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/outcomes-setup-conclude}}
