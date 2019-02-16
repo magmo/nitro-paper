@@ -2,7 +2,10 @@
 
 Nitro protocol is an extension to Turbo protocol.
 In Nitro protocol, the outcome of a channel can be either an allocation or a \textbf{guarantee}.
-- operations can be a transfer or a claim
+There are two on-chain redistribution operations: the transfer and the \textbf{claim}.
+
+Nitro enables true state channel networks with virtual channels, where channels are routed through intermediaries.
+In particular, the extra features of Nitro allow virtual channels to be safely opened and closed off-chain while maintaining the property that channels update independently\footnote{If we allow channel updates to become coupled, it actually possible to implement a version of virtual channels in Turbo.}.
 
 \subsection{Guarantees and Claims}
 
@@ -53,8 +56,6 @@ Otherwise, the claim operation has no effect.
   \end{multline}
   Note that after the claim has gone through, $L$'s debt to $B$ has decreased.
 \end{example}
-
-We give a python implementation of an adjudicator implementing the Nitro protocol in the appendix.
 
 \subsection{Redistributing}
 
@@ -216,3 +217,9 @@ The same sequence of states, when taken in reverse, can be used to close a virtu
 \end{enumerate}
 
 It is also possible to do top-ups and partial checkouts from a virtual channel.
+
+\begin{figure}[ht] \centering
+  \makebox[\textwidth][c]{\input{figures/virtual-channel-three-participants}}
+  \caption{Virtual channel with three participants}
+  \label{fig:virtual-channel-three-participants}
+\end{figure}
