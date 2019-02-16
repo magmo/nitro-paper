@@ -1,8 +1,8 @@
 \section{Turbo Protocol}
 
-- turbo protocol has one type of outcome the allocation and one on-chain operation - the transfer
-- already familiar with these, as they formed the basis of a lot of the examples in sections .. and ..
-- make this precise and talk about redestributing 
+Turbo protocol has one type of outcome (the allocation) and one on-chain operation (the transfer).
+You will already be somewhat familiar with these, as they formed the basis of a lot of the examples in sections \ref{sec:modelling} and \ref{sec:reasoning}.
+In this section we will make these more precise, present the related result on distribution and give some example constructions to cover common tasks such as opening and closing sub-channels.
 
 \subsection{Allocations and Transfer}
 
@@ -32,70 +32,75 @@ If $A$ cannot afford $x$ for $B$, then $\transfer{A}{B}{x}$ fails, leaving the o
 
 \subsection{Unbeatable Redistribution}
 
-- section in theory 
-- if you have a strategy, involving just transfers, it is unbeatable
-- roughly speaking adding money can't hurt
+As we mentioned in section \ref{sec:unbeatable-strategy}, reasoning about redistribution is easy in Turbo: if you can find one strategy to move a certain amount into an address, then no-one else can prevent this from occurring.
+In this section we will justify this by presenting an algorithm for calculating the funding for each address.
 
-- algorithm for calculating the value for each node in an outcome graph
+We will restrict ourselves to looking at strategies and counter-strategies involving transfer operations only, ignoring deposits and withdrawals.
+We claim that deposits and withdrawals cannot be required as part of a strategy and cannot help as part of a counter-strategy.
+The intuition here is that a deposit into the system cannot reduce the value of any address and cannot increase the value of any address by more than the value of the deposit.
+Withdrawals can only occur from participant addresses and are the only way funds can leave these addresses, so cannot affect values elsewhere.
 
-- we will assume the graph of outcomes is a dag
-- any participant can ensure this is the case
+We will consider the network of outcomes to be a directed acylcic graph (DAG), where the nodes are channels and the edges represent allocations from one channel to the other.
+While it is technically possible to create outcomes with cycles, it is also possible for any participant in the channel to prevent this from happening.
+We therefore consider non-DAG outcome networks to be outside the scope of the protocol.
 
+We commence our value calculation by taking a \textit{topological ordering} of the nodes of the graph.
+A topological ordering is a way of ordering the nodes such that if $N_1 \mapsto N_2$ is an edge then $N_1$ comes before $N_2$ in the list.
+It is a known result that all DAGs have at least one topological ordering.
 
-- number the edge of the dag
-- topological ordering
-- work through each node in order paying out in order
-- amount in node at the end of its turn is its value/funding
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/turbo-redistribution}}
+  \caption{
+    Diagram (a) shows the outcome network that is the input to the value calculation.
+    In (b), we have reformulated (a) as a DAG with uniquely labelled nodes by merging the two $A$ and $B$ modes.
+    We have also labelled the nodes with a topological ordering.
+    In (c), we have completed the algorithm giving each node its funding/value.
+  }\label{fig:turbo-redistribution}
+\end{figure}
 
+Once we have ordered the nodes, we work through the nodes in order.
+For a node, $n$, we first look at the amount of direct funding allocated to $n$'s address in the adjudicator.
+We then look at each of $n$'s parents and calculate the amount that that the parent can afford for $n$, according to the value of the parent (which will already have been calculated, due to the topological ordering).
+Finally we set the node's value to be the sum of the direct funding and the amounts afforded by each parent.
 
-- depositing extra can't hurt
-- withdrawing can only be done by participants, and in this case it's part of the value
-- the order of transfers out of a channel doesn't change anything
+It is not hard to see that it is impossible to find a strategy that gives any node a value higher than allocated by this algorithm.
+It also is not hard to construct a strategy for a node to obtain the value allocated by the algorithm, if necessary by actually implementing the algorithm up until that node.
+Given that we are only considering counter-strategies with transfers, and we have done every possible transfer on these channels, we know that there are no transfers that can interrupt this algorithm.
+It is also easy to see that calling transfers out of order does not affect the ultimate result.
 
-- impossible to do better without depositing
-- so any strategy you have must give this
-- and the whole outcome is unbeatable
-
-
+In Turbo, it is therefore easy to calculate the value of each node and find unbeatable strategies for extracting the value of that address .
 
 \subsection{Ledger Channels}
 
-A \textbf{ledger} channel is a channel
-whose sole purpose is to provide funding to other channels
-call these sub-channels
-Ledger channels run the consensus game
+A \textbf{ledger} channel is a channel whose sole purpose is to provide funding to other channels.
+We call the channels that are funded by the ledger channel \textbf{sub-channels} of the ledger channel.
+All ledger channels run the consensus game.
 
-Already shown this, but we'll give a quick recap of ledger channels funding another channel offchain
-
-To see how this works, consider the following setup where a ledger channel, $L$, allocates the funds it holds to participants $A$ and $B$ and channel $\rchi$:
+Although this has already been covered, for completeness we will quickly recap how a sub-channel can be considered to be funded by a ledger channel.
+For example, consider the following setup where a ledger channel, $L$, allocates the funds it holds to participants $A$ and $B$ and channel $\rchi$:
 \begin{align}
-  \adj{\holds{L}{10}{}}, \finalizable{L}{\alloc{A: 2, B: 3, \rchi: 5}}{A, B}
+  \adj{\holds{L}{10}{}}, \finalizable{L}{\alloc{A: 3, B: 1, \rchi: 6}}{A, B}
 \end{align}
-We have chosen the simplest example here, where $L$ is funded by the coins it holds on-chain, but it is completely possible to have ledger channels themselves funded by other ledger channels or (later) by virtual channels.
+\begin{figure}[h]\centering
+  \makebox[\textwidth][c]{\input{figures/ledger-offload}}
+  \caption{
+    Offloading a ledger channel.
+  }\label{fig:ledger-offload}
+\end{figure}
+In this example, $\rchi$ is funded with 6 coins by $L$ for both $A$ and $B$.
+To show this, we have to have an unbeatable strategy for moving to a situation where $\rchi$ is directly funded with 6 coins.
+To do this we first note that the outcome $\alloc{A: 3, B: 1, \rchi: 6}$ is finalizable for both $A$ and $B$, so we can start our strategy by putting this outcome on-chain.
+Once it is on-chain, the transfer operation $\transfer{L}{\rchi}{6}$ is all that is required to make $\rchi$ directly funded.
+From the Turbo redistribution result, we know that this redistribution strategy is unbeatable.
 
-- here $L$ funds $\rchi$
-- easy to see how to offload $\rchi$
-
-
-We claim that the ledger channel $L$ funds the channel $\rchi$ in the above setup.
-This is because either participant has the power to convert the situation above into a situation where $\rchi$ is funded on-chain:
-\begin{align}
-  \transfer{L}{\rchi}{5}\adj{\holds{L}{10}{\alloc{A: 2, B: 3, \rchi: 5}}} = \adj{\holds{L}{10}{\alloc{A: 2, B: 3}, \holds{\rchi}{5}{}}}
-\end{align}
-After this operation, we say that the channel $\rchi$ has been \textbf{offloaded}.
-Note that we do not need to wait for $\rchi$ to complete before offloading it.
-The offload converts $\rchi$ from an off-chain sub-channel to an on-chain direct channel, without interrupting its operation in any way.
-
-The offload should be seen as an action of last-resort.
-It is important that offloading is allowed so that either player can realize the value in channel $\rchi$ if required, but it has the downside of forcing all sub-channels supported by $L$ to be closed on-chain.
+Note that offloading $\rchi$ like this should be seen as an action of last-resort, as after the off-load all sub-channels supported by $L$ to be closed on-chain.
 It is in the interest of both participants to open and close sub-channels collaboratively.
-We next show how this can be accomplished safely.
+We next give some examples to show how this can be accomplished safely.
 
 \subsection{Example Constructions}
 
-- only examples
-- demonstrate the principles
-- easy to extend to the general case
+We now give some examples of how to work with ledger channels on Turbo.
+We have chosen to present examples that demonstrate the key principles instead of presenting general protocols, as we believe that, once seen, these protocols are easy to extend to the general case.
 
 \subsubsection{Opening a Sub-channel}
 
