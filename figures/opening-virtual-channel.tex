@@ -1,43 +1,59 @@
-\begin{tikzpicture}[x=4cm, y=0.7cm]
-  \node (s0) at (0, 0) {
+\begin{tikzpicture}[x=4cm, y=0.8cm]
+  \node (s0) at (-0.5, 0) {
     \begin{tikzpicture}[x=.8cm]
-      \node[sqadj] (a0) at (-1,0) {};
-      \node[sqadj] (a1) at (1,0) {};
-      \node[circAI] (b0) at (-1,-1) {};
-      \node[circBI] (b1) at (1,-1) {};
+      \node[sqadj] (a0) at (-2,0) {};
+      \node[circAI] (b0) at (-2,-1) {};
+      \node[circA] (aa) at (-2.5, -2) {};
+      \node[circI] (ai) at (-1.5, -2) {};
+
+      \node[sqadj] (a1) at (2,0) {};
+      \node[circBI] (b1) at (2,-1) {};
+      \node[circB] (bb) at (1.5, -2) {};
+      \node[circI] (bi) at (2.5, -2) {};
+
+
       \pic (G) at (0, -2.5) {guarantee};
       \node[circB] (b2) at (-1,-4) {};
       \node[circA] (a2) at (0,-4) {};
       \node[circI] (i) at (1, -4) {};
 
       \begin{scope}[->]
-        \draw (a0) to (b0);
-        \draw (a1) to (b1);
-        \draw (G-J) to (b2);
-        \draw (G-J) to (a2);
-        \draw (G-J) to (i);
+        \draw (a0) edge node[midway, left] { 10 } (b0);
+        \draw (a1) edge node[midway, right] { 10 } (b1);
+        \draw (b0) edge node[midway, left] { 5 } (aa);
+        \draw (b0) edge node[midway, right] { 5 } (ai);
+        \draw (b1) edge node[midway, left] { 5 } (bb);
+        \draw (b1) edge node[midway, right] { 5 } (bi);
+        \draw (G-J) edge node[midway, left] { 5 } (b2);
+        \draw (G-J) edge node[near end, left] { 5 } (a2);
+        \draw (G-J) edge node[midway, right] { 10 } (i);
       \end{scope}
     \end{tikzpicture}
   };
 
-  \node (s1) at (1, 0) {
+  \node (s1) at (0.9, 0) {
     \begin{tikzpicture}[x=.8cm]
+      \node[sqadj] (a1) at (2,0) {};
+      \node[circBI] (b1) at (2,-1) {};
+      \node[circB] (bb) at (1.5, -2) {};
+      \node[circI] (bi) at (2.5, -2) {};
+
       \node[sqadj] (a0) at (-1,0) {};
-      \node[sqadj] (a1) at (1,0) {};
       \node[circAI] (b0) at (-1,-1) {};
-      \node[circBI] (b1) at (1,-1) {};
       \pic (G) at (0, -2.5) {guarantee};
       \node[circB] (b2) at (-1,-4) {};
       \node[circA] (a2) at (0,-4) {};
       \node[circI] (i) at (1, -4) {};
 
       \begin{scope}[->]
-        \draw (a0) to (b0);
-        \draw (a1) to (b1);
-        \draw (b0) to (G-G0);
-        \draw (G-J) to (b2);
-        \draw (G-J) to (a2);
-        \draw (G-J) to (i);
+        \draw (a0) edge node[midway, left] { 10 } (b0);
+        \draw (a1) edge node[midway, right] { 10 } (b1);
+        \draw (b1) edge node[midway, left] { 5 } (bb);
+        \draw (b1) edge node[midway, right] { 5 } (bi);
+        \draw (b0) edge node[midway, left] { 10 } (G-G0);
+        \draw (G-J) edge node[midway, left] { 5 } (b2);
+        \draw (G-J) edge node[near end, left] { 5 } (a2);
+        \draw (G-J) edge node[midway, right] { 10 } (i);
       \end{scope}
     \end{tikzpicture}
   };
@@ -54,13 +70,13 @@
       \node[circI] (i) at (1, -4) {};
 
       \begin{scope}[->]
-        \draw (a0) to (b0);
-        \draw (a1) to (b1);
-        \draw (b0) to (G-G0);
-        \draw (b1) to (G-G1);
-        \draw (G-J) to (b2);
-        \draw (G-J) to (a2);
-        \draw (G-J) to (i);
+        \draw (a0) edge node[midway, left] { 10 } (b0);
+        \draw (a1) edge node[midway, right] { 10 } (b1);
+        \draw (b0) edge node[midway, left] { 10 } (G-G0);
+        \draw (b1) edge node[midway, right] { 10 } (G-G1);
+        \draw (G-J) edge node[midway, left] { 5 } (b2);
+        \draw (G-J) edge node[near end, left] { 5 } (a2);
+        \draw (G-J) edge node[midway, right] { 10 } (i);
       \end{scope}
     \end{tikzpicture}
   };
@@ -76,12 +92,12 @@
       \node[circI] (i) at (0.7, -4) {};
 
       \begin{scope}[->]
-        \draw (a0) to (b0);
-        \draw (a1) to (b1);
-        \draw (b0) to (G-G0);
-        \draw (b1) to (G-G1);
-        \draw (G-J) to (ab);
-        \draw (G-J) to (i);
+        \draw (a0) edge node[midway, left] { 10 } (b0);
+        \draw (a1) edge node[midway, right] { 10 } (b1);
+        \draw (b0) edge node[midway, left] { 10 } (G-G0);
+        \draw (b1) edge node[midway, right] { 10 } (G-G1);
+        \draw (G-J) edge node[midway, left] { 10 } (ab);
+        \draw (G-J) edge node[midway, right] { 10 } (i);
       \end{scope}
     \end{tikzpicture}
   };

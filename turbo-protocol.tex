@@ -45,7 +45,7 @@ While it is technically possible to create outcomes with cycles, it is also poss
 We therefore consider non-DAG outcome networks to be outside the scope of the protocol.
 
 We commence our value calculation by taking a \textit{topological ordering} of the nodes of the graph.
-A topological ordering is a way of ordering the nodes such that if $N_1 \mapsto N_2$ is an edge then $N_1$ comes before $N_2$ in the list.
+A topological ordering is an ordering the nodes such that, if $N_1 \mapsto N_2$ is an edge, then $N_1 < N_2$.
 It is a known result that all DAGs have at least one topological ordering.
 
 \begin{figure}[h]\centering
@@ -62,6 +62,26 @@ Once we have ordered the nodes, we work through the nodes in order.
 For a node, $n$, we first look at the amount of direct funding allocated to $n$'s address in the adjudicator.
 We then look at each of $n$'s parents and calculate the amount that that the parent can afford for $n$, according to the value of the parent (which will already have been calculated, due to the topological ordering).
 Finally we set the node's value to be the sum of the direct funding and the amounts afforded by each parent.
+
+\textbf{Turbo Value Algorithm}
+\begin{enumerate}
+  \item Choose a topological ordering, \texttt{OrderedNodes}, for the network.
+  \item Create a mapping, \texttt{Values}, from \texttt{OrderedNodes} to $\mathbb{Z}^+$. Initialize this mapping by setting $\texttt{Values}[n]$ to be the balance held for $n$ in the adjudicator, for each $n \in \texttt{OrderedNodes}$ (with $\texttt{Values}[n] = 0$ if $n$'s address does not appear).
+  \item For each $n \in \texttt{OrderedNodes}[n]$ (taken in order):
+  \begin{enumerate}
+    \item Let $\texttt{remainingFunds} = \texttt{Values}[n]$.
+    \item For each $(\texttt{destinationNode}, \texttt{payout})$ in $n$'s allocation (taken in order):
+      \begin{enumerate}
+        \item Let $x = \text{min}(\texttt{payout}, \texttt{remainingFunds})$.
+        \item Increase $\texttt{Values}[\texttt{destinationNode}]$ by $x$.
+        \item Decrease $\texttt{remainingFunds}$ by $x$.
+      \end{enumerate}
+  \end{enumerate}
+  \item Then $\texttt{Values}[n]$ gives the value of node $n$.
+\end{enumerate}
+
+
+
 
 It is not hard to see that it is impossible to find a strategy that gives any node a value higher than allocated by this algorithm.
 It also is not hard to construct a strategy for a node to obtain the value allocated by the algorithm, if necessary by actually implementing the algorithm up until that node.

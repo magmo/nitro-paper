@@ -5,12 +5,22 @@ In Nitro protocol, the outcome of a channel can be either an allocation or a \te
 There are two on-chain redistribution operations: the transfer and the \textbf{claim}.
 
 Nitro enables true state channel networks with virtual channels, where channels are routed through intermediaries.
-In particular, the extra features of Nitro allow virtual channels to be safely opened and closed off-chain while maintaining the property that channels update independently\footnote{If we allow channel updates to become coupled, it actually possible to implement a version of virtual channels in Turbo.}.
+In particular, the extra features of Nitro allow virtual channels to be safely opened and closed off-chain while maintaining the property that channels update independently\footnote{It is possible to implement virtual channels in Turbo but only by breaking the independent update constraint. We believe this constraint will be important when running large scale state channel networks.}.
 
 \subsection{Guarantees and Claims}
 
-A guarantee outcome specifies the address of a target allocation channel; the protocol specifies how this guarantee may be used to pay debt on its behalf.
-When paying debt, a guarantee can be used to alter the payout priority of the allocation outcome of its target address. 
+- guarantees are paired with allocations
+- for a guarantee outcome to pay out funds, it needs to ba paired with a allocation outcome
+- target a given outcome 
+- allows them to pay out in a different priority
+
+- complicated in that we may not know the precise outcome or even the addresses that will appear in it at the time we create the guarantee
+- because of this we need to record the guarantee to apply a range of outcomes
+- use the format of a list of addresses, that will be moved to top priority
+
+- if guarantee specifies [a, b, c] and the outcome is (c: 1, d:2, a:4), then the guarantee will pay out as though the outcome was (a:4, c:1, d: 2)
+
+- can afford
 
 \begin{tikzpicture}[y=0.8cm]
   \node[semicircle, draw] (upper) at (0,0) {};
@@ -30,9 +40,11 @@ When paying debt, a guarantee can be used to alter the payout priority of the al
   \pic (A) at (2, -0.5) {guarantee};
 \end{tikzpicture}
 
-We will use the notation $\guar{L}{A_1, A_2, \dots, A_m}$ for a guarantee with target $L$, which prioritizes payouts to $A_1$ above $A_2$, $A_2$ above $A_3$, and so on.
-Any addresses which occur in the outcome of $L$ but not in the guarantee are prioritized after $A_m$, in the order they occur in the outcome.
-We say a guarantor channel, $G$, which targets an allocation channel, $L$, `can afford $x$ for $A$', if $A$ would receive at least $x$ coins, were the coins currently held in $A$ to be paid out according to $G$'s reprioritization of $L$'s allocation.
+\begin{figure}[ht]\centering
+  \makebox[\textwidth][c]{\input{figures/claim-operation}}
+  \caption{The claim operation}
+  \label{fig:claim-operation}
+\end{figure}
 
 Nitro adds the \textbf{claim} operation, $\claim{G}{A}{x}$, to the existing transfer, deposit and withdraw operations.
 If $G$ acts as guarantor for $L$ and can afford $x$ for $A$, then $\claim{G}{A}{x}$ has the following three effects:
@@ -43,30 +55,112 @@ If $G$ acts as guarantor for $L$ and can afford $x$ for $A$, then $\claim{G}{A}{
 \end{itemize}
 Otherwise, the claim operation has no effect.
 
-\begin{figure}[ht]\centering
-  \makebox[\textwidth][c]{\input{figures/claim-operation}}
-  \caption{The claim operation}
-  \label{fig:claim-operation}
-\end{figure}
-
-\begin{example}
-  In the following example, we have a guarantor channel, $G$, which holds $5$ coins and guarantees $L$'s allocation, with $B$ as highest priority.
-  \begin{multline}
-    \claim{G}{B}{5}\adj{\holds{G}{5}{\guar{L}}{B}, \holds{L}{}{\alloc{A: 5, B: 5}}} = \\ \adj{\holds{G}{}{\guar{L}{B}}, \holds{L}{}{\alloc{A: 5}}, \holds{B}{5}{}}
-  \end{multline}
-  Note that after the claim has gone through, $L$'s debt to $B$ has decreased.
-\end{example}
 
 \subsection{Redistributing}
 
-- unlike Turbo, there is no nice result in nitro
-- in fact it's bad
-
+Reasoning about redistribution in Nitro is more complicated than in Turbo.
+For a start, it is possible to construct situations where the same outcome can lead to different values, depending on the order in which guarantees are claimed.
+Figure \ref{fig:claim-redistribution-problem} shows one of these situations.
 \begin{figure}[ht]\centering
   \makebox[\textwidth][c]{\input{figures/claim-redistribution-problem}}
-  \caption{Problem!}
+  \caption{
+    Guarantee claim ordering problem.
+    In the diagram both $G_1$ and $G_2$ guarantee $J$'s outcome with $I$ as first priority but with different second priorities.
+    If $G_1$ is claimed first, then when $G_2$ is claimed the funds go to $B$.
+    If $G_2$ is claimed first, then when $G_1$ is claimed the funds go to $A$.
+    Whether $A$ or $B$ ultimately gets paid depends on the order that the guarantees are claimed.
+  }
   \label{fig:claim-redistribution-problem}
 \end{figure}
+
+Despite this issue, it is still possible to make some statements about redistribution in Nitro, in particular putting some lower bounds on how funds are distributed.
+For example, in the example in figure \ref{fig:claim-redistribution-problem} one thing we can definitely say is that participant $I$ will receive their 5 coins, even though we cannot say anything about how the remaining 5 coins will be distributed between $A$ and $B$.
+These lower bounds prove to be enough to handle the constructions used in the rest of the chapter.
+
+We can calculate this lower bound with a modification the Turbo Value Algorithm.
+The key idea is when handling outcomes that are targets of one or more guarantees, to perform a separate analysis 
+
+
+\textbf{Minimum Payout Calculation}
+
+
+
+In this calculation we will consider an allocation channel, $L$, whose outcome allocates $a_1 \dots a_m$ to destination addresses $D_1 \dots D_m$, and a set of guarantees $G_1 \dots G_n$ which target $L$.
+We want to calculate the minimum payout, $p_i$, that each destination will receive when all possible payout orders are considered.
+
+Each guarantee, $G_i$, induces a permutation $\pi_i$ on the destination addresses, so that $G_i$ prioritizes the outcomes in the order $D_{\pi_i(1)} \dots D_{\pi_i(m)}$.
+
+We start in a state where the values of channel $L$ and the guarantees are known, with $G_i$ having value $v_i = \texttt{Value}[G_i]$.
+We will assume the value of $L$ itself is 0. 
+We are free to do this because, if $\texttt{Value}[L] = x > 0$, then for the purpose of running the algorithm we can write the problem in an equivalent way, by adding a guarantee $G_{n+1}$ that has value $x$, that targets $L$ and that has $\pi_{n+1}(k) = k$.
+
+If $\sum v_i > \sum a_j$, then we say the system is overfunded. 
+In this case, we know that all destinations will receive their allocations, so $p_i = a_i$ regardless of the order of payout.
+Otherwise, we let $p_{ij} > 0$ be the amount paid out from guarantee $G_i$ to destination $D_j$ and introduce the following set of constraints to ensure that we only consider situations where no funds are left in the guarantees:
+\begin{equation}
+  \sum_{j} p_{ij} = v_i
+\end{equation}
+
+It is useful to introduce the deficit, $\delta_j > 0$, for the destination $D_j$, defined by the equations:
+\begin{equation}
+  \delta_j + \sum_{i} p_{ij} = a_j
+\end{equation}
+
+Finally we can write down the a set of constraints that encode the priority order of the guarantees:
+\begin{align}
+\begin{split}
+  p_{i\pi_j(2)} > 0 &\Rightarrow \delta_{\pi_j(1)} = 0 \\
+  p_{i\pi_j(3)} > 0 &\Rightarrow \delta_{\pi_j(2)} = \delta_{\pi_j(1)}  = 0 \\
+  &\vdots \\
+  p_{i\pi_j(m)} > 0 &\Rightarrow \delta_{\pi_j(m-1)} = \dots = \delta_{\pi_j(1)}  = 0 
+\end{split}
+\end{align}
+
+We can then calculate $p_i = a_i - \delta_i^*$, where $\delta^*_i$ is found by minimising $\delta_i$ subject to these constraints.
+
+In general, calculating the minimimum payout therefore involves solving a constrained optimization problem, with non-linear constraints.
+In practice, for all the calculations required for the constructions in this paper, it is sufficient to look at two special cases: (i) when the allocation is fully funded and (ii) when there is only a single guarantee.
+In the fully funded case, where $\sum v_i = \sum a_i$, it is easy to see that $p_i = a_i$, just as in the overfunded case.
+In the single guarantee case, the payouts are fully determined, so it is easy to calculate the minimum payout.
+
+
+- in general this is a non-linear optimization
+- suffice to look at two special cases: fully funded and single guarantee
+
+Example
+\begin{equation}
+\adj{\holds{G_1}{5}{\guar{J}{I, A, B}},\; \holds{G_2}{5}{\guar{J}{I, B, A}}, \; \holds{J}{}{\alloc{I: 5, A: 5, B: 5}}}
+\end{equation}
+
+Let $D_1 = I$, $D_2 = A$, $D_3 = B$.
+
+\begin{align}
+  \delta_1 + p_{11} + p_{21} &= 5 \label{eq:delta1} \\
+  \delta_2 + p_{12} + p_{22} &= 5 \label{eq:delta2} \\
+  \delta_3 + p_{13} + p_{23} &= 5 \label{eq:delta3}
+\end{align}
+
+\begin{align}
+  p_{11} + p_{12} + p_{13} &= 5 \label{eq:g1} \\
+  p_{21} + p_{22} + p_{23} &= 5 \label{eq:g2}
+\end{align}
+
+\begin{align}
+  p_{12} > 0 &\Rightarrow \delta_1 = 0 \label{eq:p12} \\
+  p_{13} > 0 &\Rightarrow \delta_2 = \delta_1 = 0 \label{eq:p13} \\
+  p_{23} > 0 &\Rightarrow \delta_1 = 0 \label{eq:p23} \\
+  p_{22} > 0 &\Rightarrow \delta_3 = \delta_1 = 0 \label{eq:p22}
+\end{align}
+
+First suppose that $\delta_1 > 0$.
+Then equations (\ref{eq:p12}) to (\ref{eq:p22}) give that $p_{12} = p_{13} = p_{23} = p_{22} = 0$.
+Substituting into equation (\ref{eq:g1}) gives that $p_{11} = 5$ and, similarly, equation (\ref{eq:g2}) gives that $p_{21} = 5$.
+But then equation (\ref{eq:delta1}) cannot possibly hold.
+So $\delta_1 = 0$ in all cases and therefore $\delta_1^* = 0$.
+
+- key insight is to form groups comprising of a ledger channel plus all the guarantees that target the ledger channel
+- we then use a different rule to 
+
 
 - suffices to get lower bound 
 - follow the same algorithm as before but with guarantees treated as units

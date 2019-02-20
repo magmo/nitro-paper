@@ -43,13 +43,13 @@
   \begin{tikzpicture}[y=1cm, x=1cm]
     \node[sqadj] (adj) at (0, 0) {};
     \node[valuebox, label=right:$L$] (L) at (0, -1) { 1 \nodepart{second} 7 };
-    \node[valuebox, label=right:$\rchi$] (chi) at (1, -2) { 2 \nodepart{second} 4};
+    \node[valuebox, label=right:$\rchi$] (chi) at (1, -2) { 2 \nodepart{second} 3};
     \draw[->] (adj) edge node[midway, left] { $7$ } (L);
 
     \draw[->] (L) edge node[midway, right] { $6$ } (chi);
 
     \node[valuebox, label=below:$A$] (chiA) at (-1, -3) {3 \nodepart{second} 5};
-    \node[valuebox, label=below:$B$] (chiB) at (0.5, -3) {4 \nodepart{second} 3};
+    \node[valuebox, label=below:$B$] (chiB) at (0.5, -3) {4 \nodepart{second} 2};
 
     \draw[->] (chi) edge node[near end, above] { $2$ } (chiA);
     \draw[->] (chi) edge node[midway, right] { $4$ } (chiB);
