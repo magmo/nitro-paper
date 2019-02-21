@@ -140,6 +140,55 @@
   }
 }
 
+
+\tikzset{
+  guarantee1/.pic={
+  \pgfmathsetmacro{\angle}{45};
+  \pgfmathsetmacro{\inradius}{2};
+  \pgfmathsetmacro{\separation}{1.5};
+  \pgfmathsetmacro{\clearance}{3};
+
+  \coordinate (-incenter) at (0, 0);
+  \path (-incenter) -- +({\angle}:\inradius mm) coordinate (-rightp2);
+  \path (-incenter) -- +({180-\angle}:\inradius mm) coordinate (-leftp2);
+  \path (-incenter) -- +(270:\inradius mm) coordinate (-basep2);
+
+  \path (-rightp2) -- + ({90+\angle}:\separation mm) coordinate (-rightp1);
+  \path (-rightp2) -- + ({90+\angle}:-\separation mm) coordinate (-rightp3);
+
+  \path (-leftp2) -- + ({90-\angle}:\separation mm) coordinate (-leftp3);
+  \path (-leftp2) -- + ({90-\angle}:-\separation mm) coordinate (-leftp1);
+
+  \path (-basep2) -- +(0:\separation mm) coordinate (-basep3);
+  \path (-basep2) -- +(0:-\separation mm) coordinate (-basep1);
+
+  \begin{scope}[-, every to/.style={out={180+\angle}, in=90}]
+    \draw (-rightp2) to (-basep2);
+  \end{scope}
+
+  \begin{scope}[-, every to/.style={out={-\angle}, in=90}]
+    \draw (-leftp2) to (-basep2);
+  \end{scope}
+
+  \path (-rightp2) -- +(\angle:\clearance mm) coordinate (-Rightp2);
+
+  \path (-leftp2) -- +({180-\angle}:\clearance mm) coordinate (-Leftp2);
+
+  \begin{scope}[-, every to/.style={out={-\angle}, in={180-\angle}}]
+    \draw (-Leftp2) to (-leftp2);
+  \end{scope}
+
+  \begin{scope}[-, every to/.style={out={180+\angle}, in={\angle}}]
+    \draw (-Rightp2) to (-rightp2);
+  \end{scope}
+
+  \node[semicircle, draw, rotate=45, anchor=south] (-G0) at (-Leftp2) {};
+  \node[semicircle, draw, rotate=-45, anchor=south] (-G1) at (-Rightp2) {};
+  \node[semicircle, draw, rotate=180, anchor=south] (-J) at (-basep2) {};
+  }
+}
+
+
 \tikzset{
   guarantee3bad/.pic={
   \pgfmathsetmacro{\angle}{45};

@@ -4,45 +4,46 @@ Nitro protocol is an extension to Turbo protocol.
 In Nitro protocol, the outcome of a channel can be either an allocation or a \textbf{guarantee}.
 There are two on-chain redistribution operations: the transfer and the \textbf{claim}.
 
-Nitro enables true state channel networks with virtual channels, where channels are routed through intermediaries.
+Nitro enables true state channel networks by allowing virtual channels, where channels are routed through intermediaries.
 In particular, the extra features of Nitro allow virtual channels to be safely opened and closed off-chain while maintaining the property that channels update independently\footnote{It is possible to implement virtual channels in Turbo but only by breaking the independent update constraint. We believe this constraint will be important when running large scale state channel networks.}.
 
 \subsection{Guarantees and Claims}
 
-- guarantees are paired with allocations
-- for a guarantee outcome to pay out funds, it needs to ba paired with a allocation outcome
-- target a given outcome 
-- allows them to pay out in a different priority
+In the section on Turbo, we introduced allocations which defined a set of destinations and totals owed to them, along with a priority order in which the destinations should receive their funds.
+In Nitro, we allow for these two concerns to be split between different types of channels, with
+one type of channel providing the destinations and totals and another type of channel specifying the priority order.
+This opens up the possibility of having more than one priority order for the same allocation.
 
-- complicated in that we may not know the precise outcome or even the addresses that will appear in it at the time we create the guarantee
-- because of this we need to record the guarantee to apply a range of outcomes
-- use the format of a list of addresses, that will be moved to top priority
+The new type of channels are called \textbf{guarantee channels} and their outcomes are known as \textbf{guarantees}.
+A guarantee \textbf{targets} an allocation, while specifying a different priority order to pay out to the destinations.
+The funds held in a guarantee channel can only be paid out once the outcome of the target channel is finalized.
 
-- if guarantee specifies [a, b, c] and the outcome is (c: 1, d:2, a:4), then the guarantee will pay out as though the outcome was (a:4, c:1, d: 2)
+\begin{figure}[ht]\centering
+  \makebox[\textwidth][c]{\input{figures/guarantee-notation}}
+  \caption{
+    Guarantee notation.
+    The guarantee outcome of $G$ is written $\guar{L}{B}$, where $L$ is the allocation it targets and $B$ is an address to be prioritized first.
+    When targeted by a guarantee we draw the allocation, $L$, as a lower semicircle.
+    The guarantee, $G$, is drawn as an upper semicircle. 
+    The lines between $G$ and $L$ depict the reprioritization, showing that the highest priority position of $G$ (on the bottom left of the semicircle) will pay out to $B$.
+  }
+  \label{fig:guarantee-notation}
+\end{figure}
 
-- can afford
 
-\begin{tikzpicture}[y=0.8cm]
-  \node[semicircle, draw] (upper) at (0,0) {};
-  \node[semicircle, draw, rotate=180] (lower) at (0,-1) {};
+The format for specifying the priority order of a guarantee channels is complicated by the fact that we may not know the precise outcome or even the precise set of destinations at the time the guarantee is created.
+Because of this we need to enable the guarantee to apply a range of outcomes.
+Do do this, the guarantee provides a list of addresses, with the rule that these addresses will be moved to the top of the priority order if they appear in the outcome.
+For example, if a guarantee lists the addresses $(A, B, C)$ and the outcome is $\alloc{C: 1, D:2, A:4}$, then the guarantee will pay out as though the outcome was $\alloc{A:4, C:1, D: 2}$.
 
-  \draw[-] (upper.220) to (lower.320);
-  \draw[-] (upper.270) to (lower.270);
-  \draw[-] (upper.320) to (lower.220);
-
-  \node[semicircle, draw] (upper1) at (1,0) {};
-  \node[semicircle, draw, rotate=180] (lower1) at (1,-1) {};
-
-  \draw[-] (upper1.220) to[out=270, in=90] (lower1.270);
-  \draw[-] (upper1.270) to[out=270, in=90] (lower1.220);
-  \draw[-] (upper1.320) to[out=270, in=90] (lower1.320);
-
-  \pic (A) at (2, -0.5) {guarantee};
-\end{tikzpicture}
+Extending the terminology for allocations, we say that a guarantee `$G$ \textbf{can afford} $x$ for $B$', if $B$ would receive at least $x$ coins, were the coins currently held by $G$ to be paid out according to $G$'s prioritization of its target.
 
 \begin{figure}[ht]\centering
   \makebox[\textwidth][c]{\input{figures/claim-operation}}
-  \caption{The claim operation}
+  \caption{
+    The claim operation is used to move funds out of a guarantee.
+    Note that in diagram notation, we update the reprioritization lines to reflect the new outcome: after the claim, $L$ only allocates to Bob, so there is only one line from $G$ to $L$.
+  }
   \label{fig:claim-operation}
 \end{figure}
 
@@ -67,7 +68,7 @@ Figure \ref{fig:claim-redistribution-problem} shows one of these situations.
     Guarantee claim ordering problem.
     In the diagram both $G_1$ and $G_2$ guarantee $J$'s outcome with $I$ as first priority but with different second priorities.
     If $G_1$ is claimed first, then when $G_2$ is claimed the funds go to $B$.
-    If $G_2$ is claimed first, then when $G_1$ is claimed the funds go to $A$.
+    If $G_2$ is claimed first (not shown), then when $G_1$ is claimed the funds go to $A$.
     Whether $A$ or $B$ ultimately gets paid depends on the order that the guarantees are claimed.
   }
   \label{fig:claim-redistribution-problem}
@@ -77,13 +78,29 @@ Despite this issue, it is still possible to make some statements about redistrib
 For example, in the example in figure \ref{fig:claim-redistribution-problem} one thing we can definitely say is that participant $I$ will receive their 5 coins, even though we cannot say anything about how the remaining 5 coins will be distributed between $A$ and $B$.
 These lower bounds prove to be enough to handle the constructions used in the rest of the chapter.
 
-We can calculate this lower bound with a modification the Turbo Value Algorithm.
-The key idea is when handling outcomes that are targets of one or more guarantees, to perform a separate analysis 
+\textbf{Nitro Lower-bound Value Algorithm}
 
+We can calculate this lower bound with a modification the Turbo Value Algorithm:
+
+\begin{enumerate}
+  \item Choose a topological ordering, \texttt{OrderedNodes}, for the network.
+  \item Create a mapping, \texttt{Values}, from \texttt{OrderedNodes} to $\mathbb{Z}^+$. Initialize this mapping by setting $\texttt{Values}[n]$ to be the balance held for $n$ in the adjudicator, for each $n \in \texttt{OrderedNodes}$ (with $\texttt{Values}[n] = 0$ if $n$'s address does not appear).
+  \item For each $n \in \texttt{OrderedNodes}[n]$ (taken in order):
+  \begin{enumerate}
+    \item If $n$ is a guarantee channel, do nothing.
+    \item Otherwise, $n$ is an allocation channel:
+    \begin{enumerate}
+      \item Run the Minimum Payout Calculation on $n$ and the guarantees that target it, to calculate the minimum payouts, \texttt{MinPayouts}, for each of destination channels.
+      \item For each destination, $d$, increase $\texttt{Value}[d]$ by $\texttt{MinPayouts}[d]$.
+    \end{enumerate}
+  \end{enumerate}
+  \item Then $\texttt{Values}[n]$ gives the value of node $n$.
+\end{enumerate}
+
+Note that by taking the minimum independently on different allocation/guarantee groupings, we end up with an algorithm that strictly underestimates the actual value in some cases.
+This will not be a problem for any of the constructions presented in this paper.
 
 \textbf{Minimum Payout Calculation}
-
-
 
 In this calculation we will consider an allocation channel, $L$, whose outcome allocates $a_1 \dots a_m$ to destination addresses $D_1 \dots D_m$, and a set of guarantees $G_1 \dots G_n$ which target $L$.
 We want to calculate the minimum payout, $p_i$, that each destination will receive when all possible payout orders are considered.
@@ -122,49 +139,6 @@ In general, calculating the minimimum payout therefore involves solving a constr
 In practice, for all the calculations required for the constructions in this paper, it is sufficient to look at two special cases: (i) when the allocation is fully funded and (ii) when there is only a single guarantee.
 In the fully funded case, where $\sum v_i = \sum a_i$, it is easy to see that $p_i = a_i$, just as in the overfunded case.
 In the single guarantee case, the payouts are fully determined, so it is easy to calculate the minimum payout.
-
-
-- in general this is a non-linear optimization
-- suffice to look at two special cases: fully funded and single guarantee
-
-Example
-\begin{equation}
-\adj{\holds{G_1}{5}{\guar{J}{I, A, B}},\; \holds{G_2}{5}{\guar{J}{I, B, A}}, \; \holds{J}{}{\alloc{I: 5, A: 5, B: 5}}}
-\end{equation}
-
-Let $D_1 = I$, $D_2 = A$, $D_3 = B$.
-
-\begin{align}
-  \delta_1 + p_{11} + p_{21} &= 5 \label{eq:delta1} \\
-  \delta_2 + p_{12} + p_{22} &= 5 \label{eq:delta2} \\
-  \delta_3 + p_{13} + p_{23} &= 5 \label{eq:delta3}
-\end{align}
-
-\begin{align}
-  p_{11} + p_{12} + p_{13} &= 5 \label{eq:g1} \\
-  p_{21} + p_{22} + p_{23} &= 5 \label{eq:g2}
-\end{align}
-
-\begin{align}
-  p_{12} > 0 &\Rightarrow \delta_1 = 0 \label{eq:p12} \\
-  p_{13} > 0 &\Rightarrow \delta_2 = \delta_1 = 0 \label{eq:p13} \\
-  p_{23} > 0 &\Rightarrow \delta_1 = 0 \label{eq:p23} \\
-  p_{22} > 0 &\Rightarrow \delta_3 = \delta_1 = 0 \label{eq:p22}
-\end{align}
-
-First suppose that $\delta_1 > 0$.
-Then equations (\ref{eq:p12}) to (\ref{eq:p22}) give that $p_{12} = p_{13} = p_{23} = p_{22} = 0$.
-Substituting into equation (\ref{eq:g1}) gives that $p_{11} = 5$ and, similarly, equation (\ref{eq:g2}) gives that $p_{21} = 5$.
-But then equation (\ref{eq:delta1}) cannot possibly hold.
-So $\delta_1 = 0$ in all cases and therefore $\delta_1^* = 0$.
-
-- key insight is to form groups comprising of a ledger channel plus all the guarantees that target the ledger channel
-- we then use a different rule to 
-
-
-- suffices to get lower bound 
-- follow the same algorithm as before but with guarantees treated as units
-- calculate the minimum that comes out to each downstream address
 
 \subsection{Virtual Channels}
 
@@ -236,17 +210,17 @@ This is important to ensure that $A$ and $B$ cannot lock $I$'s funds indefinitel
 Note that $I$ has to claim on both guarantees, offloading $\rchi$ before being able to reclaim their funds.
 The virtual channel became a direct channel and the intermediary was able to recover their collateral.
 
-\subsection{Opening and Closing Virtual Channels}\label{section:open-close-virtual-channel}
+\subsection{Examples}\label{section:open-close-virtual-channel}
+
+In this section we present a sequence of network states written in terms of universally finalizable outcomes, where each state differs from the previous state only in one channel.
+
+\subsubsection{Opening a Virtual Channel}
 
 \begin{figure}[ht] \centering
   \makebox[\textwidth][c]{\input{figures/opening-virtual-channel}}
   \caption{Opening a virtual channel}
   \label{fig:virtual-channel-opening}
 \end{figure}
-
-In this section we present a sequence of network states written in terms of universally finalizable outcomes, where each state differs from the previous state only in one channel.
-We claim that this sequence of states can be used to derive a safe procedure for opening a virtual channel, where the value of the network remains unchanged throughout for all participants involved.
-We justify this claim in the appendix.
 
 The procedure for opening a virtual channel is as follows:
 \begin{enumerate}
@@ -278,13 +252,7 @@ The procedure for opening a virtual channel is as follows:
 \end{enumerate}
 We give a visual representation of this procedure in figure \ref{fig:virtual-channel-opening}.
 
-\begin{figure}[ht]
-  \centering
-  \input{figures/virtual-channels-3}
-  \caption{Opening a virtual channel}
-  \label{fig:virtual-channel-opening}
-\end{figure}
-
+\subsubsection{Closing a Virtual Channel}
 
 \begin{figure}[ht]\centering
   \makebox[\textwidth][c]{\input{figures/closing-virtual-channel}}
@@ -312,8 +280,15 @@ The same sequence of states, when taken in reverse, can be used to close a virtu
 
 It is also possible to do top-ups and partial checkouts from a virtual channel.
 
+\subsubsection{Virtual Channel with Three Participants}
+
+So far we have primarily focussed on channels with two participants.
+The techniques here all generalise to $n$-participant channels.
+In figure \ref{fig:virtual-channel-three-participants}, we give an example construction for a virtual channel between three participants.
+The opening and closing of this channel follows the same pattern as the two participant case.
+
 \begin{figure}[ht] \centering
   \makebox[\textwidth][c]{\input{figures/virtual-channel-three-participants}}
-  \caption{Virtual channel with three participants}
+  \caption{Virtual channel with three participants. Here $x = a + b + c$.}
   \label{fig:virtual-channel-three-participants}
 \end{figure}

@@ -29,16 +29,14 @@
       \node[circI, label=below:$I$] (i) at (-2, -1) {};
 
       \node[sqadj] (a1) at (1,0) {};
-      \pic (G) at (0, -1.5) {guarantee3bad};
-      \node[circEmpty] (e) at (-1, -3) {};
-      \node[circB, label=below:$B$] (b2) at (1,-3) {};
-      \node[circA, label=below:$A$] (a2) at (0,-3) {};
+      \pic (G) at (0, -1.5) {guarantee2bad};
+      \node[circB, label=below:$B$] (b2) at (0.6,-3) {};
+      \node[circA, label=below:$A$] (a2) at (-0.6,-3) {};
 
       \begin{scope}[->]
         \draw (a0) edge node[midway, left] { 5 } (i);
         \draw (a1) edge node[midway, right] { 5 } (G-G1);
-        \draw[dotted] (G-J) edge node[midway, right] {  } (e);
-        \draw (G-J) edge node[near end, left] { 5 } (a2);
+        \draw (G-J) edge node[midway, left] { 5 } (a2);
         \draw (G-J) edge node[midway, right] { 5 } (b2);
       \end{scope}
       \begin{scope}[node distance=0.07cm]
@@ -54,18 +52,14 @@
       \node[circI, label=below:$I$] (i) at (-3, -1) {};
       \node[sqadj] (adj2) at (-2,0) {};
       \node[circB, label=below:$B$] (b) at (-2,-1) {};
-      \node[circEmpty] (e) at (-1, -3) {};
-      \node[circEmpty] (e2) at (1,-3) {};
 
-      \pic (G) at (0, -1.5) {guarantee3bad};
+      \pic (G) at (0, -1.5) {guarantee1};
       \node[circA, label=below:$A$] (a2) at (0, -3) {};
 
       \begin{scope}[->]
         \draw (adj0) edge node[midway, left] { 5 } (i);
         \draw (adj2) edge node[midway, right] { 5 } (b);
-        \draw (G-J) edge node[near end, left] { 5 } (a2);
-        \draw[dotted] (G-J) edge node[near end, left] {  } (e);
-        \draw[dotted] (G-J) edge node[near end, left] {  } (e2);
+        \draw (G-J) edge node[midway, left] { 5 } (a2);
       \end{scope}
       \begin{scope}[node distance=0.07cm]
       \node[above=of G-G0] { $G_1$ };

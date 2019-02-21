@@ -13,12 +13,10 @@ that they have the right to claim the assets on-chain at a future point of time 
 
 \subsection{Ledger Channels and Virtual Channels}
 
-In their naive form, each state channel needs to have a corresponding \textit{state deposit} - a set of assets held in escrow on-chain, to be distributed according to the outcome of the channel.
+In their naive form, a group of participants need a new state channel for each application they run and each state channel needs to have a corresponding \textit{state deposit} - a set of assets held in escrow on-chain, to be distributed according to the outcome of the channel.
 Each time a state channel is opened, at least one party needs to perform an on-chain transaction to transfer assets into the state deposit, and each time it is closed at least one participant must perform an on-chain transaction to claim their share.
 This limits the effectiveness of state channels as a scaling solution, making it only suitable for the case where a large number of transactions are executed between a single group of participants.
 We refer to these naive channels as \textbf{direct channels}, as they are supported directly by funds held on the blockchain.
-
-
 
 \begin{tikzpicture}
   \begin{scope}[every node/.style={circle, draw}]

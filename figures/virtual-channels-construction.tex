@@ -1,21 +1,45 @@
-\begin{tikzpicture}[x=2.4cm, y=1cm, framed, background rectangle/.style={draw=black,dashed, rounded corners}] 
+\begin{tikzpicture}
+  \node at (0, 0) {
+    \begin{tikzpicture}[x=2.4cm, y=1cm, framed, background rectangle/.style={draw=black,dashed, rounded corners}] 
 
-  % Specification of nodes (position, etc.)
-  \node (a0) at (0,0) { $\adj{\holds{L}{x}{}, \holds{L'}{x}{}}$ };
-  \node (b0) at (-1,-1) { $\finalizable{L}{\alloc{G: x}}{A, I}$ };
-  \node (b1) at (1,-1) { $\finalizable{L'}{\alloc{G': x}}{B, I}$ };
-  \node (g0) at (-1,-2) { $\finalizable{G}{\guar{J}{\rchi, A, I}}{A, I}$ };
-  \node (g1) at (1,-2) { $\finalizable{G'}{\guar{J}{\rchi, B, I}}{B, I}$ };
-  \node (j) at (0,-3) { $\finalizable{J}{\alloc{\rchi: x, I: x}}{A,B,I}$ };
+      % Specification of nodes (position, etc.)
+      \node (a0) at (0,0) { $\adj{\holds{L}{x}{}, \holds{L'}{x}{}}$ };
+      \node (b0) at (-1,-1) { $\finalizable{L}{\alloc{G: x}}{A, I}$ };
+      \node (b1) at (1,-1) { $\finalizable{L'}{\alloc{G': x}}{B, I}$ };
+      \node (g0) at (-1,-2) { $\finalizable{G}{\guar{J}{\rchi, A, I}}{A, I}$ };
+      \node (g1) at (1,-2) { $\finalizable{G'}{\guar{J}{\rchi, B, I}}{B, I}$ };
+      \node (j) at (0,-3) { $\finalizable{J}{\alloc{\rchi: x, I: x}}{A,B,I}$ };
 
-  \begin{scope}[-]
-    \tikzstyle{every node}=[draw=none,below]
-    \draw (a0) to (b0);
-    \draw (a0) to (b1);
-    \draw (b0) to (g0);
-    \draw (b1) to (g1);
-    \draw (g0) to (j);
-    \draw (g1) to (j);
-  \end{scope}
+      \begin{scope}[-]
+        \tikzstyle{every node}=[draw=none,below]
+        \draw (a0) to (b0);
+        \draw (a0) to (b1);
+        \draw (b0) to (g0);
+        \draw (b1) to (g1);
+        \draw (g0) to (j);
+        \draw (g1) to (j);
+      \end{scope}
+    \end{tikzpicture}
+  };
 
+  \node at (7, 0) {
+    \begin{tikzpicture}[x=.8cm, y=0.85cm]
+      \node[sqadj] (a0) at (-1,0) {};
+      \node[sqadj] (a1) at (1,0) {};
+      \node[circAI, label=left:$L$] (b0) at (-1,-1) {};
+      \node[circBI, label=right:$L'$] (b1) at (1,-1) {};
+      \pic (G) at (0, -2.5) {guarantee2};
+      \node[circAB, label=below:$\rchi$] (ab) at (-0.7,-4) {};
+      \node[circI, label=below:$I$] (i) at (0.7, -4) {};
+
+      \begin{scope}[->]
+        \draw (a0) edge node[midway, left] { 10 } (b0);
+        \draw (a1) edge node[midway, right] { 10 } (b1);
+        \draw (b0) edge node[midway, left] { 10 } (G-G0);
+        \draw (b1) edge node[midway, right] { 10 } (G-G1);
+        \draw (G-J) edge node[midway, left] { 10 } (ab);
+        \draw (G-J) edge node[midway, right] { 10 } (i);
+      \end{scope}
+    \end{tikzpicture}
+  };
 \end{tikzpicture}

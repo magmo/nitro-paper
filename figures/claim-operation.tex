@@ -1,4 +1,4 @@
-\begin{tikzpicture}[x=8cm, y=2cm]
+\begin{tikzpicture}[x=8.5cm, y=2cm]
   \node[draw=black, rounded corners=0.5cm] (adj0) at (0, 0) {
     \begin{tabular}{c|c|c}
       \multicolumn{3}{c}{\textbf{Adjudicator}} \\
@@ -9,7 +9,7 @@
     \end{tabular}
   };
 
-  \node[draw=black, rounded corners=0.5cm] (adj0) at (1, 0) {
+  \node[draw=black, rounded corners=0.5cm] (adj1) at (1, 0) {
     \begin{tabular}{c|c|c}
       \multicolumn{3}{c}{\textbf{Adjudicator}} \\
       Address & Balance & Outcome \\
@@ -20,6 +20,8 @@
     \end{tabular}
   };
 
+  \draw[->, shorten >=2mm, shorten <=2mm] (adj0) edge node[midway, above] { $\claim{G}{\text{Alice}}{3}$} (adj1);
+
   \node (not0) at (0, -1) { $\adj{\holds{G}{3}{\guar{L}{\text{Alice}}}, \;\holds{L}{}{\alloc{\text{Bob}:2, \text{Alice}:3}}}$ };
   \node (not1) at (1, -1) { $\adj{\holds{G}{}{\guar{L}{\text{Alice}}}, \;\holds{L}{}{\alloc{\text{Bob}:2}}, \;\holds{\text{Alice}}{3}{}}$ };
 
@@ -27,7 +29,7 @@
     \begin{tikzpicture}[y=0.8cm, x=1.2cm]
       \node[sqadj] (adj) at (1, 0) {};
       \node[semicircle, draw, label=right:$G$] (g) at (1, -1) {};
-      \node[semicircle, draw, rotate=180, label=below right:$L$] (l) at (1,-2) {};
+      \node[semicircle, draw, rotate=180, label=355:$L$] (l) at (1,-2) {};
       \node[circB, label=below:Bob] (b) at (0.58, -3) {};
       \node[circA, label=below:Alice] (a) at (1.42, -3) {};
 
@@ -45,11 +47,10 @@
   \node (diag1) at (1, -2) {
     \begin{tikzpicture}[y=0.8cm, x=1.2cm]
       \node[semicircle, draw, label=right:$G$] (g) at (1, -1) {};
-      \node[semicircle, draw, rotate=180, label=below right:$L$] (l) at (1,-2) {};
+      \node[semicircle, draw, rotate=180, label=355:$L$] (l) at (1,-2) {};
       \node[circB, label=below:Bob] (b) at (1, -3) {};
 
-      \draw[-] (g.220) to[out=270, in=90] (l.220);
-      \draw[-] (g.320) to[out=270, in=90] (l.320);
+      \draw[-] (g.270) to[out=270, in=90] (l.270);
 
       \draw[->] (l) edge node[midway, left] { $2$ } (b);
 
