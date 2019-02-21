@@ -1,0 +1,113 @@
+\section{Appendix}
+
+THIS APPENDIX IS STILL A WIP.
+
+\subsection{Overview of ForceMove}
+
+The ForceMove protocol describes the message format and the supporting on-chain behaviour
+to enable generalized, $n$-party state channels on any blockchain that supports Turing-complete, general-purpose computation.
+Here we give a brief overview of the protocol to the level required to understand
+the rest of the paper. For a more comprehensive explanation please refer to \cite{}.
+
+\begin{table}[h]
+  \begin{tabular}{|l|l|l|p{5cm}|}
+    \hline
+    \texttt{participants} & \texttt{address[]} & $P$ & The addresses used to sign updates to the channel. \\ \hline
+    \texttt{nonce} & \texttt{unit256} & $k$ & Chosen to make the channel's address unique. \\ \hline
+    \texttt{gameLibrary} & \texttt{address} & $L$ & The address of the gameLibrary, which defines the transition rules for this channel \\ \hline
+    \texttt{challengeDuration} & \texttt{unit256} & $\eta$ & \\ \hline
+    \texttt{turnNum} & \texttt{unit256} & $i$ & Increments as new states are produced. \\ \hline
+    \texttt{balances} & \texttt{(address, uint256)[]} & $\beta$ & Current \textit{outcome} of the channel. \\ \hline
+    \texttt{isFinal} & \texttt{bool} & $f$ & \\ \hline
+    \texttt{data} & \texttt{bytes} & $\delta$ & \\ \hline
+    \texttt{v} & \texttt{uint8} & &  ECDSA signature of the above arguments by the moving participant. \\ \cline{1-2}
+    \texttt{r} & \texttt{bytes32} & & \\ \cline{1-2}
+    \texttt{s} & \texttt{bytes32} & & \\ \hline
+  \end{tabular}
+  \caption{ForceMove state format}
+  \label{table:force-move-state}
+\end{table}
+
+A ForceMove \textbf{state}, $\sigma_\chi^i(\beta, f, \delta)$, is specified by \textbf{turn number}, $i$,
+a set of \textbf{balances}, $\beta$, a boolean flag \textbf{finalized}, $f \in \{T, F\}$, and
+a chunk of unstructured \textbf{game data}, $\delta$, that will be interpreted by the game library. The
+balances can be thought of as an ordered set of $(\texttt{address}, \texttt{uint256})$ pairs,
+which specify how any funds allocated to the channel should be distributed if the channel 
+were to finalize in the current state.
+
+In order for a state, $\sigma_\chi^i$, to be valid it must be signed by participant, $p_j$,
+where $j = i \% n$ is the remainder mod $n$. This requirement specifies that participants
+in the channel must take turns when signing states.
+
+The game library is responsible for defining a set of states and allowed transitions that
+in turn define the `application' that will run inside the state channel. It does this by
+defining a single boolean function, $t_L(i, \beta, \delta, \beta', \delta') \rightarrow \{ T, F\}$.
+This function is used to derive an overall boolean transition function, $t$, specifying whether
+a transition between two states is permitted under the rules of the protocol:
+\begin{align*}
+  t(\sigma_\chi^i(\beta, f, \delta), \sigma_{\chi'}^j(\beta', f', \delta') ) \Leftrightarrow &
+    \chi = \chi'
+    \wedge j = i + 1
+    \wedge \\
+    & [ (\neg f \wedge \neg f' \wedge j \leq 2n \wedge \beta = \beta' \wedge \delta = \delta') \vee \\
+    & (\neg f \wedge \neg f' \wedge j > 2n \wedge t_L(n, \beta, \delta, \beta', \delta')) \vee \\
+    & (f' \wedge \beta = \beta' \wedge \delta' = 0) ]
+\end{align*}
+
+In all transitions the channel properties must remain unchanged and the turn number must increment.
+There are then three different modes of operation. The first mode applies in the first $2n$
+states (assuming none of these are finalized) and in this mode the balances and game data
+must remain unchanged. As we will see later, these states exist so that the channel can be
+funded safely. We refer to the first $n$ states as the \textbf{pre-fund setup} states and
+the subsequent $n$ as the \textbf{post-fund setup} states. The second mode applies to the
+`normal' operation of the channel, when the game library is used to determine the allowed
+transitions. The final mode concerns the finalization of the channel: at any point the current
+participant can choose to exit the channel and lock in the balances in the current state.
+Once this happens the only allowed transitions are to additional finalized states. Because
+of this, we have no further use for the game data, $\delta$, so can remove this from the state.
+Once a sequence of $n$ finalized states have been produced the channel is considered closed. We
+call this sequence of $n$ finalized states a \textbf{conclusion proof}, which we will write $\bm{\sigma}^*$.
+
+
+
+\subsection{The Consensus Game}
+
+The Consensus Game is an important ForceMove application, which we will use heavily in the rest of the paper due to its special properties regarding outcome finalizability. In this section we introduce transition rules and explore these properties.
+
+Like all ForceMove applications, the transition rules for the Consensus Game are specified by a game library, $L_C$, which defines the transition function, $t_{L_C}$, in terms of the turn number, $i$, the balances, $\beta$ and the game data $\delta$. $\delta = (j, x)$, where $j$ is the \textit{consensus counter} and $x$ is the \textit{proposed balances}. 
+\begin{align*}
+  t_{L_C}(i, \beta, (j, x), \beta', (j', x')) \Leftrightarrow
+    [ & (j=n-1 \wedge j'= 0 \wedge \beta' = x = x')  \vee \\
+    & (j < n-1 \wedge j' = j+1, \beta = \beta', x = x') \vee \\
+    & (j'=0, \beta = \beta') ]
+\end{align*}
+For a given $\beta$, the consensus counter will increase from $0\dots (n-1)$ as the participants sign off on the new balances. Once all participants have signed, consensus has been reached and the channel's balances are updated.
+
+
+\subsection{Proofs of Correctness}
+
+- what do we need to prove?
+- we gave the algorithms in terms of universally finalizable states.
+- we now need to find the intermediate states to move betweenthem
+
+- if we two universally finalizable states, $\sigma$, $\sigma'$
+- in a consensus game channel with $n$ participants
+- that are value preserving for all participants
+- then it is possible to find a set of $n$ state updates that preserve value for all participants and which move from $\sigma$ and $\sigma'$
+
+  \begin{align*}
+    \sigma^{i}(\beta, (0, \beta)) & \approx [\beta]_P \\
+    \sigma^{i+1}(\beta, (0, \beta')) & \approx \{\beta'\}_{p_0}[\beta]_{p_1, ..., p_{n-1}} \\
+    \sigma^{i+2}(\beta, (1, \beta')) & \approx \{\beta'\}_{p_0, p_1}[\beta]_{p_2, ..., p_{n-1}} \\
+    &\vdots\\
+    \sigma^{i+n-1}(\beta, (n-1, \beta')) & \approx [\beta', \beta]_{p_{n-1}} \\
+    \sigma^{i+n}(\beta', (0, \beta')) & \approx [\beta']_{P} \\
+  \end{align*}
+
+
+\subsection{Virtual Channels on Turbo}
+\subsection{Payouts to Non-Participants}
+\subsection{Possible Extensions}
+
+\subsection{On-chain Operations Code}
+

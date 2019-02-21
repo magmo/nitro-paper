@@ -1,0 +1,410 @@
+% https://tex.stackexchange.com/a/55604
+
+\usepackage{tikz}
+\usetikzlibrary{shapes,backgrounds,calc}
+\usetikzlibrary{positioning, shapes.geometric}
+
+\makeatletter
+\tikzset{fill halves/.style  args={#1,#2}{%
+  circle,
+  postaction={%
+    insert path={
+      \pgfextra{% 
+        % This entire script assumes that we're working with a circle, making use of the anchors
+        % we expect to find on a circle
+        % Calculates "insiderad" by looking at the distance from the center to the east anchor
+        \pgfpointdiff{\pgfpointanchor{\pgf@node@name}{center}}%
+                    {\pgfpointanchor{\pgf@node@name}{east}}%            
+        \pgfmathsetmacro\insiderad{\pgf@x}
+        % We start at the east anchor of the node and then move in by "pgflinewidth"
+        % then we draw an arc from 0 to 180
+        \fill[#1] (\pgf@node@name.base) ([xshift=-\pgflinewidth/sqrt(2), yshift=-\pgflinewidth/sqrt(2)]\pgf@node@name.north east) arc
+                          (45:225:\insiderad-\pgflinewidth)--cycle;
+        \fill[#2] (\pgf@node@name.base) ([xshift=\pgflinewidth/sqrt(2), yshift=\pgflinewidth/sqrt(2)]\pgf@node@name.south west)  arc
+                            (225:405:\insiderad-\pgflinewidth)--cycle;
+        \draw[-] (\pgf@node@name.north east) to (\pgf@node@name.south west);
+      }
+    }
+  }
+}
+}  
+
+\tikzset{fill thirds/.style  args={#1,#2,#3}{%
+  circle,
+  postaction={%
+    insert path={
+      \pgfextra{% 
+        % This entire script assumes that we're working with a circle, making use of the anchors
+        % we expect to find on a circle
+        % Calculates "insiderad" by looking at the distance from the center to the east anchor
+        \pgfpointdiff{\pgfpointanchor{\pgf@node@name}{center}}%
+                    {\pgfpointanchor{\pgf@node@name}{east}}%            
+        \pgfmathsetmacro\insiderad{\pgf@x - \pgflinewidth}
+        % We start at the east anchor of the node and then move in by "pgflinewidth"
+        % then we draw an arc from 0 to 180
+        \fill[#1] (\pgf@node@name.center) -- ++ (90:\insiderad pt) arc (90:210:\insiderad pt) --cycle;
+        \fill[#2] (\pgf@node@name.center) -- ++ (210:\insiderad pt) arc (210:330:\insiderad pt) --cycle;
+        \fill[#3] (\pgf@node@name.center) -- ++ (330:\insiderad pt) arc (330:450:\insiderad pt) --cycle;
+        \draw (\pgf@node@name.center) -- ++ (90:\insiderad pt);
+        \draw (\pgf@node@name.center) -- ++ (210:\insiderad pt);
+        \draw (\pgf@node@name.center) -- ++ (330:\insiderad pt);
+      }
+    }
+  }
+}
+}  
+
+\tikzset{semithirds/.style  args={#1,#2,#3}{%
+  semicircle,
+  rotate=180,
+  postaction={%
+    insert path={
+      \pgfextra{% 
+        % This entire script assumes that we're working with a circle, making use of the anchors
+        % we expect to find on a circle
+        % Calculates "insiderad" by looking at the distance from the center to the east anchor
+        \pgfpointdiff{\pgfpointanchor{\pgf@node@name}{south}}%
+                    {\pgfpointanchor{\pgf@node@name}{north}}%            
+        \pgfmathsetmacro\insiderad{\pgf@y-1.5\pgflinewidth}
+        % We start at the east anchor of the node and then move in by "pgflinewidth"
+        % then we draw an arc from 0 to 180
+        \fill[#1] ([yshift=\pgflinewidth/2]\pgf@node@name.south) -- ++ (0:\insiderad pt) arc (0:60:\insiderad pt) --cycle;
+        \fill[#2] ([yshift=\pgflinewidth/2]\pgf@node@name.south) -- ++ (60:\insiderad pt) arc (60:120:\insiderad pt) --cycle;
+        \fill[#3] ([yshift=\pgflinewidth/2]\pgf@node@name.south) -- ++ (120:\insiderad pt) arc (120:180:\insiderad pt) --cycle;
+        % \draw ([yshift=\pgflinewidth/2]\pgf@node@name.south) -- ++ (0:\insiderad pt);
+        \draw ([yshift=\pgflinewidth/2]\pgf@node@name.south) -- ++ (60:\insiderad pt);
+        \draw ([yshift=\pgflinewidth/2]\pgf@node@name.south) -- ++ (120:\insiderad pt);
+        % \draw ([yshift=\pgflinewidth/2]\pgf@node@name.south) -- ++ (180:\insiderad pt);
+      }
+    }
+  }
+}
+}  
+
+\tikzset{
+  guarantee/.pic={
+  \pgfmathsetmacro{\angle}{45};
+  \pgfmathsetmacro{\inradius}{2};
+  \pgfmathsetmacro{\separation}{1.5};
+  \pgfmathsetmacro{\clearance}{3};
+
+  \coordinate (-incenter) at (0, 0);
+  \path (-incenter) -- +({\angle}:\inradius mm) coordinate (-rightp2);
+  \path (-incenter) -- +({180-\angle}:\inradius mm) coordinate (-leftp2);
+  \path (-incenter) -- +(270:\inradius mm) coordinate (-basep2);
+
+  \path (-rightp2) -- + ({90+\angle}:\separation mm) coordinate (-rightp1);
+  \path (-rightp2) -- + ({90+\angle}:-\separation mm) coordinate (-rightp3);
+
+  \path (-leftp2) -- + ({90-\angle}:\separation mm) coordinate (-leftp3);
+  \path (-leftp2) -- + ({90-\angle}:-\separation mm) coordinate (-leftp1);
+
+  \path (-basep2) -- +(0:\separation mm) coordinate (-basep3);
+  \path (-basep2) -- +(0:-\separation mm) coordinate (-basep1);
+
+  \begin{scope}[-, every to/.style={out={180+\angle}, in=90}]
+    \draw (-rightp1) to (-basep1);
+    \draw (-rightp2) to (-basep2);
+    \draw (-rightp3) to (-basep3);
+  \end{scope}
+
+  \begin{scope}[-, every to/.style={out={-\angle}, in=90}]
+    \draw (-leftp1) to (-basep1);
+    \draw (-leftp2) to (-basep2);
+    \draw (-leftp3) to (-basep3);
+  \end{scope}
+
+  \path (-rightp1) -- +(\angle:\clearance mm) coordinate (-Rightp1);
+  \path (-rightp2) -- +(\angle:\clearance mm) coordinate (-Rightp2);
+  \path (-rightp3) -- +(\angle:\clearance mm) coordinate (-Rightp3);
+
+  \path (-leftp1) -- +({180-\angle}:\clearance mm) coordinate (-Leftp1);
+  \path (-leftp2) -- +({180-\angle}:\clearance mm) coordinate (-Leftp2);
+  \path (-leftp3) -- +({180-\angle}:\clearance mm) coordinate (-Leftp3);
+
+  \begin{scope}[-, every to/.style={out={-\angle}, in={180-\angle}}]
+    \draw (-Leftp1) to (-leftp2);
+    \draw (-Leftp2) to (-leftp3);
+    \draw (-Leftp3) to (-leftp1);
+  \end{scope}
+
+  \begin{scope}[-, every to/.style={out={180+\angle}, in={\angle}}]
+    \draw (-Rightp1) to (-rightp1);
+    \draw (-Rightp2) to (-rightp3);
+    \draw (-Rightp3) to (-rightp2);
+  \end{scope}
+
+  \node[semicircle, draw, rotate=45, anchor=south] (-G0) at (-Leftp2) {};
+  \node[semicircle, draw, rotate=-45, anchor=south] (-G1) at (-Rightp2) {};
+  \node[semicircle, draw, rotate=180, anchor=south] (-J) at (-basep2) {};
+  }
+}
+
+
+\tikzset{
+  guarantee1/.pic={
+  \pgfmathsetmacro{\angle}{45};
+  \pgfmathsetmacro{\inradius}{2};
+  \pgfmathsetmacro{\separation}{1.5};
+  \pgfmathsetmacro{\clearance}{3};
+
+  \coordinate (-incenter) at (0, 0);
+  \path (-incenter) -- +({\angle}:\inradius mm) coordinate (-rightp2);
+  \path (-incenter) -- +({180-\angle}:\inradius mm) coordinate (-leftp2);
+  \path (-incenter) -- +(270:\inradius mm) coordinate (-basep2);
+
+  \path (-rightp2) -- + ({90+\angle}:\separation mm) coordinate (-rightp1);
+  \path (-rightp2) -- + ({90+\angle}:-\separation mm) coordinate (-rightp3);
+
+  \path (-leftp2) -- + ({90-\angle}:\separation mm) coordinate (-leftp3);
+  \path (-leftp2) -- + ({90-\angle}:-\separation mm) coordinate (-leftp1);
+
+  \path (-basep2) -- +(0:\separation mm) coordinate (-basep3);
+  \path (-basep2) -- +(0:-\separation mm) coordinate (-basep1);
+
+  \begin{scope}[-, every to/.style={out={180+\angle}, in=90}]
+    \draw (-rightp2) to (-basep2);
+  \end{scope}
+
+  \begin{scope}[-, every to/.style={out={-\angle}, in=90}]
+    \draw (-leftp2) to (-basep2);
+  \end{scope}
+
+  \path (-rightp2) -- +(\angle:\clearance mm) coordinate (-Rightp2);
+
+  \path (-leftp2) -- +({180-\angle}:\clearance mm) coordinate (-Leftp2);
+
+  \begin{scope}[-, every to/.style={out={-\angle}, in={180-\angle}}]
+    \draw (-Leftp2) to (-leftp2);
+  \end{scope}
+
+  \begin{scope}[-, every to/.style={out={180+\angle}, in={\angle}}]
+    \draw (-Rightp2) to (-rightp2);
+  \end{scope}
+
+  \node[semicircle, draw, rotate=45, anchor=south] (-G0) at (-Leftp2) {};
+  \node[semicircle, draw, rotate=-45, anchor=south] (-G1) at (-Rightp2) {};
+  \node[semicircle, draw, rotate=180, anchor=south] (-J) at (-basep2) {};
+  }
+}
+
+
+\tikzset{
+  guarantee3bad/.pic={
+  \pgfmathsetmacro{\angle}{45};
+  \pgfmathsetmacro{\inradius}{2};
+  \pgfmathsetmacro{\separation}{1.5};
+  \pgfmathsetmacro{\clearance}{3};
+
+  \coordinate (-incenter) at (0, 0);
+  \path (-incenter) -- +({\angle}:\inradius mm) coordinate (-rightp2);
+  \path (-incenter) -- +({180-\angle}:\inradius mm) coordinate (-leftp2);
+  \path (-incenter) -- +(270:\inradius mm) coordinate (-basep2);
+
+  \path (-rightp2) -- + ({90+\angle}:\separation mm) coordinate (-rightp1);
+  \path (-rightp2) -- + ({90+\angle}:-\separation mm) coordinate (-rightp3);
+
+  \path (-leftp2) -- + ({90-\angle}:\separation mm) coordinate (-leftp3);
+  \path (-leftp2) -- + ({90-\angle}:-\separation mm) coordinate (-leftp1);
+
+  \path (-basep2) -- +(0:\separation mm) coordinate (-basep3);
+  \path (-basep2) -- +(0:-\separation mm) coordinate (-basep1);
+
+  \begin{scope}[-, every to/.style={out={180+\angle}, in=90}]
+    \draw (-rightp1) to (-basep1);
+    \draw (-rightp2) to (-basep2);
+    \draw (-rightp3) to (-basep3);
+  \end{scope}
+
+  \begin{scope}[-, every to/.style={out={-\angle}, in=90}]
+    \draw (-leftp1) to (-basep1);
+    \draw (-leftp2) to (-basep2);
+    \draw (-leftp3) to (-basep3);
+  \end{scope}
+
+  \path (-rightp1) -- +(\angle:\clearance mm) coordinate (-Rightp1);
+  \path (-rightp2) -- +(\angle:\clearance mm) coordinate (-Rightp2);
+  \path (-rightp3) -- +(\angle:\clearance mm) coordinate (-Rightp3);
+
+  \path (-leftp1) -- +({180-\angle}:\clearance mm) coordinate (-Leftp1);
+  \path (-leftp2) -- +({180-\angle}:\clearance mm) coordinate (-Leftp2);
+  \path (-leftp3) -- +({180-\angle}:\clearance mm) coordinate (-Leftp3);
+
+  \begin{scope}[-, every to/.style={out={-\angle}, in={180-\angle}}]
+    \draw (-Leftp1) to (-leftp1);
+    \draw (-Leftp2) to (-leftp2);
+    \draw (-Leftp3) to (-leftp3);
+  \end{scope}
+
+  \begin{scope}[-, every to/.style={out={180+\angle}, in={\angle}}]
+    \draw (-Rightp1) to (-rightp1);
+    \draw (-Rightp2) to (-rightp3);
+    \draw (-Rightp3) to (-rightp2);
+  \end{scope}
+
+  \node[semicircle, draw, rotate=45, anchor=south] (-G0) at (-Leftp2) {};
+  \node[semicircle, draw, rotate=-45, anchor=south] (-G1) at (-Rightp2) {};
+  \node[semicircle, draw, rotate=180, anchor=south] (-J) at (-basep2) {};
+  }
+}
+
+\tikzset{
+  guarantee2/.pic={
+    % to get a two pin guarantee, we'll reduce the distance of the three pin and ignore the middle pin
+  \pgfmathsetmacro{\angle}{45};
+  \pgfmathsetmacro{\inradius}{2};
+  \pgfmathsetmacro{\separation}{1};
+  \pgfmathsetmacro{\clearance}{3};
+
+  \coordinate (-incenter) at (0, 0);
+  \path (-incenter) -- +({\angle}:\inradius mm) coordinate (-rightp2);
+  \path (-incenter) -- +({180-\angle}:\inradius mm) coordinate (-leftp2);
+  \path (-incenter) -- +(270:\inradius mm) coordinate (-basep2);
+
+  \path (-rightp2) -- + ({90+\angle}:\separation mm) coordinate (-rightp1);
+  \path (-rightp2) -- + ({90+\angle}:-\separation mm) coordinate (-rightp3);
+
+  \path (-leftp2) -- + ({90-\angle}:\separation mm) coordinate (-leftp3);
+  \path (-leftp2) -- + ({90-\angle}:-\separation mm) coordinate (-leftp1);
+
+  \path (-basep2) -- +(0:\separation mm) coordinate (-basep3);
+  \path (-basep2) -- +(0:-\separation mm) coordinate (-basep1);
+
+  \begin{scope}[-, every to/.style={out={180+\angle}, in=90}]
+    \draw (-rightp1) to (-basep1);
+    \draw (-rightp3) to (-basep3);
+  \end{scope}
+
+  \begin{scope}[-, every to/.style={out={-\angle}, in=90}]
+    \draw (-leftp1) to (-basep1);
+    \draw (-leftp3) to (-basep3);
+  \end{scope}
+
+  \path (-rightp1) -- +(\angle:\clearance mm) coordinate (-Rightp1);
+  \path (-rightp2) -- +(\angle:\clearance mm) coordinate (-Rightp2);
+  \path (-rightp3) -- +(\angle:\clearance mm) coordinate (-Rightp3);
+
+  \path (-leftp1) -- +({180-\angle}:\clearance mm) coordinate (-Leftp1);
+  \path (-leftp2) -- +({180-\angle}:\clearance mm) coordinate (-Leftp2);
+  \path (-leftp3) -- +({180-\angle}:\clearance mm) coordinate (-Leftp3);
+
+  \begin{scope}[-, every to/.style={out={-\angle}, in={180-\angle}}]
+    \draw (-Leftp1) to (-leftp1);
+    \draw (-Leftp3) to (-leftp3);
+  \end{scope}
+
+  \begin{scope}[-, every to/.style={out={180+\angle}, in={\angle}}]
+    \draw (-Rightp1) to (-rightp1);
+    \draw (-Rightp3) to (-rightp3);
+  \end{scope}
+
+  \node[semicircle, draw, rotate=45, anchor=south] (-G0) at (-Leftp2) {};
+  \node[semicircle, draw, rotate=-45, anchor=south] (-G1) at (-Rightp2) {};
+  \node[semicircle, draw, rotate=180, anchor=south] (-J) at (-basep2) {};
+  }
+}
+
+
+\tikzset{
+  guarantee2bad/.pic={
+    % to get a two pin guarantee, we'll reduce the distance of the three pin and ignore the middle pin
+  \pgfmathsetmacro{\angle}{45};
+  \pgfmathsetmacro{\inradius}{2};
+  \pgfmathsetmacro{\separation}{1};
+  \pgfmathsetmacro{\clearance}{3};
+
+  \coordinate (-incenter) at (0, 0);
+  \path (-incenter) -- +({\angle}:\inradius mm) coordinate (-rightp2);
+  \path (-incenter) -- +({180-\angle}:\inradius mm) coordinate (-leftp2);
+  \path (-incenter) -- +(270:\inradius mm) coordinate (-basep2);
+
+  \path (-rightp2) -- + ({90+\angle}:\separation mm) coordinate (-rightp1);
+  \path (-rightp2) -- + ({90+\angle}:-\separation mm) coordinate (-rightp3);
+
+  \path (-leftp2) -- + ({90-\angle}:\separation mm) coordinate (-leftp3);
+  \path (-leftp2) -- + ({90-\angle}:-\separation mm) coordinate (-leftp1);
+
+  \path (-basep2) -- +(0:\separation mm) coordinate (-basep3);
+  \path (-basep2) -- +(0:-\separation mm) coordinate (-basep1);
+
+  \begin{scope}[-, every to/.style={out={180+\angle}, in=90}]
+    \draw (-rightp1) to (-basep1);
+    \draw (-rightp3) to (-basep3);
+  \end{scope}
+
+  \begin{scope}[-, every to/.style={out={-\angle}, in=90}]
+    \draw (-leftp1) to (-basep1);
+    \draw (-leftp3) to (-basep3);
+  \end{scope}
+
+  \path (-rightp1) -- +(\angle:\clearance mm) coordinate (-Rightp1);
+  \path (-rightp2) -- +(\angle:\clearance mm) coordinate (-Rightp2);
+  \path (-rightp3) -- +(\angle:\clearance mm) coordinate (-Rightp3);
+
+  \path (-leftp1) -- +({180-\angle}:\clearance mm) coordinate (-Leftp1);
+  \path (-leftp2) -- +({180-\angle}:\clearance mm) coordinate (-Leftp2);
+  \path (-leftp3) -- +({180-\angle}:\clearance mm) coordinate (-Leftp3);
+
+  \begin{scope}[-, every to/.style={out={-\angle}, in={180-\angle}}]
+    \draw (-Leftp1) to (-leftp1);
+    \draw (-Leftp3) to (-leftp3);
+  \end{scope}
+
+  \begin{scope}[-, every to/.style={out={180+\angle}, in={\angle}}]
+    \draw (-Rightp1) to (-rightp3);
+    \draw (-Rightp3) to (-rightp1);
+  \end{scope}
+
+  \node[semicircle, draw, rotate=45, anchor=south] (-G0) at (-Leftp2) {};
+  \node[semicircle, draw, rotate=-45, anchor=south] (-G1) at (-Rightp2) {};
+  \node[semicircle, draw, rotate=180, anchor=south] (-J) at (-basep2) {};
+  }
+}
+
+
+
+
+\tikzset{
+  circA/.style={ draw, circle, fill=red!50, minimum size=4mm }
+}
+
+\tikzset{
+  circB/.style={ draw, circle, fill=blue!50, minimum size=4mm  }
+}
+
+\tikzset{
+  circI/.style={ draw, circle, fill=orange!50, minimum size=4mm  }
+}
+
+\tikzset{
+  circEmpty/.style={ draw, circle, dotted, minimum size=4mm  }
+}
+
+\tikzset{
+  circAB/.style={ draw, circle, fill halves={blue!50,red!50}, minimum size=4mm }
+}
+\tikzset{
+  circAI/.style={ draw, circle, fill halves={red!50,orange!50}, minimum size=4mm }
+}
+\tikzset{
+  circBI/.style={ draw, circle, fill halves={blue!50,orange!50}, minimum size=4mm }
+}
+\tikzset{
+  circABI/.style={ draw, semicircle, rotate=180, minimum size=2mm }
+}
+\tikzset{
+  guarAI/.style={ draw, semicircle, minimum size=2mm }
+}
+\tikzset{
+  guarBI/.style={ draw, semicircle, minimum size=2mm }
+}
+
+\tikzset{
+  sqadj/.style={ draw, minimum size=4mm }
+}
+
+\tikzset{
+  valuebox/.style={draw, rectangle split, rectangle split horizontal, rectangle split parts=2}
+}
+
+\makeatother  

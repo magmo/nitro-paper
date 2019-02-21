@@ -1,6 +1,7 @@
 
 \usepackage{amsmath}
 \usepackage{amsthm}
+\usepackage{eucal}
 \usepackage{amssymb}
 \usepackage{color}
 \usepackage{tikz}
@@ -48,5 +49,5 @@
 \newcommand{\guar}[2]{( #1 | #2 )} 
 
 \newcommand{\finalizable}[3]{[#1 \mapsto #2]_{#3}}
-\newcommand{\transfer}[3]{T_{#1, #2}(#3)}
-\newcommand{\claim}[3]{C_{#1, #2}(#3)}
+\newcommand{\transfer}[3]{\mathcal{T}(#1, #2, #3)}
+\newcommand{\claim}[3]{\mathcal{C}(#1, #2, #3)}

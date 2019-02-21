@@ -1,0 +1,294 @@
+\section{Nitro Protocol}
+
+Nitro protocol is an extension to Turbo protocol.
+In Nitro protocol, the outcome of a channel can be either an allocation or a \textbf{guarantee}.
+There are two on-chain redistribution operations: the transfer and the \textbf{claim}.
+
+Nitro enables true state channel networks by allowing virtual channels, where channels are routed through intermediaries.
+In particular, the extra features of Nitro allow virtual channels to be safely opened and closed off-chain while maintaining the property that channels update independently\footnote{It is possible to implement virtual channels in Turbo but only by breaking the independent update constraint. We believe this constraint will be important when running large scale state channel networks.}.
+
+\subsection{Guarantees and Claims}
+
+In the section on Turbo, we introduced allocations which defined a set of destinations and totals owed to them, along with a priority order in which the destinations should receive their funds.
+In Nitro, we allow for these two concerns to be split between different types of channels, with
+one type of channel providing the destinations and totals and another type of channel specifying the priority order.
+This opens up the possibility of having more than one priority order for the same allocation.
+
+The new type of channels are called \textbf{guarantee channels} and their outcomes are known as \textbf{guarantees}.
+A guarantee \textbf{targets} an allocation, while specifying a different priority order to pay out to the destinations.
+The funds held in a guarantee channel can only be paid out once the outcome of the target channel is finalized.
+
+\begin{figure}[ht]\centering
+  \makebox[\textwidth][c]{\input{figures/guarantee-notation}}
+  \caption{
+    Guarantee notation.
+    The guarantee outcome of $G$ is written $\guar{L}{B}$, where $L$ is the allocation it targets and $B$ is an address to be prioritized first.
+    When targeted by a guarantee we draw the allocation, $L$, as a lower semicircle.
+    The guarantee, $G$, is drawn as an upper semicircle. 
+    The lines between $G$ and $L$ depict the reprioritization, showing that the highest priority position of $G$ (on the bottom left of the semicircle) will pay out to $B$.
+  }
+  \label{fig:guarantee-notation}
+\end{figure}
+
+
+The format for specifying the priority order of a guarantee channels is complicated by the fact that we may not know the precise outcome or even the precise set of destinations at the time the guarantee is created.
+Because of this we need to enable the guarantee to apply a range of outcomes.
+Do do this, the guarantee provides a list of addresses, with the rule that these addresses will be moved to the top of the priority order if they appear in the outcome.
+For example, if a guarantee lists the addresses $(A, B, C)$ and the outcome is $\alloc{C: 1, D:2, A:4}$, then the guarantee will pay out as though the outcome was $\alloc{A:4, C:1, D: 2}$.
+
+Extending the terminology for allocations, we say that a guarantee `$G$ \textbf{can afford} $x$ for $B$', if $B$ would receive at least $x$ coins, were the coins currently held by $G$ to be paid out according to $G$'s prioritization of its target.
+
+\begin{figure}[ht]\centering
+  \makebox[\textwidth][c]{\input{figures/claim-operation}}
+  \caption{
+    The claim operation is used to move funds out of a guarantee.
+    Note that in diagram notation, we update the reprioritization lines to reflect the new outcome: after the claim, $L$ only allocates to Bob, so there is only one line from $G$ to $L$.
+  }
+  \label{fig:claim-operation}
+\end{figure}
+
+Nitro adds the \textbf{claim} operation, $\claim{G}{A}{x}$, to the existing transfer, deposit and withdraw operations.
+If $G$ acts as guarantor for $L$ and can afford $x$ for $A$, then $\claim{G}{A}{x}$ has the following three effects:
+\begin{itemize}
+  \item Reduces the funds held in channel $G$ by $x$.
+  \item Increases the funds held in channel $A$ by $x$.
+  \item Reduces the amount owed to $A$ in the outcome of $L$ by $x$.
+\end{itemize}
+Otherwise, the claim operation has no effect.
+
+
+\subsection{Redistributing}
+
+Reasoning about redistribution in Nitro is more complicated than in Turbo.
+For a start, it is possible to construct situations where the same outcome can lead to different values, depending on the order in which guarantees are claimed.
+Figure \ref{fig:claim-redistribution-problem} shows one of these situations.
+\begin{figure}[ht]\centering
+  \makebox[\textwidth][c]{\input{figures/claim-redistribution-problem}}
+  \caption{
+    Guarantee claim ordering problem.
+    In the diagram both $G_1$ and $G_2$ guarantee $J$'s outcome with $I$ as first priority but with different second priorities.
+    If $G_1$ is claimed first, then when $G_2$ is claimed the funds go to $B$.
+    If $G_2$ is claimed first (not shown), then when $G_1$ is claimed the funds go to $A$.
+    Whether $A$ or $B$ ultimately gets paid depends on the order that the guarantees are claimed.
+  }
+  \label{fig:claim-redistribution-problem}
+\end{figure}
+
+Despite this issue, it is still possible to make some statements about redistribution in Nitro, in particular putting some lower bounds on how funds are distributed.
+For example, in the example in figure \ref{fig:claim-redistribution-problem} one thing we can definitely say is that participant $I$ will receive their 5 coins, even though we cannot say anything about how the remaining 5 coins will be distributed between $A$ and $B$.
+These lower bounds prove to be enough to handle the constructions used in the rest of the chapter.
+
+\textbf{Nitro Lower-bound Value Algorithm}
+
+We can calculate this lower bound with a modification the Turbo Value Algorithm:
+
+\begin{enumerate}
+  \item Choose a topological ordering, \texttt{OrderedNodes}, for the network.
+  \item Create a mapping, \texttt{Values}, from \texttt{OrderedNodes} to $\mathbb{Z}^+$. Initialize this mapping by setting $\texttt{Values}[n]$ to be the balance held for $n$ in the adjudicator, for each $n \in \texttt{OrderedNodes}$ (with $\texttt{Values}[n] = 0$ if $n$'s address does not appear).
+  \item For each $n \in \texttt{OrderedNodes}[n]$ (taken in order):
+  \begin{enumerate}
+    \item If $n$ is a guarantee channel, do nothing.
+    \item Otherwise, $n$ is an allocation channel:
+    \begin{enumerate}
+      \item Run the Minimum Payout Calculation on $n$ and the guarantees that target it, to calculate the minimum payouts, \texttt{MinPayouts}, for each of destination channels.
+      \item For each destination, $d$, increase $\texttt{Value}[d]$ by $\texttt{MinPayouts}[d]$.
+    \end{enumerate}
+  \end{enumerate}
+  \item Then $\texttt{Values}[n]$ gives the value of node $n$.
+\end{enumerate}
+
+Note that by taking the minimum independently on different allocation/guarantee groupings, we end up with an algorithm that strictly underestimates the actual value in some cases.
+This will not be a problem for any of the constructions presented in this paper.
+
+\textbf{Minimum Payout Calculation}
+
+In this calculation we will consider an allocation channel, $L$, whose outcome allocates $a_1 \dots a_m$ to destination addresses $D_1 \dots D_m$, and a set of guarantees $G_1 \dots G_n$ which target $L$.
+We want to calculate the minimum payout, $p_i$, that each destination will receive when all possible payout orders are considered.
+
+Each guarantee, $G_i$, induces a permutation $\pi_i$ on the destination addresses, so that $G_i$ prioritizes the outcomes in the order $D_{\pi_i(1)} \dots D_{\pi_i(m)}$.
+
+We start in a state where the values of channel $L$ and the guarantees are known, with $G_i$ having value $v_i = \texttt{Value}[G_i]$.
+We will assume the value of $L$ itself is 0. 
+We are free to do this because, if $\texttt{Value}[L] = x > 0$, then for the purpose of running the algorithm we can write the problem in an equivalent way, by adding a guarantee $G_{n+1}$ that has value $x$, that targets $L$ and that has $\pi_{n+1}(k) = k$.
+
+If $\sum v_i > \sum a_j$, then we say the system is overfunded. 
+In this case, we know that all destinations will receive their allocations, so $p_i = a_i$ regardless of the order of payout.
+Otherwise, we let $p_{ij} > 0$ be the amount paid out from guarantee $G_i$ to destination $D_j$ and introduce the following set of constraints to ensure that we only consider situations where no funds are left in the guarantees:
+\begin{equation}
+  \sum_{j} p_{ij} = v_i
+\end{equation}
+
+It is useful to introduce the deficit, $\delta_j > 0$, for the destination $D_j$, defined by the equations:
+\begin{equation}
+  \delta_j + \sum_{i} p_{ij} = a_j
+\end{equation}
+
+Finally we can write down the a set of constraints that encode the priority order of the guarantees:
+\begin{align}
+\begin{split}
+  p_{i\pi_j(2)} > 0 &\Rightarrow \delta_{\pi_j(1)} = 0 \\
+  p_{i\pi_j(3)} > 0 &\Rightarrow \delta_{\pi_j(2)} = \delta_{\pi_j(1)}  = 0 \\
+  &\vdots \\
+  p_{i\pi_j(m)} > 0 &\Rightarrow \delta_{\pi_j(m-1)} = \dots = \delta_{\pi_j(1)}  = 0 
+\end{split}
+\end{align}
+
+We can then calculate $p_i = a_i - \delta_i^*$, where $\delta^*_i$ is found by minimising $\delta_i$ subject to these constraints.
+
+In general, calculating the minimimum payout therefore involves solving a constrained optimization problem, with non-linear constraints.
+In practice, for all the calculations required for the constructions in this paper, it is sufficient to look at two special cases: (i) when the allocation is fully funded and (ii) when there is only a single guarantee.
+In the fully funded case, where $\sum v_i = \sum a_i$, it is easy to see that $p_i = a_i$, just as in the overfunded case.
+In the single guarantee case, the payouts are fully determined, so it is easy to calculate the minimum payout.
+
+\subsection{Virtual Channels}
+
+A virtual channel is a channel between two participants who do not have a shared on-chain deposit, supported through an intermediary.
+We will now give the construction for the simplest possible virtual channel, between $A$ and $B$ through a shared intermediary, $I$.
+Our starting point for this channel is a pair of ledger channels, $L$ and $L'$, with participants $\{A,I\}$ and $\{B,I\}$ respectively.
+\begin{align}
+  \adj{\holds{L}{x}{}, \holds{L'}{x}{}}, \; \finalizable{L}{\alloc{A:a, I:b}}{A, I}, \; \finalizable{L'}{\alloc{B: b, I: a}}{B, I} \label{eq:virtual-channel-start-state}
+\end{align}
+where $x = a + b$.
+The participants want to use the existing deposits and ledger channels to fund a virtual channel, $\rchi$, with $x$ coins.
+
+In order to do this the participants will need three additional channels: a joint allocation channel, $J$, with participants $\{A, B, I\}$ and two guarantor channels $G$ and $G'$ which target $J$. The setup is shown in figure \ref{fig:virtual-channel-construction}.
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/virtual-channels-construction}
+  \caption{Virtual channel construction}
+  \label{fig:virtual-channel-construction}
+\end{figure}
+
+We will cover the steps for safely setting up this construction in section \ref{section:open-close-virtual-channel}. 
+In the next section, we will explain why this construction can be considered to fund the channel $\rchi$.
+
+\subsection{Offloading Virtual Channels}
+
+Similarly to the method for ledger channel construction, we will show that the virtual channel construction funds $\rchi$ by demonstrating how any one of the participants can offload the channel $\rchi$, thereby converting it to an on-chain channel that holds its own funds.
+
+We will first consider the case where $A$ wishes to offload $\rchi$. $A$ proceeds as follows:
+\begin{enumerate}
+  \item $A$ starts by finalizing all their finalizable outcomes on-chain:
+  \begin{align}
+    \adj{\holds{L}{x}{\alloc{G:x}}, \; \holds{L'}{x}{}, \holds{G}{}{\guar{J}{\rchi, A, I}}, \; \holds{J}{}{\alloc{\rchi: x, I: x}}}
+  \end{align}
+  Although $A$ has the power to finalize $L$, $G$ and $J$, they are not able to finalize $L'$.
+  Thankfully, this does not prevent them from offloading $\rchi$.
+  \item $A$ then calls $\transfer{L}{G}{x}$ to move the funds from $L$ to $G$:
+  \begin{align}
+    \adj{\holds{L'}{x}{}, \holds{G}{x}{\guar{J}{\rchi, A, I}}, \; \holds{J}{}{\alloc{\rchi: x, I: x}}}
+  \end{align}
+  \item Finally $A$ calls $\claim{G}{A}{\rchi}$ to move the funds from $G$ to $\rchi$.
+  \begin{align}
+    \adj{\holds{L'}{x}{}, \holds{G}{}{\guar{J}{\rchi, A, I}}, \; \holds{J}{}{\alloc{I: x}}, \; \holds{\rchi}{x}{}}
+  \end{align}
+\end{enumerate}
+As $G$ has $\rchi$ as top priority, the operation is successful.
+
+By symmetry, the previous case also covers the case where $B$ wants to offload.
+The final case to consider is the one where $I$ wants to offload the channel and reclaim their funds.
+This is important to ensure that $A$ and $B$ cannot lock $I$'s funds indefinitely in the channel.
+\begin{enumerate}
+  \item $I$ starts by finalizing all their finalizable outcomes on-chain:
+  \begin{multline}
+    \adj{\holds{L}{x}{\alloc{G:x}}, \; \holds{L'}{x}{\alloc{G':x}}, \holds{G}{}{\guar{J}{\rchi, A, I}}, \; \\\holds{G'}{}{\guar{J}{\rchi, B, I}}, \; \holds{J}{}{\alloc{\rchi: x, I: x}}}
+  \end{multline}
+  \item $I$ then transfers funds from the ledger channels to the virtual channels by calling $\transfer{L}{G}{x}$ and $\transfer{L'}{G'}{x}$:
+  \begin{align}
+    \adj{\holds{G}{x}{\guar{J}{\rchi, A, I}}, \; \holds{G'}{x}{\guar{J}{\rchi, B, I}}, \; \holds{J}{}{\alloc{\rchi: x, I: x}}}
+  \end{align}
+  \item Then $I$ claims on one of the guarantees, e.g. $\claim{G}{\rchi}{x}$ to offload $\rchi$:
+  \begin{align}
+    \adj{\holds{G}{}{\guar{J}{\rchi, A, I}}, \; \holds{G'}{x}{\guar{J}{\rchi, B, I}}, \; \holds{J}{}{\alloc{I: x}}, \; \holds{\rchi}{x}{}}
+  \end{align}
+  \item After which, $I$ can recover their funds by claiming on the other guarantee, $\claim{G'}{I}{x}$:
+  \begin{align}
+    \adj{\holds{G}{}{\guar{J}{\rchi, A, I}}, \; \holds{G'}{}{\guar{J}{\rchi, B, I}}, \;  \holds{\rchi}{x}{}, \; \holds{I}{x}{}}
+  \end{align}
+\end{enumerate}
+Note that $I$ has to claim on both guarantees, offloading $\rchi$ before being able to reclaim their funds.
+The virtual channel became a direct channel and the intermediary was able to recover their collateral.
+
+\subsection{Examples}\label{section:open-close-virtual-channel}
+
+In this section we present a sequence of network states written in terms of universally finalizable outcomes, where each state differs from the previous state only in one channel.
+
+\subsubsection{Opening a Virtual Channel}
+
+\begin{figure}[ht] \centering
+  \makebox[\textwidth][c]{\input{figures/opening-virtual-channel}}
+  \caption{Opening a virtual channel}
+  \label{fig:virtual-channel-opening}
+\end{figure}
+
+The procedure for opening a virtual channel is as follows:
+\begin{enumerate}
+  \item Start in the state given in equation (\ref{eq:virtual-channel-start-state}):
+  \begin{align}
+    & \adj{\holds{L}{x}{}, \holds{L'}{x}{}}\\
+    & \finalizable{L}{\alloc{A:a, I:b}}{A, I} \\
+    & \finalizable{L'}{\alloc{B: b, I: a}}{B, I}
+  \end{align}
+  \item $A$ and $B$ bring their channel $\rchi$ to the funding point:
+  \begin{align}
+    \finalizable{\rchi}{\alloc{A:a, B:b}}{A,B}
+  \end{align}
+  \item In any order, $A$, $B$ and $I$ setup the virtual channel construction:
+  \begin{align}
+    & \finalizable{J}{\alloc{A:a, B:b, I: x}}{A, B, I} \\
+    & \finalizable{G}{\guar{J}{\rchi, A, I}}{A, I} \\
+    & \finalizable{G'}{\guar{J}{\rchi, B, I}}{B, I}
+  \end{align}
+  \item In either order switch the ledger channels over to fund the guarantees:
+  \begin{align}
+    & \finalizable{L}{\alloc{G: x}}{A,I} \\
+    & \finalizable{L'}{\alloc{G': x}}{B,I}
+  \end{align}
+  \item Switch $J$ over to fund $\rchi$:
+  \begin{align}
+    \finalizable{J}{\alloc{\rchi: x, I: x}}{A, B, I}
+  \end{align}
+\end{enumerate}
+We give a visual representation of this procedure in figure \ref{fig:virtual-channel-opening}.
+
+\subsubsection{Closing a Virtual Channel}
+
+\begin{figure}[ht]\centering
+  \makebox[\textwidth][c]{\input{figures/closing-virtual-channel}}
+  \caption{Closing a virtual channel}
+  \label{fig:virtual-channel-closing}
+\end{figure}
+
+The same sequence of states, when taken in reverse, can be used to close a virtual channel:
+\begin{enumerate}
+  \item Participants $A$ and $B$ finalize $\rchi$ by signing a conclusion proof:
+  \begin{align}
+    \finalizable{\rchi}{\alloc{A:a', B:b'}}{A,B}
+  \end{align}
+  \item $A$ and $B$ sign an update to $J$ to take account of the outcome of $\rchi$. $I$ will accept this update, provided that their allocation of $x$ coins remains the same:
+  \begin{align}
+    \finalizable{J}{\alloc{A: a', B:b', I: x}}{A, B, I}
+  \end{align}
+  \item In either order switch the ledger channels to absorb the outcome of $J$, defunding the guarantor channels in the process:
+  \begin{align}
+    & \finalizable{L}{\alloc{A: a', I: b'}}{A,I} \\
+    & \finalizable{L'}{\alloc{B: b', I: a'}}{B,I}
+  \end{align}
+  \item The channels $\rchi$, $J$, $G$ and $G'$ are now all defunded, so can be discarded
+\end{enumerate}
+
+It is also possible to do top-ups and partial checkouts from a virtual channel.
+
+\subsubsection{Virtual Channel with Three Participants}
+
+So far we have primarily focussed on channels with two participants.
+The techniques here all generalise to $n$-participant channels.
+In figure \ref{fig:virtual-channel-three-participants}, we give an example construction for a virtual channel between three participants.
+The opening and closing of this channel follows the same pattern as the two participant case.
+
+\begin{figure}[ht] \centering
+  \makebox[\textwidth][c]{\input{figures/virtual-channel-three-participants}}
+  \caption{Virtual channel with three participants. Here $x = a + b + c$.}
+  \label{fig:virtual-channel-three-participants}
+\end{figure}

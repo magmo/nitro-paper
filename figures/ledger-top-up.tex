@@ -1,0 +1,64 @@
+\begin{tikzpicture}[x=4cm]
+  \node (s0) at (0, 0) {
+    \begin{tikzpicture}[y=1cm, x=1cm]
+      \node[sqadj] (adj) at (0, 0) {};
+      \node[circAB, label=right:$L$] (L) at (0, -1) {};
+      \node[circA, label=below:$A$] (A) at (-1, -2) {};
+      \node[circB, label=below:$B$] (B) at (0, -2) {};
+      \node[circAB, label=below:$\rchi$] (chi) at (1, -2) {};
+      \draw[->] (adj) edge node[midway, right] { 10 } (L);
+      \draw[->] (L) edge node[pos=0.6, left=1mm] { 7 } (A);
+      \draw[->] (L) edge node[pos=0.7, left=-0mm] { 1 } (B);
+      \draw[->] (L) edge node[pos=0.6, right=1mm] { 2 } (chi);
+    \end{tikzpicture}
+  };
+
+  \node (s1) at (1, 0) {
+    \begin{tikzpicture}[y=1cm, x=1cm]
+      \node[sqadj] (adj) at (0, 0) {};
+      \node[circAB, label=right:$L$] (L) at (0, -1) {};
+      \node[circA, label=below:$A$] (A) at (-1, -2) {};
+      \node[circAB, label=below:$\rchi$] (chi) at (0, -2) {};
+      \node[circB, label=below:$B$] (B) at (1, -2) {};
+      \draw[->] (adj) edge node[midway, right] { 10 } (L);
+      \draw[->] (L) edge node[pos=0.6, left=1mm] { 7 } (A);
+      \draw[->] (L) edge node[pos=0.7, left=-0mm] { 2 } (chi);
+      \draw[->] (L) edge node[pos=0.6, right=1mm] { 6 } (B);
+    \end{tikzpicture}
+  };
+
+  \node (s2) at (2, 0) {
+    \begin{tikzpicture}[y=1cm, x=1cm]
+      \node[sqadj] (adj) at (0, 0) {};
+      \node[circAB, label=right:$L$] (L) at (0, -1) {};
+      \node[circA, label=below:$A$] (A) at (-1, -2) {};
+      \node[circAB, label=below:$\rchi$] (chi) at (0, -2) {};
+      \node[circB, label=below:$B$] (B) at (1, -2) {};
+      \draw[->] (adj) edge node[midway, right] { 15 } (L);
+      \draw[->] (L) edge node[pos=0.6, left=1mm] { 7 } (A);
+      \draw[->] (L) edge node[pos=0.7, left=-0mm] { 2 } (chi);
+      \draw[->] (L) edge node[pos=0.6, right=1mm] { 6 } (B);
+    \end{tikzpicture}
+  };
+
+  \node (s3) at (3, 0) {
+    \begin{tikzpicture}[y=1cm, x=1cm]
+      \node[sqadj] (adj) at (0, 0) {};
+      \node[circAB, label=right:$L$] (L) at (0, -1) {};
+      \node[circA, label=below:$A$] (A) at (-1, -2) {};
+      \node[circB, label=below:$B$] (B) at (0, -2) {};
+      \node[circAB, label=below:$\rchi$] (chi) at (1, -2) {};
+      \draw[->] (adj) edge node[midway, right] { 15 } (L);
+      \draw[->] (L) edge node[pos=0.6, left=1mm] { 7 } (A);
+      \draw[->] (L) edge node[pos=0.7, left=-0mm] { 6 } (B);
+      \draw[->] (L) edge node[pos=0.6, right=1mm] { 2 } (chi);
+    \end{tikzpicture}
+  };
+
+  \begin{scope}[shorten <=1.2cm, shorten >=1.2cm, -{Latex[length=2mm]}]
+    \node (level) at (0, 0.4) {};
+    \draw (s0 |- level) to (s1 |- level);
+    \draw (s1 |- level) to (s2 |- level);
+    \draw (s2 |- level) to (s3 |- level);
+  \end{scope}
+\end{tikzpicture}

@@ -1,0 +1,23 @@
+\begin{tikzpicture}[node distance=0.3cm]
+  \node (outcome) at (0, 0) {
+    \begin{tikzpicture}[x=0.7cm]
+      \node[circAB, label=right:$L$] (L) at (0, 0) {};
+      \node[circA, label=below:$A$] (A) at (-1, -1) {};
+      \node[circB, label=below:$B$] (B) at (1, -1) {};
+      \draw[->] (L) edge node[midway, left] { $3$ } (A);
+      \draw[->] (L) edge node[midway, right] { $4$ } (B);
+    \end{tikzpicture}
+  };
+  \node[right=of outcome] (plus) {$+$};
+  \node[right=of plus] (otherstuff) {$\dots$};
+  \node[right=2cm of otherstuff] (balance) {
+    \begin{tikzpicture}
+      \node[sqadj] (adj) at (0, 0) {};
+      \node[circA, label=below:$A$] (A) at (0, -1) {};
+      \draw[->] (adj) edge node[midway, left] { $3$ } (A);
+    \end{tikzpicture}
+  };
+  \draw[shorten <=0.5cm, shorten >=0.3cm, -{Latex[length=2mm]}] (otherstuff) edge node[midway, above] { ? } (balance);
+  \node[right=of balance] (plus2) {$+$};
+  \node[right=of plus2] {$\dots$};
+\end{tikzpicture}

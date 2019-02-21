@@ -1,0 +1,74 @@
+\begin{tikzpicture}[node distance=1cm]
+  \node (s0) {
+    \begin{tikzpicture}[x=0.7cm]
+      \node[circAB, label=right:$L$] (L) at (0, 0) {};
+      \node[circA, label=below:$A$] (A) at (-1, -1) {};
+      \node[circB, label=below:$B$] (B) at (1, -1) {};
+      \draw[->] (L) edge node[midway, left] { $3$ } (A);
+      \draw[->] (L) edge node[midway, right] { $4$ } (B);
+    \end{tikzpicture}
+  };
+  \node[right=of s0.south east, anchor=south west] (s1) {
+    \begin{tikzpicture}[y=1cm, x=0.7cm]
+      \node[sqadj] (a0) at (1, 0) {};
+      \node[circAB, label=right:$L$] (p0) at (1, -1) {};
+      \node[circA, label=below:$A$] (p1) at (0, -2) {};
+      \node[circB, label=below:$B$] (p2) at (2, -2) {};
+
+      \draw[->] (a0) edge node[midway, left] { $7$ } (p0);
+      \draw[->] (p0) edge node[midway, left] { $3$ } (p1);
+      \draw[->] (p0) edge node[midway, right] { $4$ } (p2);
+
+    \end{tikzpicture}
+  };
+
+  \node[right=of s1.north east, anchor = north west] (s2) {
+    \begin{tikzpicture}[y=1cm, x=2cm]
+      \node[sqadj] (a0) at (1, 0) {};
+      \node[circAB, label=right:$L$] (p0) at (1, -1) {};
+
+      \draw[->] (a0) edge node[midway, left] { $7$ } (p0);
+
+    \end{tikzpicture}
+  };
+
+  \node[right=of s2.north east, anchor=north west] (s3) {
+    \begin{tikzpicture}[y=1cm, x=2cm]
+      \node[sqadj] (a0) at (1, 0) {};
+      \node[circAB, label=right:$L$] (p0) at (1, -1) {};
+      \node[circA, label=below:$A$] (p1) at (0.58, -2) {};
+      \node[circB, label=below:$B$] (p2) at (1.42, -2) {};
+
+      \draw[->] (a0) edge node[midway, left] { $7$ } (p0);
+      \draw[->] (p0) edge node[midway, left] { $6$ } (p1);
+      \draw[->] (p0) edge node[midway, right] { $1$ } (p2);
+
+    \end{tikzpicture}
+  };
+
+  \node[right=of s3.north east, anchor=north west] (s4) {
+    \begin{tikzpicture}[y=1cm, x=1cm]
+      \node[sqadj] (a0) at (1, 0) {};
+      \node[circA, label=below:$A$] (p0) at (1, -1) {};
+      \node[sqadj] (a1) at (2, 0) {};
+      \node[circB, label=below:$B$] (p1) at (2, -1) {};
+
+      \draw[->] (a0) edge node[midway, left] { $6$ } (p0);
+      \draw[->] (a1) edge node[midway, left] { $1$ } (p1);
+
+    \end{tikzpicture}
+  };
+  \node (mid) at ([yshift=-3mm] s0.north) {};
+  \begin{scope}[-{Latex[length=2mm]}]
+    \draw (s0.east |- mid) to (s1.west |- mid);
+    \draw (s1.east |- mid) to (s2.west |- mid);
+    \draw (s2.east |- mid) to (s3.west |- mid);
+    \draw (s3.east |- mid) to (s4.west |- mid);
+  \end{scope}
+
+  \node[below=-1mm of s0] (below) { (a) };
+  \node at (s1 |- below) { (b) };
+  \node at (s2 |- below) { (c) };
+  \node at (s3 |- below) { (d) };
+  \node at (s4 |- below) { (e) };
+\end{tikzpicture}
