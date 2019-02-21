@@ -1,14 +1,14 @@
 \section{Proofs of Construction}\label{sec:reasoning}
 
-- approach to proving the correctness of our state channel network protocol
+In this section, we outline our approach to proving the correctness of our state channel network constructions.
 
-- the nature of state channels tends to make the logic complex
-- value is moved between participants by exchanging statements about the distribution of assets held on-chain
-- inevitably you end up reasoning about the statements you hold and their interpretation by the chain, and the possible actions of the other participants in the channel
+The very nature of state channels tends to make the logic complex.
+In a state channel, value is moved between participants by exchanging commitments about the distribution of assets held on-chain.
+Inevitably you end up reasoning about the statements you hold and their interpretation by the chain, which necessarily also includes reasoning about the possible actions of the other parties both internal and external to the channel.
 
-- inherent danger, funds are locked on-chain
-- participants act maliciously and stop cooperating at any point in the protocol
-- safe at all times
+On top of this, there is an inherent danger in entering into a state channel relationship, as it requires funds to be locked on-chain.
+In order to be safe, protocols need to be robust against other parties acting maliciously and/or ceasing to cooperate at any point in the protocol.
+We need to show that at any point, any participant can extract the value currently owed to them in spite of any actions another party might take.
 
 \subsection{Channel Funding and Value}
 
@@ -21,6 +21,7 @@ Understanding this is key to analysing state channel networks.
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/meaning-of-funding}}
   \caption{
+    Understanding whether a channel is funded amounts to understanding how much value can be extracted from the system when that channel reaches an outcome.
   }\label{fig:meaning-of-funding}
 \end{figure}
 
@@ -31,6 +32,8 @@ If this happens, $A$ will receive all $x$ coins allocated to them in $\omega$.
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/direct-funding}}
   \caption{
+    Direct funding.
+    One case where we know we can extract the full value allocated to us in a channel outcome, is when the channel has a sufficient balance in the adjudicator to cover the full allocation.
   }\label{fig:direct-funding}
 \end{figure}
 
@@ -44,6 +47,9 @@ Note that we did not actually need to perform the redistribution on-chain to rea
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/indirect-funding}}
   \caption{
+    Indirect funding.
+    If we possess another outcome, that allocates funds to $L$, we know we can convert this to a situation where $L$ is directly funded.
+    We can therefore consider $L$ to be indirectly funded.
   }\label{fig:indirect-funding}
 \end{figure}
 
@@ -73,6 +79,8 @@ Generally we assume that all other participants are controlled by a single adver
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/system-state-direct-funding}}
   \caption{
+    In practice, we deal with a network state, $\Sigma$, and not in definite outcomes.
+    To understand value, we also need to be able to reason about which outcome(s) could result from the current network state, as well as the value those outcomes then deliver.
   }\label{fig:system-state-direct-funding}
 \end{figure}
 
@@ -137,7 +145,7 @@ In general, we cannot assume that the outcome will be known;
 we might have to take multiple possible outcomes through to the redistribution step.
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/multiple-outcomes-possible}}
-  \caption{Cool, huh?}
+  \caption{When calculating value, we will often need to consider all outcomes that are possible from a given network state and show that they all allow us to extract the same value from the network.}
 \end{figure}
 The finalization step depends heavily on the rules of the state channel framework.
 We will cover finalization in more detail in section \ref{sec:finalizable-outcomes}.
@@ -174,7 +182,10 @@ None of the protocols we present make use of the final situation, where no parti
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/force-move-state-progression}}
-  \caption{Cool, huh?}
+  \caption{
+    Every ForceMove channel has at least two points when the outcome is universally finalizable: one at the funding point and one when the channel has concluded.
+    This is important when reasoning about creating state channel network constructions.
+  }
 \end{figure}
 In the special case where the outcome of a channel is finalizable by all its participants, we say that the outcome is \textbf{universally finalizable}.
 For a ForceMove channel, this happens at the following points in its lifecycle:

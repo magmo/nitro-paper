@@ -59,7 +59,13 @@ We refer to these naive channels as \textbf{direct channels}, as they are suppor
   \end{scope}
 \end{tikzpicture}
 
-- graph of direct channels with multiple lines between nodes
+- ledger channels 
+- one deposit between a pair of participants
+- can run multiple applications
+
+- virtual channels
+- for example in a hub and spoke model
+- participants would connect with one 
 
 \begin{tikzpicture}
   \begin{scope}[every node/.style={circle, draw}]
@@ -91,3 +97,14 @@ We refer to these naive channels as \textbf{direct channels}, as they are suppor
 - graph of virtual channels with hub + spoke
 
 - image of virtual channels, talking about the agreements
+
+
+\subsection{Our contribution}
+
+- detailed description of how to build ledger + virtual channels
+- the basis for reasoning about the correctness of construction of these channels
+
+- unique:
+  - no time limit - instead allowing participants to offload channels
+  - n-parties
+  - arbitrary applications
