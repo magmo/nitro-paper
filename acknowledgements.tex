@@ -1,7 +1,16 @@
-\section{Acknowledgements}
+\section{Conclusion}
 
-- Andrew Stewart
-- George Knee
-- James Prestwich
-- Chris Buckland
-- Magmo team
+In this paper, we have presented a protocol to allow the construction of state channel networks.
+The channels in these networks operate independently from one another and follow the same rules of operation regardless of whether they are funded directly or via other channels.
+The examples we have given make it clear how to open and close channels off-chain, while also performing many operations that are important in the practical operation of these channels, such as top ups and partial withdrawals.
+
+By splitting the extraction of value from a state channel into finalization and redistribution, we have provided an approach for reasoning about the correctness of state channels that can be applied beyond the the constructions presented in this paper.
+For both of the protocols we present, we have provided algorithms to calculate the value obtainable, allowing for the creation of software to automate these calculations.
+
+
+
+\textbf{Acknowledgments}
+
+I would like to thank James Prestwich, Andrew Stewart and Chris Buckland for multiple discusssions which helped shape the work in this paper. 
+George Knee, Kristina Hostakova and Lisa Eckley all provided important feedback on the draft, leading to multiple improvements to the finished paper.
+This work is funded through an Ethereum Foundation Grant.
