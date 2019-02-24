@@ -102,6 +102,7 @@ For example, consider the following setup where a ledger channel, $L$, allocates
   \makebox[\textwidth][c]{\input{figures/ledger-offload}}
   \caption{
     Offloading a ledger channel.
+    The transfer operation is used to move funds out of the ledger channel $L$ into channel $\rchi$, so that $\rchi$ becomes directly funded.
   }\label{fig:ledger-offload}
 \end{figure}
 In this example, $\rchi$ is funded with 6 coins by $L$ for both $A$ and $B$.
@@ -124,6 +125,7 @@ We have chosen to present examples that demonstrate the key principles instead o
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/opening-sub-channel}}
   \caption{
+    Opening a sub-channel.
   }\label{fig:opening-sub-channel}
 \end{figure}
 
@@ -149,6 +151,7 @@ Here we show how to open a sub-channel.
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/closing-sub-channel}}
   \caption{
+    Closing a sub-channel.
   }\label{fig:closing-sub-channel}
 \end{figure}
 
@@ -175,6 +178,7 @@ This allows the sub-channel to be defunded and closed off-chain.
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/ledger-top-up}}
   \caption{
+    Topping up a ledger channel.
   }\label{fig:ledger-top-up}
 \end{figure}
 
@@ -207,7 +211,7 @@ The participants want to do this without disturbing any sub-channels supported b
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/partial-withdrawal}}
-  \caption{Cool, huh?}
+  \caption{Partial withdrawal from a ledger channel.}
 \end{figure}
 
 \begin{enumerate}

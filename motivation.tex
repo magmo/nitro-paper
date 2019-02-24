@@ -4,107 +4,58 @@ State channels are an important technique for scaling blockchains.
 In a state channel, a fixed set of participants execute a series of state transitions off-chain, in order to determine how a set of assets should be distributed between them.
 By allowing participants to execute these transitions off-chain, the state channel removes load from the blockchain, allowing it to support the same level of activity with fewer transactions.
 
-Unlike many other scaling techniques, state channels provide a way to run arbitrary state update protocols, instead of just providing a method for realizing transfers off-chain.
+The allowed state transitions are specified by a set of update rules, which can be thought of as defining an application that runs in the state channel.
+When running an application in this collaborative manner, participants need guarantees that the application will not stall indefinitely and that the transition rules will be respected.
+State channels provide these guarantees by providing a challenge mechanism, whereby participants can appeal to the blockchain to enforce these conditions.
+By harnessing the blockchain, state channels become a trustless execution environment for running multi-party applications.
 
-Beyond scaling, state channels bring instant finality to blockchain transactions:
-value can be considered to be transferred at the moment when a state channel update is received.
-The holder of a fully signed state does not need to wait for the transaction to be mined, safe in the knowledge
-that they have the right to claim the assets on-chain at a future point of time of their choosing.
 
-\subsection{Ledger Channels and Virtual Channels}
+The final state of the channel is used to determine how a set of assets should be distributed.
+In order to ensure that these assets can only be distributed according to the outcome of the channel, they must be held in escrow for the duration of the channel.
+These assets are often referred to as the state deposit for the channel.
+By ensuring that the state deposit is fully governed by the channel's outcome, state channels also provide a form of instant finality; 
+once the outcome of the channel is known the participants can consider the value to have been distributed knowing that they now have the capability to claim the assets on-chain at a future point of time of their choosing.
 
-In their naive form, a group of participants need a new state channel for each application they run and each state channel needs to have a corresponding \textit{state deposit} - a set of assets held in escrow on-chain, to be distributed according to the outcome of the channel.
-Each time a state channel is opened, at least one party needs to perform an on-chain transaction to transfer assets into the state deposit, and each time it is closed at least one participant must perform an on-chain transaction to claim their share.
+In the simplest case, a separate state desposit is required for each new channel.
+For each application a set of participants wish to run, at least one party needs to perform an on-chain transaction to transfer assets into the state deposit, and each time it is closed at least one participant must perform an on-chain transaction to claim their share.
 This limits the effectiveness of state channels as a scaling solution, making it only suitable for the case where a large number of transactions are executed between a single group of participants.
 We refer to these naive channels as \textbf{direct channels}, as they are supported directly by funds held on the blockchain.
 
-\begin{tikzpicture}
-  \begin{scope}[every node/.style={circle, draw}]
-    \node (a) at (0,0) {} ;
-    \node (b) at (-1,2) {} ;
-    \node (c) at (1,-1) {} ;
-    \node (d) at (2,1) {} ;
-    \node (e) at (1,2) {} ;
-    \node (f) at (-2,-1) {} ;
-    \node (g) at (3,0) {} ;
-    \node (h) at (4,-1) {} ;
-    \node (i) at (4.5,0.5) {} ;
-  \end{scope}
-
-  \begin{scope}[-]
-    \draw (a) to (b);
-    \draw (a) to (c);
-    \draw (a) to (f);
-    \draw (a) to (d);
-    \draw (a) to (g);
-    \draw (b) to (f);
-    \draw (c) to (h);
-    \draw (c) to (g);
-    \draw (d) to (c);
-    \draw (d) to (b);
-    \draw (g) to (h);
-    \draw (g) to (i);
-    \draw (g) to (d);
-    \draw (e) to (d);
-    \draw (e) to (i);
-    % \draw (e) to (a);
-    \draw (f) to[bend left=10] (b);
-    \draw (f) to[bend left=10] (a);
-    \draw (f) to[bend right=10] (a);
-    \draw (e) to[bend left=10] (i);
-    \draw (g) to[bend right=10] (i);
-    \draw (c) to[bend right=10] (d);
-    \draw (c) to[bend right=10] (h);
-    \draw (c) to[bend left=10] (h);
-  \end{scope}
-\end{tikzpicture}
-
-- ledger channels 
-- one deposit between a pair of participants
-- can run multiple applications
-
-- virtual channels
-- for example in a hub and spoke model
-- participants would connect with one 
-
-\begin{tikzpicture}
-  \begin{scope}[every node/.style={circle, draw}]
-    \node (a) at (0,0) {} ;
-    \node (b) at (-1,2) {} ;
-    \node (c) at (1,-1) {} ;
-    \node (d) at (2,1) {} ;
-    \node (e) at (1,2) {} ;
-    \node (f) at (-2,-1) {} ;
-    \node (g) at (3,0) {} ;
-    \node (h) at (4,-1) {} ;
-    \node (i) at (4.5,0.5) {} ;
-  \end{scope}
-
-  \begin{scope}[-]
-    \draw (a) to (b);
-    \draw (a) to (c);
-    \draw (a) to (f);
-    \draw (a) to (e);
-    \draw (a) to (g);
-    \draw (g) to (h);
-    \draw (g) to (i);
-    \draw (g) to (d);
-  \end{scope}
-\end{tikzpicture}
-
-- graph of ledger channels with single lines between nodes
-
-- graph of virtual channels with hub + spoke
-
-- image of virtual channels, talking about the agreements
-
+State channel networks move beyond this limitation, using new types of channels to break the direct link between state deposits and channels.
+Ledger channels allow one state deposit between a fixed set of participants to support multiple simultaneous applications between that set of participants.
+Virtual channels take this one step further by allowing state deposits with a shared intermediary to support applications between a set of participants who have no state deposit between themselves.
 
 \subsection{Our contribution}
 
-- detailed description of how to build ledger + virtual channels
-- the basis for reasoning about the correctness of construction of these channels
+In this paper we present Nitro Protocol, a protocol for constructing state channel networks.
+We give a detailed description of how to construct ledger channels and virtual channels, including how to safely open and close these channels entirely off-chain.
+Taken with our earlier work on ForceMove \cite{force-move}, this paper gives a complete specification for building a state channel network capable of running arbitrary state channel applications.
 
-- unique:
-  - no time limit - instead allowing participants to offload channels
-  - n-parties
-  - arbitrary applications
+Our work is unique in that the channels in our networks are both homogeneous and independent.
+By homogeneous, we mean that channels function exactly the same whether they are direct channels or whether they are funded via a ledger channel or virtual channel;
+in particular, there are no time limits or other restrictions placed on the applications that run in virtual channels.
+Channels can even transition from virtual channels to direct channels while an application is running, without affecting the application's execution in any way.
+By independent, we mean that updates to different channels are unrelated.
+We have no way of applying coupled updates across multiple channels atomically, nor do we have need to do this.
+The independence of channel updates makes it far easier to reason about the incentives involved in designing state channel applications, as with independence you can reason about whether updates will be accepted on a per channel basis.
+
+All the work in this paper is generalizable to $n$-party channels and, by way of example, we include the first explicit construction of a virtual channel between 3 parties with a shared intermediary.
+Other examples include utility protocols for tasks such as top-ups and partial withdrawals from ledger channels.
+
+We also develop a set of tools for reasoning about the correctness of the protocols we present.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

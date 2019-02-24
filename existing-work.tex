@@ -2,20 +2,20 @@
 
 There are many examples of state channels and off-chain scaling projects. In this section we limit ourselves to a review of published work on the subject of off-chain payment channel and state channel networks.
 
-The Lightning network, which went live in March 2018, provides off-chain payments for the Bitcoin blockchain.
+The Lightning network \cite{lightning}, which went live in March 2018, provides off-chain payments for the Bitcoin blockchain.
 The payments make use of hashed timelocked contracts (HTLCs), which can be thought of as payments that are conditional on a hash pre-image being revealed before a given point in time.
 This construction allows payments to be routed through an arbitrary number of intermediaries but is strictly limited to payments.
-The Raiden network provides the same functionality for the Ethereum blockchain and launched on the mainnet in December 2018.
+The Raiden network \cite{raiden} provides the same functionality for the Ethereum blockchain and launched on the mainnet in December 2018.
 
-Celer Network proposes a state channel construction that extends HTLCs to allow payments that are conditional on the outcome of an arbitrary calculation.
+Celer Network \cite{celer} proposes a state channel construction that extends HTLCs to allow payments that are conditional on the outcome of an arbitrary calculation.
 The outcome of the calculation can specify the amount of funds that move, as well as whether the payments should go through at all.
 The paper gives a high-level justification of how the construction yields state channels capable of running arbitrary state machine transitions.
 
-Perun proposed a different flavour of state channel construction, viewing state channels as a direct interaction between two parties instead of a series of conditional payments.
+Perun \cite{perun1, perun2} proposed a different flavour of state channel construction, viewing state channels as a direct interaction between two parties instead of a series of conditional payments.
 This makes it very clear that state channel updates themselves need only be shared between the participants in the channel, and do not need to be routed through a network.
 They precisely specify a virtual channel construction, allowing two-party channels to be supported through intermediaries, and prove its correctness using the UC framework.
 The proof relies on the fact that their virtual channels have a pre-determined validity time, after which the channel must be settled.
 
-Counterfactual gives a state channel construction using the technique of counterfactual instantiation, a form of logic that reasons about constructions that could be deployed to the chain if required.
+Counterfactual \cite{counterfactual} gives a state channel construction using the technique of counterfactual instantiation, a form of logic that reasons about constructions that could be deployed to the chain if required.
 The channels they describe are $n$-party and they give a high-level overview of how to construct `meta-channels' that allow channels to be supported through intermediaries.
 While the paper itself does not specify the details of how to construct meta-channels, many of these details can be found in their publicly released source code.

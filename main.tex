@@ -6,47 +6,34 @@
 \usetikzlibrary{patterns, decorations.pathreplacing}
 \usepackage[format=plain, labelfont={bf,it}, textfont=it]{caption}
 
-\usepackage[all, color=black]{background}
-\SetBgContents{Nitro Protocol - research@magmo.com}% Set contents
-\SetBgPosition{3cm,0cm}% Select location
-\SetBgOpacity{0.5}% Select opacity
-\SetBgAngle{0}% Select rotation of logo
-\SetBgScale{1.0}% Select scale factor of logo
-
-
-
-% \usepackage{draftwatermark}
-% \SetWatermarkTex2t{DRAFT}
-% \SetWatermarkScale{5}
-
 \title{Nitro Protocol}
 \author{Tom Close}
 
 \begin{document}
 
-% \maketitle
-% \begin{abstract}
-%   State channels are an important technique for scaling blockchains, allowing a fixed set of participants to trustlessly execute a series of state transitions off-chain, in order to determine how a set of assets should be distributed between them.
-%   In this paper we present constructions that allow state channels to fund one another, significantly reducing the number of on-chain deposits required.
-%   Unlike in previous constructions, channels funded by parent channels operate identically to channels funded on-chain, making it easier to reason about the applications that run within them.
-%   We develop the logic to prove the correctness of our constructions.
-% \end{abstract}
+\maketitle
+\begin{abstract}
+  State channels are an important technique for scaling blockchains, allowing a fixed set of participants to trustlessly execute a series of state transitions off-chain, in order to determine how a set of assets should be distributed between them.
 
-% \input{motivation}
+   TODO
+\end{abstract}
 
-% \input{existing-work}
+\input{motivation}
 
-% \setcounter{section}{5}
+\input{existing-work}
 
-% \input{modelling-state-channel-networks}
+
+\input{modelling-state-channel-networks}
 \input{reasoning}
 
 
-% \input{turbo-protocol.tex}
-% \input{nitro-protocol.tex}
-% \input{acknowledgements.tex}
+\input{turbo-protocol.tex}
+\input{nitro-protocol.tex}
+\input{acknowledgements.tex}
 
-\newpage
+
+\bibliography{main}
+\bibliographystyle{ieeetr}
 
 
 \end{document}
