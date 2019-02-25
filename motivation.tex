@@ -13,13 +13,13 @@ By harnessing the blockchain, state channels become a trustless execution enviro
 The final state of the channel is used to determine how a set of assets should be distributed.
 In order to ensure that these assets can only be distributed according to the outcome of the channel, they must be held in escrow for the duration of the channel.
 These assets are often referred to as the state deposit for the channel.
-By ensuring that the state deposit is fully governed by the channel's outcome, state channels also provide a form of instant finality; 
+By ensuring that the \textit{state deposit} is fully governed by the channel's outcome, state channels also provide a form of instant finality; 
 once the outcome of the channel is known the participants can consider the value to have been distributed knowing that they now have the capability to claim the assets on-chain at a future point of time of their choosing.
 
 In the simplest case, a separate state desposit is required for each new channel.
 For each application a set of participants wish to run, at least one party needs to perform an on-chain transaction to transfer assets into the state deposit, and each time it is closed at least one participant must perform an on-chain transaction to claim their share.
 This limits the effectiveness of state channels as a scaling solution, making it only suitable for the case where a large number of transactions are executed between a single group of participants.
-We refer to these naive channels as \textbf{direct channels}, as they are supported directly by funds held on the blockchain.
+We refer to these naive channels as \textit{direct channels}, as they are supported directly by funds held on the blockchain.
 
 State channel networks move beyond this limitation, using new types of channels to break the direct link between state deposits and channels.
 Ledger channels allow one state deposit between a fixed set of participants to support multiple simultaneous applications between that set of participants.
@@ -36,7 +36,7 @@ By homogeneous, we mean that channels function exactly the same whether they are
 in particular, there are no time limits or other restrictions placed on the applications that run in virtual channels.
 Channels can even transition from virtual channels to direct channels while an application is running, without affecting the application's execution in any way.
 By independent, we mean that updates to different channels are unrelated.
-We have no way of applying coupled updates across multiple channels atomically, nor do we have need to do this.
+We have no way of applying atomic updates across multiple channels, nor do we have need to do this.
 The independence of channel updates makes it far easier to reason about the incentives involved in designing state channel applications, as with independence you can reason about whether updates will be accepted on a per channel basis.
 
 All the work in this paper is generalizable to $n$-party channels and, by way of example, we include the first explicit construction of a virtual channel between 3 parties with a shared intermediary.

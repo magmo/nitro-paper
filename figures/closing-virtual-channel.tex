@@ -54,12 +54,11 @@
       \node[sqadj] (adj1) at (2,0) {};
       \node[circBI] (bi) at (-1,-1) {};
       \node[circAI] (ai) at (2,-1) {};
-      \node[circB] (b) at (-2,-2) {};
+      \node[circB] (b) at (-1.6,-2) {};
       \node[circI] (ibi) at (-0.6,-2) {};
-      \pic (G) at (1, -2.5) {guarantee};
-      \node[circEmpty] (e) at (1,-4) {};
-      \node[circA] (a) at (0,-4) {};
-      \node[circI] (i) at (2, -4) {};
+      \pic (G) at (1, -2.5) {guarantee2other};
+      \node[circA] (a) at (0.4,-4) {};
+      \node[circI] (i) at (1.6, -4) {};
 
       \node[circle, draw=none, label=below:\strut] at (0, -4) {}; %ghost node for alignment%
 
@@ -69,7 +68,6 @@
         \draw (bi) edge node[midway, right] {2} (ibi);
         \draw (adj1) to (ai);
         \draw (ai) to (G-G1);
-        \draw[dotted] (G-J) to (e);
         \draw (G-J) edge node[midway, left] { 2 } (a);
         \draw (G-J) edge node[midway, right] { 10 } (i);
       \end{scope}

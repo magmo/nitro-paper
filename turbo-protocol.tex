@@ -1,7 +1,7 @@
 \section{Turbo Protocol}
 
 Turbo protocol has one type of outcome (the allocation) and one on-chain operation (the transfer).
-You will already be somewhat familiar with these, as they formed the basis of a lot of the examples in sections \ref{sec:modelling} and \ref{sec:reasoning}.
+You will already be somewhat familiar with these, as they formed the basis of the examples in sections \ref{sec:modelling} and \ref{sec:reasoning}.
 In this section we will make these more precise, present the related result on distribution and give some example constructions to cover common tasks such as opening and closing sub-channels.
 
 \subsection{Allocations and Transfer}
@@ -36,32 +36,27 @@ As we mentioned in section \ref{sec:unbeatable-strategy}, reasoning about redist
 In this section we will justify this by presenting an algorithm for calculating the funding for each address.
 
 We will restrict ourselves to looking at strategies and counter-strategies involving transfer operations only, ignoring deposits and withdrawals.
-We claim that deposits and withdrawals cannot be required as part of a strategy and cannot help as part of a counter-strategy.
+Deposits and withdrawals cannot be required as part of a strategy and cannot help as part of a counter-strategy.
 The intuition here is that a deposit into the system cannot reduce the value of any address and cannot increase the value of any address by more than the value of the deposit.
 Withdrawals can only occur from participant addresses and are the only way funds can leave these addresses, so cannot affect values elsewhere.
 
-We will consider the network of outcomes to be a directed acylcic graph (DAG), where the nodes are channels and the edges represent allocations from one channel to the other.
+We will only consider the case where the network of outcomes forms a directed acyclic graph (DAG), where the nodes are channels and the edges represent allocations from one channel to the other.
 While it is technically possible to create outcomes with cycles, it is also possible for any participant in the channel to prevent this from happening.
 We therefore consider non-DAG outcome networks to be outside the scope of the protocol.
 
 We commence our value calculation by taking a \textit{topological ordering} of the nodes of the graph.
-A topological ordering is an ordering the nodes such that, if $N_1 \mapsto N_2$ is an edge, then $N_1 < N_2$.
+A topological ordering is an ordering of nodes such that, if $N_1 \mapsto N_2$ is an edge, then $N_1 < N_2$.
 It is a known result that all DAGs have at least one topological ordering.
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/turbo-redistribution}}
   \caption{
     Diagram (a) shows the outcome network that is the input to the value calculation.
-    In (b), we have reformulated (a) as a DAG with uniquely labelled nodes by merging the two $A$ and $B$ modes.
+    In (b), we have reformulated (a) as a DAG with uniquely labelled nodes by merging the two $A$ and $B$ nodes.
     We have also labelled the nodes with a topological ordering.
     In (c), we have completed the algorithm giving each node its funding/value.
   }\label{fig:turbo-redistribution}
 \end{figure}
-
-Once we have ordered the nodes, we work through the nodes in order.
-For a node, $n$, we first look at the amount of direct funding allocated to $n$'s address in the adjudicator.
-We then look at each of $n$'s parents and calculate the amount that that the parent can afford for $n$, according to the value of the parent (which will already have been calculated, due to the topological ordering).
-Finally we set the node's value to be the sum of the direct funding and the amounts afforded by each parent.
 
 \textbf{Turbo Value Algorithm}
 \begin{enumerate}
@@ -81,11 +76,11 @@ Finally we set the node's value to be the sum of the direct funding and the amou
 \end{enumerate}
 
 It is not hard to see that it is impossible to find a strategy that gives any node a value higher than allocated by this algorithm.
-It also is not hard to construct a strategy for a node to obtain the value allocated by the algorithm, if necessary by actually implementing the algorithm up until that node.
+It is also not hard to construct a strategy for a node to obtain the value allocated by the algorithm, if necessary by actually implementing the algorithm up until that node.
 Given that we are only considering counter-strategies with transfers, and we have done every possible transfer on these channels, we know that there are no transfers that can interrupt this algorithm.
 It is also easy to see that calling transfers out of order does not affect the ultimate result.
 
-In Turbo, it is therefore easy to calculate the value of each node and find unbeatable strategies for extracting the value of that address .
+In Turbo, it is therefore easy to calculate the value of each node and find unbeatable strategies for extracting the value of that address.
 
 \subsection{Ledger Channels}
 
@@ -111,7 +106,7 @@ To do this we first note that the outcome $\alloc{A: 3, B: 1, \rchi: 6}$ is fina
 Once it is on-chain, the transfer operation $\transfer{L}{\rchi}{6}$ is all that is required to make $\rchi$ directly funded.
 From the Turbo redistribution result, we know that this redistribution strategy is unbeatable.
 
-Note that offloading $\rchi$ like this should be seen as an action of last-resort, as after the off-load all sub-channels supported by $L$ to be closed on-chain.
+Note that offloading $\rchi$ like this should be seen as an action of last-resort, as after the off-load all sub-channels supported by $L$ must be closed on-chain.
 It is in the interest of both participants to open and close sub-channels collaboratively.
 We next give some examples to show how this can be accomplished safely.
 
@@ -162,7 +157,7 @@ This allows the sub-channel to be defunded and closed off-chain.
   \begin{align}
     \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{A: a, B: b, \rchi: c}}{A, B}
   \end{align}
-  \item The next step is for $A$ and $B$ to concluded channel $\rchi$, leaving the channel in the conclude state. Assuming $a' + b' = c$:
+  \item The next step is for $A$ and $B$ to conclude channel $\rchi$, leaving the channel in the conclude state. Assuming $a' + b' = c$:
   \begin{align}
     \finalizable{\rchi}{\alloc{A:a', B:b'}}{A,B}
   \end{align}
@@ -185,7 +180,7 @@ This allows the sub-channel to be defunded and closed off-chain.
 Here we show how a participant can increase their funds held in a ledger channel by depositing into it.
 They can do this without disturbing any sub-channels supported by the ledger channel.
 \begin{enumerate}
-  \item In this process $A$ wants to deposit an additional $a'$ coins into the the ledger channel $L$. We start in the state where $L$ contains balances for $A$ and $B$, as well as funding a sub-channel, $\rchi$. With $x = a + b + c$:
+  \item In this process $A$ wants to deposit an additional $a'$ coins into the ledger channel $L$. We start in the state where $L$ contains balances for $A$ and $B$, as well as funding a sub-channel, $\rchi$. With $x = a + b + c$:
   \begin{align}
     \adj{\holds{L}{x}{}}, \; \finalizable{L}{\alloc{A: a, B: b, \rchi: c}}{A, B}
   \end{align}

@@ -4,11 +4,11 @@ In this section, we outline our approach to proving the correctness of our state
 
 The very nature of state channels tends to make the logic complex.
 In a state channel, value is moved between participants by exchanging commitments about the distribution of assets held on-chain.
-Inevitably you end up reasoning about the statements you hold and their interpretation by the chain, which necessarily also includes reasoning about the possible actions of the other parties both internal and external to the channel.
+Inevitably you end up reasoning about the commitments you hold and their interpretation by the chain, which necessarily also includes reasoning about the possible actions of the other parties both internal and external to the channel.
 
 On top of this, there is an inherent danger in entering into a state channel relationship, as it requires funds to be locked on-chain.
 In order to be safe, protocols need to be robust against other parties acting maliciously and/or ceasing to cooperate at any point in the protocol.
-We need to show that at any point, any participant can extract the value currently owed to them in spite of any actions another party might take.
+We need to show that at any point, any participant can extract the value currently owed to them in spite of any actions taken by other parties.
 
 \subsection{Channel Funding and Value}
 
@@ -16,7 +16,6 @@ We will start by considering the interpretation of the outcome of a state channe
 Suppose $A$ is a participant in a state channel, $L$, that reaches an (allocation) outcome, $\omega$, that allocates $x$ coins to $A$.
 What does that mean for $A$?
 In particular, how much more can $A$ withdraw from the system due to that outcome?
-Understanding this is key to analysing state channel networks.
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/meaning-of-funding}}
@@ -41,7 +40,7 @@ This is a good start, but the whole point of state channel \textit{networks} is 
 Suppose instead that $L$ is not directly funded but there is another channel, $L'$, that is.
 Further suppose that $L'$ has reached an outcome where all its coins are allocated to $L$.
 Using this outcome, we know we can redistribute the coins in the adjudicator to $L$, recreating the situation above, where $L$ was directly funded.
-Therefore, in this situation we also know that $A$ will receive the $x$ coins from the outcome of $L$, and that $L$ can be considered to be funded, in some sense.
+Therefore, in this situation we also know that $A$ will receive the $x$ coins from the outcome of $L$, and that $L$ can be considered to be \textbf{indirectly funded}.
 Note that we did not actually need to perform the redistribution on-chain to reach this conclusion - we just needed to be able to reason that the outcome enabled us to.
 
 \begin{figure}[h]\centering
@@ -55,7 +54,7 @@ Note that we did not actually need to perform the redistribution on-chain to rea
 
 In the previous paragraph, we looked at the case where $L'$ had already reached an outcome.
 In general, this will not be the case;
-indeed, the power of state channels comes from the ability to move between many potential outcomes as the interaction progresses.
+the power of state channels comes from the ability to move between many potential outcomes as the interaction progresses.
 In order to say whether a channel is funded, we will need to start not with an outcome but with a \textbf{network state}.
 The network state, $\Sigma$, for a participant, $A$, consists of:
 \begin{enumerate}
@@ -66,15 +65,15 @@ The network state, $\Sigma$, for a participant, $A$, consists of:
   \end{enumerate}
   \item For each channel $A$ is a partipicant of:
   \begin{enumerate}
-    \item Signed statements that $A$ has received
-    \item Signed statements that $A$ has sent
+    \item Signed commitments that $A$ has received
+    \item Signed commitments that $A$ has sent
     \item Private information held by $A$
   \end{enumerate}
 \end{enumerate}
 The private information always includes $A$'s signing key for the channel and can also include information specific to the application running in the channel;
-for example, for a game of battleships the private information would include the positions of $A$'s ships.
-Note that $A$'s network state does not include a detailed model of which statements are held by specific other participants - just what $A$ has sent and received.
-Generally we assume that all other participants are controlled by a single adversary, pooling their resources and statements. 
+for example, in a game of battleships the private information would include the positions of $A$'s ships.
+Note that $A$'s network state does not include a detailed model of which commitments are held by specific other participants - just what $A$ has sent and received.
+Generally we assume that all other participants are controlled by a single adversary, pooling their resources and commitments. 
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/system-state-direct-funding}}
@@ -86,37 +85,35 @@ Generally we assume that all other participants are controlled by a single adver
 
 We can now proceed with some definitions of funding and value:
 
-A channel $\rchi$ is \textbf{funded} with $x$ coins for participant $A$ with network state $\Sigma$, if $A$ has an unbeatable strategy for obtaining a state where $\rchi$ is directly funded with $x$ coins, starting from $\Sigma$.
+A channel $\rchi$ is \textbf{funded} for participant $A$ with $x$ coins, if $A$ has an unbeatable strategy for obtaining a state where $\rchi$ is directly funded with $x$ coins.
 
-The $\textbf{value}$ for participant $A$ of a network state $\Sigma$ is the maximum $x$ for which $A$ has an unbeatable strategy for obtaining a state where the balance of $A$'s address in the adjudicator is $x$ coins, starting from $\Sigma$
+The $\textbf{value}$ for participant $A$ of a network state $\Sigma$ is the maximum $x$ for which $A$ has an unbeatable strategy for obtaining a state where the balance of $A$'s address in the adjudicator is $x$ coins.
 
-The concept of an unbeatable strategy can involve a full range of actions allowed within the protocol including signing statements, refusing to sign statements, launching/responding to on-chain challenges and calling on-chain operations to redistribute funds.
+The concept of an unbeatable strategy can involve a full range of actions allowed within the protocol including signing commitments, refusing to sign commitments, launching/responding to on-chain challenges and calling on-chain operations to redistribute funds.
 We will cover this in more detail in section \ref{sec:unbeatable-strategy}.
 
-\subsection{Constructing}
+\subsection{Network Constructions}
 
 Now that we have defined what we mean by a channel being funded and a state having value, we can start to talk about the state channel network constructions that will form the bulk of the paper.
 A construction specifies both the network state for each participant and a sequence of states that can be used to reach it.
 Presenting a construction will follow the same rough pattern:
 \begin{enumerate}
-  \item Show that a given network state funds a channel
-  \item Show you can build it from a known state, using a sequence of value-preserving single channel updates
+  \item Show that a given network state funds a channel.
+  \item Show it can be built from a known state, using a sequence of value-preserving single channel updates.
 \end{enumerate}
-The second point here is really important and often neglected in state channel work - often the hardest part is not finding a construction that funds a channel but demonstrating how the participants can safely reach this state.
-The single channel update requirement is a decision we have made when designing the protocol.
-What this means is that we do not allow atomic updates across multiple channels;
+The single channel update requirement is a key decision in the design the protocol.
+This means that we do not allow atomic updates across multiple channels;
 each update to the system comprises sending or receiving a single statement applying to just one channel.
-This keeps channel updates are independent, which makes it a lot easier to reason about finalizability on a per-channel basis.
-We make protocol design harder but remove complexity that would otherwise be present at the engineering stage.
+This keeps channel updates independent, which makes it a lot easier to reason about finalizability on a per-channel basis.
 
-We require that the sequence of state transitions must be value preserving for each participants involved. 
+We require that the sequence of state transitions is value preserving for each participants involved. 
 While the power of state channel networks comes from being able to move value off-chain, opening and closing channels can be viewed as rewriting the existing state in a different form and therefore should not change the value.
 We furthermore make the assumption that participants will be willing to make any transition that preserves their value, meaning that value-preservation is both a necessary and sufficient property for constructing network states.
-
 We call this last assumption the \textbf{Simple Transition Rule}. 
-The assumption here is slightly subtle, when combined with the fact that our value calculations ignore the cost of the on-chain redistribution operations required to extract the value from the system.
-If you were to consider this cost, then moving from a simpler to a more complicated construction would slightly decrease the value of the network for the participants.
-In practice, the simple transition rule incorporates the assumption that the utility from being able to fund channels off-chain will outweigh the slight increase in cost in the worst-case scenario.
+
+In the case where we ignore the cost of the on-chain redistribution operations, the simple transition rule is straightforward and non-controversial.
+If we consider this cost, the situation becomes a bit more subtle, as moving from a simpler to a more complicated construction actually leads to a slight decrease the value that is extractable from the network.
+In practice, using the simple transition rule means we are assuming that the utility from being able to fund channels off-chain will outweigh the slight increase in cost in the worst-case scenario.
 Modelling the cost of the on-chain operations is beyond the scope of this paper.
 
 \subsection{Unbeatable Strategies}\label{sec:unbeatable-strategy}
@@ -137,7 +134,7 @@ The first assumption sidesteps issues of censorship, chain congestion and timing
 In practice, this assumption should hold if $\epsilon$ is sufficiently large, which can be accomplished by picking sensible channel timeouts.
 The second assumption rules out any strategies that rely on executing a given transaction on-chain before someone else executes a different one.
 
-We will next break an unbeatable strategy for obtaining a state into two stages: finalization and redistribution. 
+We now take the task of constructing an unbeatable strategy and break it into two stages: finalization and redistribution. 
 
 Finalization happens on a per-channel basis, with different channels finalizing independently.
 This makes it easier to reason about which outcomes are possible.
@@ -168,17 +165,17 @@ where the outcome, $\Omega$, is finalizable by $A$.
 It follows from the definition that exactly one of the following statements is true about
 a channel $\rchi$ at any point in time:
 \begin{enumerate}
-  \item The outcome of $\rchi$ has already been finalized on-chain: $\adj{\holds{\rchi}{}{\Omega}}$
-  \item Participant $p$ is the unique participant with one or more finalizable outcome(s), $\Omega_1, \dots, \Omega_m$.
+  \item Finalized outcome: the outcome of $\rchi$ has already been finalized on-chain: $\adj{\holds{\rchi}{}{\Omega}}$
+  \item One participant has multiple finalizable outcomes: participant $p$ has one or more finalizable outcome(s), $\Omega_1, \dots, \Omega_m$, and no other participant has any finalizable outcomes.
         We write this $\finalizable{\rchi}{\Omega_1, \dots, \Omega_m}{p}$.
-  \item There are at least two participants, $P = \{p_1, \dots, p_m \}$, who share the same
+  \item Multiple participants share one finalizable outcome: there are at least two participants, $P = \{p_1, \dots, p_m \}$, who share the same
         finalizable outcome, $\Omega$. We write this $\finalizable{\rchi}{\Omega}{p_1, \dots, p_m}$.
-  \item There are no participants with any finalizable outcomes.
+  \item No finalizable outcomes: there are no participants with any finalizable outcomes.
 \end{enumerate}
 The definition of finalizability excludes the case where two different finalizable outcomes are held
 by different participants, as in this case at least one participant's strategy would be beatable
 by the other participant's strategy.
-None of the protocols we present make use of the final situation, where no participant has a finalizable outcome, and we believe this state should generally be avoided.
+None of the protocols we present make use of the last case, where no participant has a finalizable outcome.
 
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/force-move-state-progression}}
@@ -194,8 +191,7 @@ For a ForceMove channel, this happens at the following points in its lifecycle:
   \item When a single conclusion proof is known to each participant. In this state, we say the channel is in the \textbf{concluded state}.
 \end{enumerate}
 It is an important property of ForceMove that all channels have one universally finalizable
-state at the beginning of their lifecycle and one at the end
-\footnote{If a channel does not end with a conclusion proof, it ends with an expired on-chain challenge,
+state at the beginning of their lifecycle and one at the end\footnote{If a channel does not end with a conclusion proof, it ends with an expired on-chain challenge,
 in which case the outcome is already finalized on-chain.}.
 
 If a participant has no finalizable outcomes, their analysis of the network needs to be performed
@@ -220,8 +216,9 @@ set of transitions rules that can be used to define the allowed state transition
 We will make heavy use of the consensus game throughout the paper.
 
 The consensus game provides a way for participants to move from one universally finalizable outcome to another, provided that they all agree.
+The participants start in a state where $\Omega_1$ is the universally finalizable outcome.
 One participant proposes the new outcome, $\Omega_2$.
-On their turn, each subsequent participant decides whether to accept the transition to the new outcome or whether to cancel the transition and return to the old outcome, $\Omega_2$.
+On their turn, each subsequent participant decides whether to accept the transition to the new outcome or whether to cancel the transition and return to $\Omega_1$.
 \begin{figure}[h]\centering
   \makebox[\textwidth][c]{\input{figures/consensus-game}}
   \caption{
@@ -243,7 +240,7 @@ Instead, we will write our constructions in terms of outcomes and use the proper
 
 In particular, we will present sequences of sets of outcomes, where each set differs only in the outcome of a single consensus game channel.
 Each of the outcomes will have the same value to all participants.
-We then know that, using the properties of the consensus game, we can transition between these two states with a consensus gaem transition, without enabling any additional outcomes.
+We then know that, using the properties of the consensus game, we can transition between these two states with a consensus game transition, without enabling any additional outcomes.
 
 To show that we can build a construction, it is therefore sufficient to present the sequence of sets of equal-value outcomes, where each set differs only in the outcome of a single consensus game channel. This is the approach we will take in the rest of the paper.
 

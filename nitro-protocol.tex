@@ -5,7 +5,7 @@ In Nitro protocol, the outcome of a channel can be either an allocation or a \te
 There are two on-chain redistribution operations: the transfer and the \textbf{claim}.
 
 Nitro enables true state channel networks by allowing virtual channels, where channels are routed through intermediaries.
-In particular, the extra features of Nitro allow virtual channels to be safely opened and closed off-chain while maintaining the property that channels update independently\footnote{It is possible to implement virtual channels in Turbo but only by breaking the independent update constraint. We believe this constraint will be important when running large scale state channel networks.}.
+In particular, the extra features of Nitro allow virtual channels to be safely opened and closed off-chain while maintaining the property that channels update independently\footnote{It is possible to implement virtual channels in Turbo but only by breaking the constraint that channels update independently. We believe this constraint will be important when running large scale state channel networks.}.
 
 \subsection{Guarantees and Claims}
 
@@ -33,8 +33,8 @@ The funds held in a guarantee channel can only be paid out once the outcome of t
 
 The format for specifying the priority order of a guarantee channels is complicated by the fact that we may not know the precise outcome or even the precise set of destinations at the time the guarantee is created.
 Because of this we need to enable the guarantee to apply a range of outcomes.
-Do do this, the guarantee provides a list of addresses, with the rule that these addresses will be moved to the top of the priority order if they appear in the outcome.
-For example, if a guarantee lists the addresses $(A, B, C)$ and the outcome is $\alloc{C: 1, D:2, A:4}$, then the guarantee will pay out as though the outcome was $\alloc{A:4, C:1, D: 2}$.
+To do this, the guarantee provides a list of addresses, with the rule that these addresses will be moved to the top of the priority order if they appear in the outcome.
+For example, if we have the guarantee $\guar{L}{A, B, C}$ and the outcome of $L$ is $\alloc{C: 1, D:2, A:4}$, then the guarantee will pay out as though the outcome was $\alloc{A:4, C:1, D: 2}$.
 
 Extending the terminology for allocations, we say that a guarantee `$G$ \textbf{can afford} $x$ for $B$', if $B$ would receive at least $x$ coins, were the coins currently held by $G$ to be paid out according to $G$'s prioritization of its target.
 
@@ -48,7 +48,7 @@ Extending the terminology for allocations, we say that a guarantee `$G$ \textbf{
 \end{figure}
 
 Nitro adds the \textbf{claim} operation, $\claim{G}{A}{x}$, to the existing transfer, deposit and withdraw operations.
-If $G$ acts as guarantor for $L$ and can afford $x$ for $A$, then $\claim{G}{A}{x}$ has the following three effects:
+If $G$ acts as guarantee for $L$ and can afford $x$ for $A$, then $\claim{G}{A}{x}$ has the following three effects:
 \begin{itemize}
   \item Reduces the funds held in channel $G$ by $x$.
   \item Increases the funds held in channel $A$ by $x$.
@@ -98,7 +98,7 @@ We can calculate this lower bound with a modification the Turbo Value Algorithm:
 \end{enumerate}
 
 Note that by taking the minimum independently on different allocation/guarantee groupings, we end up with an algorithm that strictly underestimates the actual value in some cases.
-This will is not the case for any of the constructions presented in this paper.
+This is not the case for any of the constructions presented in this paper.
 
 \textbf{Minimum Payout Calculation}
 
@@ -123,7 +123,7 @@ It is useful to introduce the deficit, $\delta_j > 0$, for the destination $D_j$
   \delta_j + \sum_{i} p_{ij} = a_j
 \end{equation}
 
-Finally we can write down the a set of constraints that encode the priority order of the guarantees:
+Finally we can write down the set of constraints that encode the priority order of the guarantees:
 \begin{align}
 \begin{split}
   p_{i\pi_j(2)} > 0 &\Rightarrow \delta_{\pi_j(1)} = 0 \\
@@ -132,6 +132,7 @@ Finally we can write down the a set of constraints that encode the priority orde
   p_{i\pi_j(m)} > 0 &\Rightarrow \delta_{\pi_j(m-1)} = \dots = \delta_{\pi_j(1)}  = 0 
 \end{split}
 \end{align}
+Note that we can rewrite these constraints in product form, e.g. $p_{i\pi_j(3)}(\delta_{\pi_j(2)} + \delta_{\pi_j(1)}) = 0$, making it clear that they are non-linear.
 
 We can then calculate $p_i = a_i - \delta_i^*$, where $\delta^*_i$ is found by minimising $\delta_i$ subject to these constraints.
 
@@ -275,7 +276,7 @@ The same sequence of states, when taken in reverse, can be used to close a virtu
     & \finalizable{L}{\alloc{A: a', I: b'}}{A,I} \\
     & \finalizable{L'}{\alloc{B: b', I: a'}}{B,I}
   \end{align}
-  \item The channels $\rchi$, $J$, $G$ and $G'$ are now all defunded, so can be discarded
+  \item The channels $\rchi$, $J$, $G$ and $G'$ are now all defunded, so can be discarded.
 \end{enumerate}
 
 It is also possible to do top-ups and partial checkouts from a virtual channel.
