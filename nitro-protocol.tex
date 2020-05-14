@@ -126,13 +126,13 @@ It is useful to introduce the deficit, $\delta_j > 0$, for the destination $D_j$
 Finally we can write down the set of constraints that encode the priority order of the guarantees:
 \begin{align}
 \begin{split}
-  p_{i\pi_j(2)} > 0 &\Rightarrow \delta_{\pi_j(1)} = 0 \\
-  p_{i\pi_j(3)} > 0 &\Rightarrow \delta_{\pi_j(2)} = \delta_{\pi_j(1)}  = 0 \\
+  p_{i\pi_i(2)} > 0 &\Rightarrow \delta_{\pi_i(1)} = 0 \\
+  p_{i\pi_i(3)} > 0 &\Rightarrow \delta_{\pi_i(2)} = \delta_{\pi_i(1)}  = 0 \\
   &\vdots \\
-  p_{i\pi_j(m)} > 0 &\Rightarrow \delta_{\pi_j(m-1)} = \dots = \delta_{\pi_j(1)}  = 0 
+  p_{i\pi_i(m)} > 0 &\Rightarrow \delta_{\pi_i(m-1)} = \dots = \delta_{\pi_i(1)}  = 0 
 \end{split}
 \end{align}
-Note that we can rewrite these constraints in product form, e.g. $p_{i\pi_j(3)}(\delta_{\pi_j(2)} + \delta_{\pi_j(1)}) = 0$, making it clear that they are non-linear.
+Note that we can rewrite these constraints in product form, e.g. $p_{i\pi_i(3)}(\delta_{\pi_i(2)} + \delta_{\pi_i(1)}) = 0$, making it clear that they are non-linear.
 
 We can then calculate $p_i = a_i - \delta_i^*$, where $\delta^*_i$ is found by minimising $\delta_i$ subject to these constraints.
 
