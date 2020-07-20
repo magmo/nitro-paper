@@ -228,7 +228,7 @@ The participants want to do this without disturbing any sub-channels supported b
   \end{align}
   \item $A$ can then call the transfer operation to get their coins under their control. 
   \begin{multline}
-    \transfer{L}{A}{a'}\adj{\holds{L}{x}{\alloc{L: a + b + c, A: a'}}} = \\ \adj{\holds{L}{x - a'}{\alloc{L': a + b + c}}, \; \holds{A}{a}{}}
+    \transfer{L}{A}{a'}\adj{\holds{L}{x}{\alloc{L': a + b + c, A: a'}}} = \\ \adj{\holds{L}{x - a'}{\alloc{L': a + b + c}}, \; \holds{A}{a'}{}}
   \end{multline}
   \item At any point in the future the remaining coins can be transferred to $L'$:
   \begin{multline}
