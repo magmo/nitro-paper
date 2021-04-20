@@ -180,7 +180,7 @@ We will first consider the case where $A$ wishes to offload $\rchi$. $A$ proceed
   \begin{align}
     \adj{\holds{L'}{x}{}, \holds{G}{x}{\guar{J}{\rchi, A, I}}, \; \holds{J}{}{\alloc{\rchi: x, I: x}}}
   \end{align}
-  \item Finally $A$ calls $\claim{G}{A}{\rchi}$ to move the funds from $G$ to $\rchi$.
+  \item Finally $A$ calls $\claim{G}{\rchi}{x}$ to move the funds from $G$ to $\rchi$.
   \begin{align}
     \adj{\holds{L'}{x}{}, \holds{G}{}{\guar{J}{\rchi, A, I}}, \; \holds{J}{}{\alloc{I: x}}, \; \holds{\rchi}{x}{}}
   \end{align}
