@@ -1,10 +1,10 @@
 \begin{tikzpicture}[x=4cm, y=0.8cm]
   \node (s0) at (0, 0) {
     \begin{tikzpicture}[x=.8cm]
-      \node[sqadj] (adj0) at (-1,0) {};
-      \node[sqadj] (adj1) at (1,0) {};
-      \node[circBI] (bi) at (-1,-1) {};
-      \node[circAI] (ai) at (1,-1) {};
+      \node[sqadj] (adj0) at (1,0) {};
+      \node[sqadj] (adj1) at (-1,0) {};
+      \node[circBI] (bi) at (1,-1) {};
+      \node[circAI] (ai) at (-1,-1) {};
       \pic (G) at (0, -2.5) {guarantee2};
       \node[circAB] (ab) at (-0.7,-4) {};
       \node[circI] (i) at (0.7, -4) {};
@@ -14,8 +14,8 @@
       \begin{scope}[->]
         \draw (adj0) edge node[midway, left] { 10 } (bi);
         \draw (adj1) edge node[midway, right] { 10 } (ai);
-        \draw (bi) edge node[midway, left] { 10 } (G-G0);
-        \draw (ai) edge node[midway, right] { 10 } (G-G1);
+        \draw (ai) edge node[midway, left] { 10 } (G-G0);
+        \draw (bi) edge node[midway, right] { 10 } (G-G1);
         \draw (G-J) edge node[midway, left] { 10 } (ab);
         \draw (G-J) edge node[midway, right] { 10 } (i);
         \draw (ab) edge node[midway, left] { 2 } (a);
@@ -26,10 +26,10 @@
 
   \node (s1) at (1, 0) {
     \begin{tikzpicture}[x=.8cm]
-      \node[sqadj] (adj0) at (-1,0) {};
-      \node[sqadj] (adj1) at (1,0) {};
-      \node[circBI] (bi) at (-1,-1) {};
-      \node[circAI] (ai) at (1,-1) {};
+      \node[sqadj] (adj0) at (1,0) {};
+      \node[sqadj] (adj1) at (-1,0) {};
+      \node[circBI] (bi) at (1,-1) {};
+      \node[circAI] (ai) at (-1,-1) {};
       \pic (G) at (0, -2.5) {guarantee};
       \node[circB] (b) at (0,-4) {};
       \node[circA] (a) at (-1,-4) {};
@@ -39,8 +39,8 @@
       \begin{scope}[->]
         \draw (adj0) to (bi);
         \draw (adj1) to (ai);
-        \draw (bi) to (G-G0);
-        \draw (ai) to (G-G1);
+        \draw (ai) to (G-G0);
+        \draw (bi) to (G-G1);
         \draw (G-J) edge node[near end, left] { 8 } (b);
         \draw (G-J) edge node[midway, left] { 2 } (a);
         \draw (G-J) edge node[midway, right] { 10 } (i);
@@ -50,25 +50,25 @@
 
   \node (s2) at (2.1, 0) {
     \begin{tikzpicture}[x=.8cm]
-      \node[sqadj] (adj0) at (-1,0) {};
-      \node[sqadj] (adj1) at (2,0) {};
-      \node[circBI] (bi) at (-1,-1) {};
-      \node[circAI] (ai) at (2,-1) {};
-      \node[circB] (b) at (-1.6,-2) {};
-      \node[circI] (ibi) at (-0.6,-2) {};
+      \node[sqadj] (adj0) at (2,0) {};
+      \node[sqadj] (adj1) at (-1,0) {};
+      \node[circBI] (bi) at (2,-1) {};
+      \node[circAI] (ai) at (-1,-1) {};
+      \node[circA] (a) at (-1.6,-2) {};
+      \node[circI] (iai) at (-0.6,-2) {};
       \pic (G) at (1, -2.5) {guarantee2other};
-      \node[circA] (a) at (0.4,-4) {};
+      \node[circB] (b) at (0.4,-4) {};
       \node[circI] (i) at (1.6, -4) {};
 
       \node[circle, draw=none, label=below:\strut] at (0, -4) {}; %ghost node for alignment%
 
       \begin{scope}[->]
         \draw (adj0) to (bi);
-        \draw (bi) edge node[midway, left] {8} (b);
-        \draw (bi) edge node[midway, right] {2} (ibi);
+        \draw (ai) edge node[midway, left] {2} (a);
+        \draw (ai) edge node[midway, right] {8} (iai);
         \draw (adj1) to (ai);
-        \draw (ai) to (G-G1);
-        \draw (G-J) edge node[midway, left] { 2 } (a);
+        \draw (bi) to (G-G1);
+        \draw (G-J) edge node[midway, left] { 8 } (b);
         \draw (G-J) edge node[midway, right] { 10 } (i);
       \end{scope}
     \end{tikzpicture}
@@ -76,15 +76,15 @@
 
   \node (s3) at (3.4, 0) {
     \begin{tikzpicture}[x=.8cm]
-      \node[sqadj] (adj0) at (-1,0) {};
-      \node[circBI] (bi) at (-1,-1) {};
-      \node[circB] (b) at (-1.7,-2) {};
-      \node[circI] (ibi) at (-0.3,-2) {};
+      \node[sqadj] (adj1) at (-1,0) {};
+      \node[circAI] (ai) at (-1,-1) {};
+      \node[circA] (a) at (-1.7,-2) {};
+      \node[circI] (iai) at (-0.3,-2) {};
 
-      \node[sqadj] (adj1) at (1.5,0) {};
-      \node[circAI] (ai) at (1.5,-1) {};
-      \node[circA] (a) at (0.8,-2) {};
-      \node[circI] (iai) at (2.2, -2) {};
+      \node[sqadj] (adj0) at (1.5,0) {};
+      \node[circBI] (bi) at (1.5,-1) {};
+      \node[circB] (b) at (0.8,-2) {};
+      \node[circI] (ibi) at (2.2, -2) {};
 
       \node[circle, draw=none, label=below:\strut] at (0, -4) {}; %ghost node for alignment%
 
