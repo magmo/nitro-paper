@@ -1,11 +1,11 @@
 name: Build LaTeX document
-# Controls when the action will run. 
+# Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 jobs:
   build_latex:
     runs-on: ubuntu-latest
@@ -16,3 +16,5 @@ jobs:
         uses: xu-cheng/latex-action@v2
         with:
           root_file: main.tex
+      - name: check pdf file
+        run: git diff --exit-code # Fails the job if you forgot to check in the updated pdf
