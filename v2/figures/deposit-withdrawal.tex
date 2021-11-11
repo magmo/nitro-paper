@@ -1,0 +1,68 @@
+  \begin{tikzpicture}[x=5.5cm,y=1.5cm]
+    \node[draw=black, rounded corners=0.5cm, outer sep=0.2cm] (adj0) at (0, 0) {
+      \begin{tabular}{c|c}
+        \multicolumn{2}{c}{\textbf{Adjudicator}} \\
+        Address & Balance \\
+        \hline
+        Bob & 5 \\
+        & \\
+      \end{tabular}
+    };
+
+    \node[draw=black, rounded corners=0.5cm, outer sep=0.2cm] (adj1) at (1, 0) {
+      \begin{tabular}{c|c}
+        \multicolumn{2}{c}{\textbf{Adjudicator}} \\
+        Address & Balance \\
+        \hline
+        Bob & 5 \\
+        Alice & 4 \\
+      \end{tabular}
+    };
+
+    \node[draw=black, rounded corners=0.5cm, outer sep=0.2cm] (adj2) at (2, 0) {
+      \begin{tabular}{c|c}
+        \multicolumn{2}{c}{\textbf{Adjudicator}} \\
+        Address & Balance \\
+        \hline
+        Bob & 2 \\
+        Alice & 4 \\
+      \end{tabular}
+    };
+
+    \node (not0) at (0, -1) {$\adj{\holds{\text{Bob}}{5}{}}$ };
+    \node (not0) at (1, -1) {$\adj{\holds{\text{Bob}}{5}{},\;\holds{\text{Alice}}{4}{}}$ };
+    \node (not0) at (2, -1) {$\adj{\holds{\text{Bob}}{2}{},\;\holds{\text{Alice}}{4}{}}$ };
+
+    \node (diag0) at (0, -2) {
+      \begin{tikzpicture}[y=1cm]
+        \node[sqadj] (a0) at (0, 0) {};
+        \node[circB, label=below:Bob] (p0) at (0, -1) {};
+        \draw[->] (a0) edge node[midway, left] { $5$ } (p0);
+      \end{tikzpicture}
+    };
+
+    \node (diag1) at (1, -2) {
+      \begin{tikzpicture}[y=1cm, x=1cm]
+        \node[sqadj] (a0) at (0, 0) {};
+        \node[circB, label=below:Bob] (p0) at (0, -1) {};
+        \node[sqadj] (a1) at (1, 0) {};
+        \node[circA, label=below:Alice] (p1) at (1, -1) {};
+        \draw[->] (a0) edge node[midway, left] { $5$ } (p0);
+        \draw[->] (a1) edge node[midway, left] { $4$ } (p1);
+      \end{tikzpicture}
+    };
+
+    \node (diag2) at (2, -2) {
+      \begin{tikzpicture}[y=1cm, x=1cm]
+        \node[sqadj] (a0) at (0, 0) {};
+        \node[circB, label=below:Bob] (p0) at (0, -1) {};
+        \node[sqadj] (a1) at (1, 0) {};
+        \node[circA, label=below:Alice] (p1) at (1, -1) {};
+        \draw[->] (a0) edge node[midway, left] { $2$ } (p0);
+        \draw[->] (a1) edge node[midway, left] { $4$ } (p1);
+      \end{tikzpicture}
+    };
+
+    \draw[->] (adj0) edge node[midway, above] { $D_\text{Alice}(4)$} (adj1);
+    \draw[->] (adj1) edge node[midway, above] { $W_\text{Bob}(3)$} (adj2);
+  \end{tikzpicture}

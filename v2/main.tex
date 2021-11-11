@@ -1,0 +1,30 @@
+\documentclass{article}
+\input{preamble}
+
+\usepackage{xparse}
+\input{channel-diagrams}
+\usetikzlibrary{patterns, decorations.pathreplacing}
+\usepackage[format=plain, labelfont={bf,it}, textfont=it]{caption}
+
+\title{Virtual state channels are simple and useful}
+\author{Andrew Stewart, Mike Kerzhner, George Knee, Sebastian Stammler, Matthias Who, \footnote{The expanded list of authors represent the collaborative nature by which this protocol was developed.}}
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+  Virtual state channels allow peers to bootstrap existing connections to form a state channel network. Existing virtual channel constructions are not so good. We present an amalgamation of two existing state channel protocols, Nitro and Perun, which considerately improve the practical application of virtual state channels..
+\end{abstract} 
+
+% NOTE: you can draw a very nice analogy to Adenosine Tri-Phosphate, which allows muscles to express maximum power for short bursts, but need to be periodically topped up :laughing:
+% lightning is one way to get "nitro"gen into the mitochondria
+
+\input{introduction.tex}
+\input{on-chain.tex}
+\input{off-chain.tex}
+\input{appendix.tex}
+
+\bibliography{main}
+\bibliographystyle{ieeetr}
+
+\end{document}

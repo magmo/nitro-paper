@@ -1,0 +1,75 @@
+\section{Off-chain protocols}
+\subsection{Ledger Channels}
+
+A \textbf{ledger} channel is a channel which is funded directly by the ledger.
+
+\subsubsection{Depositing into a ledger channel}
+(Provide minimal explanation, and refer to the Nitro whitepaper for details.)
+
+\subsubsection{Withdrawing from a ledger channel}
+
+\subsection{Virtual channels}
+Suppose we have peers $A = P_0, P_1, ..., P_n, P_{n+1} = B$ where:
+\begin{itemize}
+    \item each $(P_i, P_{i+1})$ pair already has a ledger channel $L_i$ running the consensus app
+    \item Alice ($P_0$) and Bob ($P_{n+1}$) want to make (virtual) payments between each other.
+\end{itemize}
+
+We can safely fund a joint channel $J$ with the following protocol:
+
+\textbf{Round 1}: Each participant signs a state $s$ for $J$ with $turnNum = 0$ and outcome $\{A: a_0,\; B: b_0\}$. They sign $s$ and send 
+
+\textbf{Round 2}: For each i = 0,...,n, participants $P_i$ and $P_{i+1}$ sign an update in $L_i$ to:
+\begin{itemize}
+    \item deduct $a_0$ from $P_i$'s balance in $L_i$
+    \item deduct $b_0$ from $P_{i+1}$'s balance in $L_i$
+    \item include the allocation $G_i = {J: {amount: x, left: P_i, right: P_{i+1}}}$ where $x=a_0+b_0$
+\end{itemize}
+
+
+For instance, $L_i$'s outcome might change
+\begin{itemize}
+    \item from $[\allocation{P_i}{bal_i}, \allocation{P_{i+1}}{bal_i'}, \guarantee{X'}{x'}{foo, bar}]$
+    \item to
+$[\allocation{P_i}{bal_i - a_0}, \allocation{P_{i+1}}{bal_i' - b_0}, \guarantee{X'}{x'}{P_i, P_{i+1}}, \guarantee{X}{x}{P_i, P_{i+1}}].$
+\end{itemize}
+
+
+\textbf{Round 3}:
+Alice blocks until she receives a counter-signed update in $L_0$. Bob blocks until he receives a counter-signed update in $L_n$. For $i \in \{1,\ldots,n\}$, $P_i$ blocks until they have counter-signed updates in $L_i$.
+
+Each participant signs a post-fund state $s_1$ for $J$ with $version = 1$ and outcome $\{A: a_0, B: b_0\}$.
+
+For each peer, the protocol is completed once a full set of signatures is received on $s_1$. At this point,
+\begin{itemize}
+    \item each $P_i$ has $a_0 + b_0$ fewer tokens across their two ledger channels $L_{i-1}$ and $L_i$
+    \item Alice ($P_0$) has $a_0$ fewer tokens in $L_0$
+    \item Bob ($P_{n+1}$) has $b_0$ fewer tokens in $L_{n}$
+    \item every participant's ledger channel reductions are offset by an equal allocation to the joint channel $J$
+    \item $J$'s outcome
+\end{itemize}
+
+To secure this protocol, we now specify application rules for $J$. \todo{specify}
+
+We are now ready to state the main result of this paper:\todo{add theorem}
+% \begin{theorem}
+%     This protocol is secure.
+% \end{theorem}
+
+Proof: \todo{see V2 spec}
+
+Case 1:
+Case 2:
+Case 3:
+
+% \begin{cases}
+%     \item{}
+% \end{cases}
+
+\subsection{Variations}
+
+\subsubsection{Generic virtual channels.}
+\todo{see the example on github}
+
+\subsection{Reduced latency of construction.}
+\todo{}

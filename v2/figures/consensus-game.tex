@@ -1,0 +1,29 @@
+\begin{tikzpicture}[x=1.7cm, y=1cm]
+  \begin{scope}[every node/.style={draw,circle,minimum size=4mm}]
+    \node (A) at (0,0) {};
+    \node (AB1) at (1,0) {};
+    \node (AB2) at (2,0) {};
+    \node[draw=none] (ABx) at (3,0) {};
+    % Dots
+    \foreach \n in {2.95,3,3.05} {\fill (\n,0) circle (0.8pt);}
+    \node (ABn) at (4,0) {};
+    \node (B) at (5,0) {};
+  \end{scope}
+  \begin{scope}
+    \node at ([yshift=-0.5cm]A) { $\Omega_1$ };
+    \node at ([yshift=-0.5cm]AB1) { $(\Omega_1, \Omega_2, 1)$ };
+    \node at ([yshift=-0.5cm]AB2) { $(\Omega_1, \Omega_2, 2)$ };
+    \node at ([yshift=-0.5cm]ABn) { $(\Omega_1, \Omega_2, n-1)$ };
+    \node at ([yshift=-0.5cm]B) { $\Omega_2$ };
+  \end{scope}
+  \begin{scope}[-{Latex[length=2mm]}]
+    \draw (A) to (AB1);
+    \draw (AB1) to (AB2);
+    \draw (AB2) to (ABx);
+    \draw (ABx) to (ABn);
+    \draw (ABn) to (B);
+    \draw (AB1) to[bend right] (A);
+    \draw (AB2) to[bend right] (A);
+    \draw (ABn) to[bend right] (A);
+  \end{scope}
+\end{tikzpicture}

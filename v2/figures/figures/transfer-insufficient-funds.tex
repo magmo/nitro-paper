@@ -1,0 +1,34 @@
+\begin{tikzpicture}[x=6.5cm, y=2cm]
+  \node (diag0) at (0, 0) {
+    \begin{tikzpicture}[y=1cm, x=2cm]
+
+      \node[sqadj] (a0) at (1, 0) {};
+      \node[circAB, label=right:$L$] (p0) at (1, -1) {};
+      \node[circB, label=below:$B$] (p1) at (0.58, -2) {};
+      \node[circA, label=below:$A$] (p2) at (1.42, -2) {};
+
+      \draw[->] (a0) edge node[midway, left] { $5$ } (p0);
+      \draw[->] (p0) edge node[midway, left] { $4$ } (p1);
+      \draw[->] (p0) edge node[midway, right] { $3$ } (p2);
+
+    \end{tikzpicture}
+  };
+
+  \node (diag1) at (1, 0) {
+    \begin{tikzpicture}[y=1cm, x=1cm]
+      \node[sqadj] (a0) at (0, 0) {};
+      \node[circB, label=below:$B$] (p0) at (0, -1) {};
+      \draw[->] (a0) edge node[midway, left] { $4$ } (p0);
+
+      \node[sqadj] (a2) at (1, 0) {};
+      \node[circA, label=below:$A$] (pa) at (1, -1) {};
+      \draw[->] (a2) edge node[midway, left] { $1$ } (pa);
+
+      \node[circAB, label=right:$L$] (p1) at (2, -1) {};
+      \node[circA, label=below:$A$] (p2) at (2, -2) {};
+      \draw[->] (p1) edge node[midway, left] { $2$ } (p2);
+    \end{tikzpicture}
+  };
+
+  \draw[shorten <=0.5cm, shorten >=0.3cm, -{Latex[length=2mm]}] (diag0) edge node[midway, above] {$\transfer{L}{B}{4}\; \transfer{L}{A}{1}$} (diag1);
+\end{tikzpicture}
