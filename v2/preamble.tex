@@ -1,0 +1,82 @@
+
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amsthm}
+\usepackage{eucal}
+\usepackage{amssymb}
+\usepackage{color}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows.meta,backgrounds}
+\usepackage{etoolbox}
+\usepackage{url} % for urls in bibliography
+\usepackage[parfill]{parskip} % no paragraph indents, leave blank line
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{listings}
+\usepackage{xifthen}% provides \isempty test
+\usepackage{todonotes}
+
+\graphicspath{ {./drawio/} }
+
+% Need this to keep the space before theorems when using parfill parskip
+% https://tex.stackexchange.com/questions/25346/wrong-spacing-before-theorem-environment-amsthm
+\begingroup
+    \makeatletter
+    \@for\theoremstyle:=definition,remark,plain\do{%
+        \expandafter\g@addto@macro\csname th@\theoremstyle\endcsname{%
+            \addtolength\thm@preskip\parskip
+            }%
+        }
+\endgroup
+
+\DeclareRobustCommand{\rchi}{{\mathpalette\irchi\relax}}
+\newcommand{\irchi}[2]{\raisebox{\depth}{$#1\chi$}} % inner command, used by \rchi
+
+\usepackage{mathtools}
+\usepackage{bm}
+\usepackage{stmaryrd} % for llbracket and rrbracket
+
+\theoremstyle{definition}
+\newtheorem{example}{Example}[section]
+\newtheorem{defn}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{conjecture}{Conjecture}[section]
+
+\newcommand{\adj}[1]{\llbracket #1 \rrbracket} 
+\newcommand{\enf}[1]{[#1]} 
+
+\newcommand{\holds}[3]{#1 %
+  \ifthenelse{\isempty{#2}}{}{: #2} %
+  \ifthenelse{\isempty{#3}}{}{\mapsto #3} %
+} 
+% \newcommand{\alloc}[1]{( #1 )} 
+% \newcommand{\guar}[2]{( #1 | #2 )} 
+
+\newcommand{\finalizable}[3]{[#1 \mapsto #2]_{#3}}
+\newcommand{\transfer}[2]{\mbox{Transfer}(#1, #2)}
+\newcommand{\allocation}[2]{\mbox{Alloc}(#1, #2)}
+\newcommand{\guarantee}[3]{\mbox{Guar}(#1, #2, [#3])}
+\newcommand{\claim}[2]{Claim(#1, #2)}
+
+\newcommand{\version}{\mbox{version}}
+\newcommand{\outcome}{\mbox{outcome}}
+\newcommand{\holdings}{\mbox{holdings}}
+\newcommand{\hash}{\mbox{hash}}
+\newcommand{\isFinal}{\mbox{isFinal}}
+\newcommand{\nonce}{\mbox{nonce}}
+\newcommand{\peers}{\mbox{peers}}
+\newcommand{\appDefinition}{\mbox{appDef}}
+\newcommand{\appData}{\mbox{appData}}
+
+
+\newcommand{\finalizationTime}{\mbox{finalizationTime}}
+\newcommand{\challengeDuration}{\mbox{challengeDuration}}
+\newcommand{\latestSupportedState}{\mbox{latestSupportedState}}
+
+\newcommand{\fixedPart}{\mbox{fixedPart}}
+\newcommand{\true}{\mbox{true}}
+\newcommand{\statusOf}{\mbox{statusOf}}
+\newcommand{\now}{\mbox{now}}
+\newcommand{\amount}{\mbox{amount}}
+
+\newcommand{\timeToPayment}{time to payment}

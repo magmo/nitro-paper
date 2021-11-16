@@ -1,0 +1,33 @@
+\begin{tikzpicture}[y=1cm, x=1cm]
+
+  \node[draw=black, rounded corners=0.5cm] (adj0) at (0, 0) {
+    \begin{tabular}{c|c|c}
+      \multicolumn{3}{c}{\textbf{Adjudicator}} \\
+      Address & Balance & Outcome \\
+      \hline
+      $G$ & 3 & $\guar{L}{B}$\\
+      $L$ &  & $A$: 2, $B$: 3 \\
+    \end{tabular}
+  };
+
+  \coordinate (eqlevel) at (0, -2);
+  \node (eq0) at (adj0 |- eqlevel) {$\adj{\holds{G}{3}{\guar{L}{B}}, \; \holds{L}{}{\alloc{A: 2, B: 3}}}$};
+
+  \node (diag0) at (5, -1) {
+    \begin{tikzpicture}[y=0.8cm, x=1.2cm]
+      \node[sqadj] (adj) at (1, 0) {};
+      \node[semicircle, draw, label=right:$G$] (g) at (1, -1) {};
+      \node[semicircle, draw, rotate=180, label=355:$L$] (l) at (1,-2) {};
+      \node[circA, label=below:$A$] (b) at (0.58, -3) {};
+      \node[circB, label=below:$B$] (a) at (1.42, -3) {};
+
+
+      \draw[-] (g.220) to[out=270, in=90] (l.220);
+      \draw[-] (g.320) to[out=270, in=90] (l.320);
+
+      \draw[->] (adj) edge node[midway, left] { $3$ } (g);
+      \draw[->] (l) edge node[midway, left] { $2$ } (b);
+      \draw[->] (l) edge node[midway, right] { $3$ } (a);
+    \end{tikzpicture}
+  };
+\end{tikzpicture}

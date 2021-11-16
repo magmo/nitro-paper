@@ -1,0 +1,76 @@
+\begin{tikzpicture}[x=4cm]
+  \node (s0) at (0, 0) {
+    \begin{tikzpicture}[y=1cm, x=1.2cm]
+      \node[sqadj] (adj) at (0, 0) {};
+      \node[circAB, label=right:$L$] (L) at (0, -1) {};
+      \node[circA, label=below:$A$] (A) at (-0.5, -2) {};
+      \node[circB, label=below:$B$] (B) at (0.5, -2) {};
+      \node[circle, draw=none, label=below:\strut] at (0, -3) {}; %ghost node for alignment%
+      \draw[->] (adj) edge node[midway, left] { $10$ } (L);
+      \draw[->] (L) edge node[midway, left] { $5$ } (A);
+      \draw[->] (L) edge node[midway, right] { $5$ } (B);
+    \end{tikzpicture}
+  };
+
+  \node[right=of s0] (s1) {
+    \begin{tikzpicture}[y=1cm, x=1cm]
+      \node[sqadj] (adj) at (0, 0) {};
+      \node[circAB, label=right:$L$] (L) at (0, -1) {};
+      \node[circA, label=below:$A$] (A) at (-1, -2) {};
+      \node[circB, label=below:$B$] (B) at (0, -2) {};
+      \node[circAB, label=right:$\rchi$] (chi) at (1, -2) {};
+      \draw[->] (adj) edge node[midway, left] { $10$ } (L);
+      \draw[->] (L) edge node[midway, left] { $5$ } (A);
+      \draw[->] (L) edge node[midway, right] { $5$ } (B);
+
+      \node[circA, label=below:$A$] (chiA) at (0.4, -3) {};
+      \node[circB, label=below:$B$] (chiB) at (1.6, -3) {};
+
+      \draw[->] (chi) edge node[midway, right] { $2$ } (chiA);
+      \draw[->] (chi) edge node[midway, right] { $4$ } (chiB);
+    \end{tikzpicture}
+  };
+
+  \node[right=of s1] (s2) {
+    \begin{tikzpicture}[y=1cm, x=1cm]
+      \node[sqadj] (adj) at (0, 0) {};
+      \node[circAB, label=right:$L$] (L) at (0, -1) {};
+      \node[circA, label=below:$A$] (A) at (-1, -2) {};
+      \node[circB, label=below:$B$] (B) at (0, -2) {};
+      \node[circAB, label=right:$\rchi$] (chi) at (1, -2) {};
+      \draw[->] (adj) edge node[midway, left] { $10$ } (L);
+
+      \draw[->] (L) edge node[midway, left] { $3$ } (A);
+      \draw[->] (L) edge node[midway, right] { $1$ } (B);
+      \draw[->] (L) edge node[midway, right] { $6$ } (chi);
+
+      \node[circA, label=below:$A$] (chiA) at (0.4, -3) {};
+      \node[circB, label=below:$B$] (chiB) at (1.6, -3) {};
+
+      \draw[->] (chi) edge node[midway, right] { $2$ } (chiA);
+      \draw[->] (chi) edge node[midway, right] { $4$ } (chiB);
+    \end{tikzpicture}
+  };
+
+  \node[right=of s2] (s3) {
+    \begin{tikzpicture}[y=1cm, x=1cm]
+      \node[sqadj] (adj) at (0, 0) {};
+      \node[circAB, label=right:$L$] (L) at (0, -1) {};
+      \node[circA, label=below:$A$] (A) at (-1, -2) {};
+      \node[circB, label=below:$B$] (B) at (0, -2) {};
+      \node[circAB, label=below:$\rchi$] (chi) at (1, -2) {};
+      \node[circle, draw=none, label=below:\strut] at (0, -3) {}; %ghost node for alignment%
+      \draw[->] (adj) edge node[midway, left] { $10$ } (L);
+      \draw[->] (L) edge node[midway, left] { $3$ } (A);
+      \draw[->] (L) edge node[midway, right] { $1$ } (B);
+      \draw[->] (L) edge node[midway, right] { $6$ } (chi);
+    \end{tikzpicture}
+  };
+
+  \begin{scope}[shorten <=1cm, shorten >=1.4cm, -{Latex[length=2mm]}]
+    \node (level) at (0, 0.8) {};
+    \draw (s0 |- level) to (s1 |- level);
+    \draw (s1 |- level) to (s2 |- level);
+    \draw (s2 |- level) to (s3 |- level);
+  \end{scope}
+\end{tikzpicture}

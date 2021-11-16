@@ -1,0 +1,38 @@
+\section{Introduction}
+
+\subsection{State channels}
+Introduce state channels.
+
+\subsection{Prior work}
+Review existing protocols
+\begin{itemize}
+    \item Perun: Too many channels, recursive construction, intermediaries block ledger updates.
+    \item Nitro: Even more channels, still recursive construction.
+    \item Donner: UTXO model, complicated construction, authors have not yet understood it. We suspect there is a mapping between ATP and Donner.
+    \item See Perun paper for more background.
+\end{itemize}
+
+\subsection{Our contribution}
+
+In this paper we present Asset Transfer Protocol\footnote{ATP, or adenosine tri-phosphate, serves as a reasonable analogy for Asset Transfer Protocol -- both enable a burst of high-performance activity, followed by periodic replentishing of reserves. Perun, the Norse God of lightning, is partially responsible for getting nitrogen into mitochondria.}, a simple and practical protocol for constructing state channel networks.
+We give a detailed description of how to construct ledger channels and virtual channels, including how to safely open and close these channels entirely off-chain.
+Taken with our earlier work on Perun and Nitro \todo{Citations needed}, this paper gives a complete specification for building a state channel network capable of running arbitrary state channel applications.
+
+\begin{itemize}
+    \item We describe a simple protocol for quickly constructing virtually funded channels in an adversarial state channel network.
+    \item The idea is: Perun laid out the correct data structures, and Nitro introduced guarantees. By combining the two ideas, both protocols are significantly simplified.
+    \item Quick means there are few serial messages required in the protocol.
+    \item We prove it's safe for all parties involved.
+    \item In the appendix, we outline a streamlined ledger\todo{Nitro uses ``ledger'' differently than Perun. What's a good term to use here?} funding protocol.
+    \item We discuss auxilliary protocols (top-ups, partial checkouts, etc) in an extended version of the paper.
+\end{itemize}
+
+An implementation of this protocol is underway in Golang and Solidity, under a grant from the Filecoin Foundation and support from Consensys Mesh. \todo{add ref} ATP channels will alleviate key UX issues in the Filecoin Retrieval Market. The ability to use bespoke application logic will enable the retrieval market to use novel cryptoeconomic incentives to reward retrieval miners.
+
+\subsection{Outline}
+\begin{itemize}
+    \item \ref{sec:on-chain} - specification of on-chain components
+    \item \ref{sec:ledger-funded} review of ledger funded channels
+    \item \ref{sec:virtual-funded} review of ledger funded channels
+    \item \ref{sec:results} statement of theorem + proof\todo{Mention Groethendic's quote about making things trivial using the correct definitions.}
+\end{itemize}\todo{fix references}

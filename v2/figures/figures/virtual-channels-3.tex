@@ -1,0 +1,23 @@
+\begin{tikzpicture}[x=2cm, y=1cm, framed, background rectangle/.style={draw=black,dashed, rounded corners}] 
+
+  % Specification of nodes (position, etc.)
+  \node (a0) at (0,0) { $\adj{\holds{L}{x}{}, \holds{L'}{x}{}}$ };
+  \node (b0) at (-1,-1) { $\finalizable{L}{\alloc{G: x}}{A, I}$ };
+  \node (b1) at (1,-1) { $\finalizable{L'}{\alloc{G': x}}{B, I}$ };
+  \node (g0) at (-1,-2) { $\finalizable{G}{\guar{J}{\rchi, A, I}}{A, I}$ };
+  \node (g1) at (1,-2) { $\finalizable{G'}{\guar{J}{\rchi, B, I}}{B, I}$ };
+  \node (j) at (0,-3) { $\finalizable{J}{\alloc{\rchi: x, I: x}}{A,B,I}$ };
+  \node (c) at (0,-4) { $\finalizable{\rchi}{\alloc{A: a, B: b}}{A,B}$ };
+
+  \begin{scope}[-]
+    \tikzstyle{every node}=[draw=none,below]
+    \draw (a0) to (b0);
+    \draw (a0) to (b1);
+    \draw (b0) to (g0);
+    \draw (b1) to (g1);
+    \draw (g0) to (j);
+    \draw (g1) to (j);
+    \draw (j) to (c);
+  \end{scope}
+
+\end{tikzpicture}

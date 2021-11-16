@@ -1,0 +1,127 @@
+\section{On-chain protocol}\todo{Title}
+\todo{Describe on-chain model (smart contracts, etc.)}
+
+
+
+\subsection{Channel attributes}
+
+A channel has the following constant attributes:
+\begin{itemize}
+  \item \peers, an ordered list of signing keys
+  \item \appDefinition, an address defining the location of the channel's application logic.
+  \item \nonce, a nonnegative integer
+  \item \challengeDuration, a nonnegative integer
+\end{itemize}\todo{Should we define these data structures as a protobuf or something?}
+The channel's id is computed as $\hash(\peers, \appDefinition, \nonce)$. The inclusion of a nonce allows for a fixed set of peers to construct an arbitrary number of distinct channels.
+
+
+A \textbf{channel state} is comprised of channel constants together with the following variable attributes:
+\begin{itemize}
+  \item \version, a nonnegative integer
+  \item \outcome, specified in Subsection \ref{sec:outcomes}
+  \item \appData, unspecified bytes parsed by custom application logic
+  \item \isFinal, a boolean flag
+\end{itemize}
+
+A channel has an on-chain \textbf{adjudication state}, with the following attributes:
+\begin{itemize}
+  \item \holdings, a nonnegative integer representing the cumulative deposits into the channel
+  \item \version, a nonnegative integer
+  \item \outcome, specified in Subsection \ref{sec:outcomes}
+  \item \finalizationTime, a timestamp indicating the time at which the channel is considered finalized.
+\end{itemize}
+
+The adjudicator stores two values for a given channel $X$:
+\begin{itemize}
+  \item $\holdings(X)$, representing the sum total of the deposits into the channel.
+  \item $\statusOf(X)$, representing an adjudication state.
+\end{itemize}
+
+\subsection{Applications}\label{sec:applications}
+
+A state channel application is a smart contract implementing a \latestSupportedState function with the signature \todo{FILL}.
+% latestSupportedState( fixedPart: FixedPart, states: SignedVariablePart[],): VariablePart
+The variable part returned is assumed by the adjudicator to be the most recent version of the channel's state to be supported by all peers in the channel. \footnote{
+Note that an application is free to define support in an arbitrary manner. For instance, an application where assets flow unidirectionally from Alice to Bob may specify that Alice can unilaterally support non-final states, and Bob can unilaterally transition from a non-final state signed by Alice to a final state signed by Bob. 
+Care must be taken to ensure application rules encode the fair distribution of assets.
+}
+
+The most basic application, coined a \textbf{consensus app}, follows the following specification:
+\begin{itemize}
+  \item Revert if $\mbox{states}.\mbox{length} \neq 1$.
+  \item Revert if $\mbox{states}[0]$ is not signed by all of $\fixedPart.\peers$.
+  \item Return $\mbox{states}[0].$
+\end{itemize}
+In other words, a consensus application is used to ensure that all peers support the unique state provided to the adjudicator.
+
+A more sophisticated application is specified in Section \ref{sub:virtual-funding}.
+
+\subsection{Adjudication}
+A state channel protocol assumes an adversarial setting. Therefore, assets are deposited into an adjudicator contract, which releases funds.
+
+To protect against arbitrary behaviour among peers, an adjudicator implements a \textbf{challenge} operation, enabling peers to recover funds from the channel after a timeout.\footnote{In practice, a state's support may need to be provided over multiple blockchain transactions to account for bounds on computation complexity. We ignore this detail.} It is implemented according to the following specification:
+\begin{itemize}
+  \item Check that the channel is not finalized, ie. $\statusOf(X).\finalizationTime \ge \now$.
+  \item Let $s = \appDefinition.\latestSupportedState(a, b)$
+  \item Set $\statusOf(X)$ to $$(s.\outcome, s.\version, \finalizationTime = \now + s.\challengeDuration)$$
+\end{itemize}\todo{fix}
+
+
+As\todo{Make sure this is necessary in the paper?} timers significantly worsen user experience, we also describe a collaborative operation \textbf{conclude}, which instantly finalizes a channel.\footnote{Implementations may also specify a \textbf{checkpoint} operation, which reverts for finalized channels or when presented with a stale state, and otherwise replaces the latest outcome and cancels any existing timer. See \ref{tla-plus-blog} for details}\todo{fix ref}
+\begin{itemize}
+  \item Revert if $X$ is finalized, ie. $\statusOf(X).\finalizationTime \ge \now$.
+  \item Let $s = \appDefinition.\latestSupportedState(a, b)$. 
+  \item Revert if $s.\isFinal$ is false.
+  \item Set $\statusOf(X)$ to $(s.\outcome, s.\version, \finalizationTime = \now)$
+\end{itemize}\todo{fix}
+
+\subsection{Outcomes and Asset Management}\label{sec:outcomes}
+\todo{Define deposits}
+
+An \textbf{allocation} $\allocation{A}{a}$ is a data structure encoding a destination $A$ and an amount $a$.
+A \textbf{guarantee} $\guarantee{X}{x}{[A_1, A_2, \ldots, A_k]}$ encodes a target $X$, an amount $x$, and an ordered list of destinations $A_1, \ldots, A_k$.
+An \textbf{exit} is either an allocation or a guarantee.
+An \textbf{outcome} is an ordered list of exits.
+
+Outcomes are in priority order\todo{This is irrelevant to the paper.}%, so that if the channel does not hold enough funds to pay all the coins that are due in its finalized outcome, then the exits at the beginning of the allocation will be triggered.\footnote{This choice is somewhat arbitrary yet practical. Alternatively, unordered outcomes which use additional state to manage deposits can enable concurrent deposits with less off-chain overhead, at the the expense of increased cost to users. See Vector \ref{} or Perun \ref{}.}\todo{missing refs}
+% We say that `$A$ \textbf{can afford} $x$ for $B$', if $B$ would receive at least $x$ coins, were the coins currently held by $A$ to be paid out in priority order.\todo{is this used?}
+
+% \begin{figure}[h]\centering
+%   \makebox[\textwidth][c]{\input{figures/transfer-insufficient-funds}}
+%   \caption{
+%     A graphical representation of the outcome $[\allocation{B}{4}, \allocation{A}{3}]$.
+%     All exits are allocations, meaning
+%     Outcomes pay out in priority order.
+%     In the diagram, $B$ is drawn to the left of $A$ to show that $B$ has higher priority in the outcome of $L$.
+%     In this example, $L$ can afford $4$ coins for $B$, but can only afford $1$ coin for $A$.
+%   }\label{fig:transfer-insufficient-funds}
+% \end{figure}
+
+% {}\todo{This figure needs to be updated}
+
+In this paper, we assume that ledger channels are fully funded when an exit is triggered, ie. $$\holdings(X) = \sum_{e\in \statusOf(X).\outcome} e.\amount.$$ There are multiple ways of implementing deposits, and the main result \ref{main-result}\todo{missing ref} does not depend on this choice.
+
+Allocation exits are triggered via the \textbf{transfer} operation, \transfer{A}{i}, which follows the following specification:
+\begin{enumerate}
+  \item Reverts if the channel $A$ is not finalized\todo{address}.
+  \item Sets $e = \statusOf(X).outcome[i]$.
+  \item Reverts if $e$ is not an allocation.
+  \item Sets $x$ to be $e.amount$.
+  \item Reduces the funds held in channel $A$ by $x$. 
+  \item Sends $x$ coints to $B$.
+  \item Sets $e.amount = 0$.
+\end{enumerate} \todo{address e.amount issue}
+
+Guarantees are triggered via the \textbf{claim}\todo{If we call this \em{reclaim} instead of claim, and simply modify outcomes, we'll end up with a cleaner statement.} operation \claim{A}{i}\todo{decide where to fetch $x$ from}, which follows the following specification:
+\begin{enumerate}
+  \item Reverts if the channel $A$ is not finalized\todo{address}.
+  \item Reverts if the $i$-th exit $e$ in $A$'s outcome is not a guarantee
+  \item Reverts if the channel $e.target$ is not finalized.
+  \item Reduces the funds held in channel $A$ by $x$. 
+  \item Sends $x$ coints to the ether\todo{fill this in}
+  \item Reduces $e.amount$ by $x$.
+\end{enumerate} \todo{address e.amount and e.target issue}
+
+
+\subsection{Recap}
+\todo{Add a table outlining on-chain state transitions}

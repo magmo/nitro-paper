@@ -1,0 +1,36 @@
+\begin{tikzpicture}[node distance=2cm]
+  \node (diag0) {
+    \begin{tikzpicture}[y=1cm, x=1cm]
+      \node[sqadj] (a0) at (0, 1) {};
+      \node[circAB, label=right:$L'$] (l0) at (0, 0) {};
+      \draw[->] (a0) edge node[midway, left] { $7$ } (l0);
+
+      \node[cloud, draw,cloud puffs=10,cloud puff arc=120, aspect=2, inner ysep=1em, align=center] at (2.5, 0.5) (systemstate) {$\Sigma$};
+
+    \end{tikzpicture}
+  };
+
+
+  \node[right=of diag0] (diag1) {
+    \begin{tikzpicture}[y=1cm, x=2cm]
+      \node[sqadj] (a0) at (1, 1) {};
+      \node[circAB, label=right:$L'$] (l0) at (1, 0) {};
+      \node[circAB, label=right:$L$] (p0) at (1, -1) {};
+
+      \draw[->] (a0) edge node[midway, left] { $7$ } (l0);
+      \draw[->] (l0) edge node[midway, left] { $7$ } (p0);
+
+    \end{tikzpicture}
+  };
+
+  \node[right=of diag1] (diag2) {
+    \begin{tikzpicture}[y=1cm, x=1.5cm]
+      \node[sqadj] (a0) at (0, 0) {};
+      \node[circAB, label=below:$L$] (p0) at (0, -1) {};
+      \draw[->] (a0) edge node[midway, left] { $7$ } (p0);
+    \end{tikzpicture}
+  };
+
+  \draw[shorten <=0.5cm, shorten >=0.3cm, -{Latex[length=2mm]}] (diag0) to (diag1);
+  \draw[shorten <=0.5cm, shorten >=0.3cm, -{Latex[length=2mm]}] (diag1) to (diag2);
+\end{tikzpicture}

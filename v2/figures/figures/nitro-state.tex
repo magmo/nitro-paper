@@ -1,0 +1,19 @@
+\begin{table}[h]\centering
+  \begin{tabular}{|l|l|l|p{5cm}|}
+    \hline
+    \texttt{participants} & \texttt{address[]} & $P$ & The addresses used to sign updates to the channel. \\ \hline
+    \texttt{gameLibrary} & \texttt{address} & $L$ & The address of the gameLibrary, which defines the transition rules for this channel \\ \hline
+    \texttt{nonce} & \texttt{unit256} & $k$ & Chosen to make the channel's address unique. \\ \hline
+    \texttt{challengeDuration} & \texttt{unit256} & $\eta$ & \\ \hline
+    \texttt{turnNum} & \texttt{unit256} & $i$ & Increments as new states are produced. \\ \hline
+    \texttt{guarantorFor} & \texttt{address} &  & Target channel for guarantee channels. Equal to 0 for balance channels. \\ \hline
+    \texttt{balances} & \texttt{(address, uint256)[]} & $\beta$ or $\gamma$ & Current \textit{outcome} of the channel. \\ \hline
+    \texttt{isFinal} & \texttt{bool} & $f$ & \\ \hline
+    \texttt{data} & \texttt{bytes} & $\delta$ & \\ \hline
+    \texttt{v} & \texttt{uint8} & &  ECDSA signature of the above arguments by the moving participant. \\ \cline{1-2}
+    \texttt{r} & \texttt{bytes32} & & \\ \cline{1-2}
+    \texttt{s} & \texttt{bytes32} & & \\ \hline
+  \end{tabular}
+  \caption{Nitro state format}
+  \label{table:force-move-state}
+\end{table}
