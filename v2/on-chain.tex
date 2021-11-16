@@ -30,9 +30,14 @@ A channel has an on-chain \textbf{adjudication state}, with the following attrib
   \item \outcome, specified in Subsection \ref{sec:outcomes}
   \item \finalizationTime, a timestamp indicating the time at which the channel is considered finalized.
 \end{itemize}
-The adjudicator stores a mapping from channel id to adjudication state.
 
-\subsection{Applications}
+The adjudicator stores two values for a given channel $X$:
+\begin{itemize}
+  \item $\holdings(X)$, representing the sum total of the deposits into the channel.
+  \item $\statusOf(X)$, representing an adjudication state.
+\end{itemize}
+
+\subsection{Applications}\label{sec:applications}
 
 A state channel application is a smart contract implementing a \latestSupportedState function with the signature \todo{FILL}.
 % latestSupportedState( fixedPart: FixedPart, states: SignedVariablePart[],): VariablePart
@@ -49,7 +54,7 @@ The most basic application, coined a \textbf{consensus app}, follows the followi
 \end{itemize}
 In other words, a consensus application is used to ensure that all peers support the unique state provided to the adjudicator.
 
-A more sophisticated application is specified in \ref{sub:virtual-funding}\todo{fix ref}.
+A more sophisticated application is specified in Section \ref{sub:virtual-funding}.
 
 \subsection{Adjudication}
 A state channel protocol assumes an adversarial setting. Therefore, assets are deposited into an adjudicator contract, which releases funds.
@@ -107,7 +112,7 @@ Allocation exits are triggered via the \textbf{transfer} operation, \transfer{A}
   \item Sets $e.amount = 0$.
 \end{enumerate} \todo{address e.amount issue}
 
-Guarantees are triggered via the \textbf{claim} operation \claim{A}{i}\todo{decide where to fetch $x$ from}, which follows the following specification:
+Guarantees are triggered via the \textbf{claim}\todo{If we call this \em{reclaim} instead of claim, and simply modify outcomes, we'll end up with a cleaner statement.} operation \claim{A}{i}\todo{decide where to fetch $x$ from}, which follows the following specification:
 \begin{enumerate}
   \item Reverts if the channel $A$ is not finalized\todo{address}.
   \item Reverts if the $i$-th exit $e$ in $A$'s outcome is not a guarantee
